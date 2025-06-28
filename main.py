@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+
 # Imports
 import json
 import requests
@@ -1824,4 +1828,4 @@ async def districtclaim(ctx, category_id: int):
         await ctx.send("No replies detected for remaining messages within the timeout period.")
 
 # This was created by Happy!
-bot.run('bot_token')
+bot.run(os.environ.get('TOKEN', input("Bot token not found. Please enter your token\n> \x1b[;32m")))  # Use the token from environment variables

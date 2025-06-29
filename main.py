@@ -152,6 +152,44 @@ async def cogs(ctx: commands.Context):
 global_repeat_counts = {}
 
 
+BLACKLIST_FILE = "blacklist.json"
+
+# Load blacklist from file
+def load_blacklist():
+    try:
+        with open(BLACKLIST_FILE, "r") as f:
+            return json.load(f).get("users", [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+# Save updated blacklist to file
+def save_blacklist(users):
+    with open(BLACKLIST_FILE, "w") as f:
+        json.dump({"users": users}, f, indent=4)
+
+# Check if user is blacklisted
+def is_blacklisted(user_id):
+    return user_id in load_blacklist()
+
+# Global check
+@bot.check
+async def block_blacklisted_users(ctx):
+    if is_blacklisted(ctx.author.id):
+        await ctx.send("Get your disgusting hands off of me, bitch.")
+        return False
+    return True
+
+# Mod command to blacklist a user
+@bot.command()
+@commands.has_any_role(ROLES.MODERATOR)
+async def blacklist(ctx, user: discord.User):
+    users = load_blacklist()
+    if user.id in users:
+        await ctx.send("🚫 That user is already blacklisted.")
+    else:
+        users.append(user.id)
+        save_blacklist(users)
+        await ctx.send(f"✅ {user.name} has been blacklisted.")
 # Command error handling
 @bot.event
 async def on_command_error(ctx, error):

@@ -934,11 +934,12 @@ async def halp(ctx):
 
 
 @bot.command()
-async def howgay(ctx):
-    await ctx.send(f'{ctx.author.mention} is {random.randint(0, 100)}% gay')
+async def howgay(ctx, member: Member = None): # type: ignore
+    member = member or ctx.author
+    await ctx.send(f'{member.mention} is {random.randint(0, 100)}% gay')
 
 @bot.command()
-async def compliment(ctx):
+async def compliment(ctx): # type: ignore
     good_words = [
         'You are a valuable member',
         'You are an icon!',

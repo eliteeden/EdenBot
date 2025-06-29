@@ -1,0 +1,90 @@
+.LOG
+
+Eden bot Changelog
+
+-New Invest command
+-Fixed issues with economy commands storing too many users
+-Reworked work command
+-Reworked compliment command
+-Added cooldowns to work and web
+-Updated error handling
+
+4:31 am 18/04/2025
+
+-Reworked roulette
+-Updated gamble
+-Fixed warn command
+-Updated slowmode
+-New botpurge command
+
+7:30 am 18/04/2025
+
+7:19 pm 18/04/2025
+
+-Added more bot responses for compliment and work
+-Added a new command to check if chains are broken
+-Incomplete command for claim events
+-A few bug fixes
+-Made insults rarer when using the compliment command
+
+12:44 am 23/04/2025
+
+-Fixed the auto responses and chain checker
+-Fixed the ban command
+-Patched nsfw loopholes with the web command
+-Edited the errors a bit 
+
+1:36 am 25/04/2025
+
+-Fixed ban command
+-Fixed warn, removewarn and warns commands by adding an ID to each warn
+-Added more autoresponses(Bot is now at 1k+ lines of code)
+-Added exact autoresponses
+1:18 am 29/04/2025
+
+-Rewroked the embed command
+-Implementation of booster exclusive commands
+-Few new responses
+
+3:41 pm 07/05/2025
+
+-Bit of cleaning up
+-New Autoresponses
+-New snipe command
+-New confess command(new user_colors.json file)
+-New gethex command(new webcolor lib)
+
+10:39 pm 15/05/2025
+
+-New profanity counter
+-New check profanity command
+-Fixed bal and replaced checkbal
+-New balances leaderboard command
+-New dictionary command
+5:47 pm 16/05/2025
+
+-New setbal command
+-New member, join, leave prompts 
+-Minor fixes
+2:42 pm 17/05/2025
+
+-New work command easter egg
+
+9:37 pm 20/05/2025
+
+-New lyrics command
+
+
+6:02 am 22/05/2025
+-New stick command for messages
+-New unstick command for messages
+-New stuck messages json file
+
+12:01 am 25/05/2025
+
+-Updated profanities
+-Updated topbal
+-New meme command
+-New list role command
+-Updated help command
+-Temporary subreddit event

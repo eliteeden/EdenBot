@@ -127,7 +127,13 @@ async def on_ready():
         print("Slash commands synced successfully!")
 
         # Load cogs
-        await bot.load_extension("cogs.test") 
+        for filename in os.listdir("cogs"):
+            if filename.endswith(".py"):
+                try:
+                    await bot.load_extension(f"cogs.{filename[:-3]}")
+                    print(f"Loaded cog: {filename[:-3]}")
+                except Exception as e:
+                    print(f"Failed to load cog {filename[:-3]}: {e}")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
     
@@ -1819,18 +1825,24 @@ async def districtclaim(ctx, category_id: int):
         # Stop listening after timeout if no reply occurs
         await ctx.send("No replies detected for remaining messages within the timeout period.")
 
-
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
-async def testreload(ctx: commands.Context):
-    """Reloads the test cog."""
+async def reload(ctx: commands.Context, cog: str):
+    """Reloads a specific cog."""
     try:
-        await bot.reload_extension("cogs.test")
-        await ctx.send("Test cog reloaded successfully!")
+        await bot.reload_extension(f"cogs.{cog}")
+        await ctx.send(f"{cog} cog reloaded successfully!")
     except Exception as e:
-        await ctx.send(f"Failed to reload test cog: {e}")
-
-
+        await ctx.send(f"Failed to reload {cog} cog: {e}")
+@reload.error
+async def reload_error(ctx: commands.Context, error: commands.CommandError):
+    """Handles errors for the reload command."""
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("buzz off butterfingers, only an elite few can tinker with me like that")
+    elif isinstance(error, commands.ExtensionNotFound):
+        await ctx.send("The specified cog does not exist.")
+    else:
+        await ctx.send(f"An unexpected error occurred: {error}")
 
 
 # This was created by Happy!

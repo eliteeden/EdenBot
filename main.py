@@ -15,7 +15,8 @@ import os
 import random
 import aiohttp
 import asyncio
-
+import unicodedata
+from googlesearch import search
 import webcolors
 from constants import CHANNELS, ROLES, USERS
 
@@ -173,6 +174,7 @@ With the air, like I don't care, baby, by the way huh
     "1984": "You should have never been given rights imo",
     "say bye to eden bot": "Later guys <3",
     "estrogen": "tmi",
+    "absolute cinema": "https://tenor.com/view/me-atrapaste-es-cine-its-cinema-cinema-esto-es-cine-gif-12869046600151364058",
   
     "weird edener": "https://tenor.com/view/do-you-have-any-idea-how-little-that-narrows-it-down-that-narrows-it-down-clear-now-its-clear-now-i-understand-now-gif-21256627"
 
@@ -223,17 +225,21 @@ async def lyrics(ctx, *, query: str):
                     if not lyrics_text:
                         return await ctx.send("Lyrics not found.")
 
-                    chunks = [lyrics_text[i:i+4096] for i in range(0, len(lyrics_text), 4096)]
+                    # Clean up formatting
+                    lyrics_text = lyrics_text.replace("\n\n", "\n")  # Reduce excess breaks
+
+                    # Split into chunks of 1024 characters
+                    chunks = [lyrics_text[i:i+1024] for i in range(0, len(lyrics_text), 1024)]
+
                     for i, chunk in enumerate(chunks):
                         embed = discord.Embed(
-                            title=f"{title} - {artist}" if i == 0 else f"{title} - {artist} (cont.)",
+                            title=f"{title} - {artist}" if i == 0 else f"{title} - {artist} (Part {i+1})",
                             description=chunk,
                             color=discord.Color.blurple()
                         )
                         await ctx.send(embed=embed)
     except Exception as e:
         await ctx.send(f"An error occurred: `{e}`")
-
 @bot.command()
 @commands.has_any_role("Bonked by Zi")
 async def eat(ctx, *, victim):
@@ -521,10 +527,10 @@ async def ping(ctx):
 
 @bot.command()
 async def changelog(ctx):
-    file_path = "C:/Users/Ace/Documents/eden bot changelog.txt"  # Update with the correct path
+      # Update with the correct path
 
     try:
-        with open(file_path, "r", encoding="utf-8") as file:
+        with open("eden bot changelog.txt", "r", encoding="utf-8") as file:
             content = file.read()
             
         if len(content) > 2000:
@@ -984,21 +990,37 @@ async def compliment(ctx):
 async def ryan(ctx):
     await ctx.send('<:ee_Aira:1302116437594210435>')
 
-@bot.command()
-async def cinema(ctx):
-    await ctx.send("https://tenor.com/view/me-atrapaste-es-cine-its-cinema-cinema-esto-es-cine-gif-12869046600151364058")
 
+
+
+# List of banned words (case-insensitive)
+slur_words = {"retard", "fag", "faggot", "nigga", "tard", "nigger"}
+
+# The ID of the channel where alerts should be sent
+alert_channel_id = 999768498492428398  # Replace with your mod/log/alert channel ID
 
 @bot.tree.command(name="talk")
 async def talk(interaction: Interaction, message: str):
     await interaction.response.defer(ephemeral=True)
-    
-    # Send the embed
-    await interaction.channel.send(message) # type: ignore
 
-    # Optionally delete the original interaction message if visible
+    # Check for bad words
+    lowered = message.lower()
+    flagged = any(bad_word in lowered for bad_word in slur_words)
+
+    # Send the original message to the current channel
+    await interaction.channel.send(message)  # type: ignore
+
+    # If flagged, notify a specific channel
+    if flagged:
+        alert_channel = bot.get_channel(alert_channel_id)
+        if alert_channel:
+            await alert_channel.send(
+                f"🚨 Message from {interaction.user.mention} in {interaction.channel.mention} "
+                f"contained flagged content: ```{message}```"
+            )
+
+    # Clean up original interaction
     await interaction.delete_original_response()
-
 
 
 
@@ -1768,6 +1790,8 @@ async def testreload(ctx: commands.Context):
         await ctx.send("Test cog reloaded successfully!")
     except Exception as e:
         await ctx.send(f"Failed to reload test cog: {e}")
+
+
 
 # This was created by Happy!
 bot.run(os.environ.get('TOKEN', input("Bot token not found. Please enter your token\n> \x1b[;32m")))  # Use the token from environment variables

@@ -57,6 +57,7 @@ pyee==13.0.0
 pygame==2.6.1
 Pygments==2.19.1
 python-dateutil==2.9.0.post0
+python-dotenv==1.1.1
 pytz==2024.2
 PyYAML==6.0.2
 regex==2024.11.6

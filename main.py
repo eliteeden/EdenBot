@@ -4,15 +4,20 @@
 
 # Imports
 import json
+from typing import Optional
+from discord import Interaction
 import requests
-from datetime import datetime, timedelta
+import datetime
 import discord
 from discord.ext import commands
-from discord import Intents, Embed, User, Member
+from discord import Intents, Embed, User, Member, app_commands
 import os
 import random
 import aiohttp
 import asyncio
+
+import webcolors
+from .constants import CHANNELS, ROLES, USERS
 
 # Initialize the report dictionary
 if os.path.exists("reports.json"):
@@ -75,7 +80,6 @@ class Paginator:
                 break
 
 SUBREDDITS = ["EliteEden", "memes"]  # Add more subreddits as needed
-CHANNEL_ID = 1377976690260836453  # Replace with your target Discord channel ID
 LAST_POST_IDS = {subreddit: None for subreddit in SUBREDDITS}  # Track last post ID per subreddit
 
 async def check_subreddits():
@@ -101,7 +105,7 @@ async def check_subreddits():
                         LAST_POST_IDS[subreddit] = post_id  # Initialize on first run
                     elif LAST_POST_IDS[subreddit] != post_id:
                         LAST_POST_IDS[subreddit] = post_id
-                        channel = bot.get_channel(CHANNEL_ID)
+                        channel: discord.TextChannel = bot.get_channel(CHANNELS.REDDIT)  # type: ignore
                         post_embed = Embed(title=latest_post["title"])
                         post_embed.set_image(url=latest_post["url"])
                         await channel.send(f"New post detected in r/{subreddit}: ")
@@ -293,6 +297,7 @@ STICKY_FILE = "sticky_messages.json"
 sticky_data = {}
 last_update = {}
 sticky_queues = {}  # Stores queues per channel
+sticky_tasks = {}  # Tracks background tasks per channel
 
 def load_sticky_data():
     if not os.path.exists(STICKY_FILE):
@@ -308,7 +313,7 @@ sticky_data = load_sticky_data()
 
 
 @bot.command()
-@commands.has_any_role(995294676385009664)
+@commands.has_any_role(ROLES.MODERATOR)
 async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None):
     try:
         if channel is None:
@@ -336,7 +341,7 @@ async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None):
         await ctx.send(f"An error occurred: {e}")
 
 @bot.command()
-@commands.has_any_role(995294676385009664)
+@commands.has_any_role(ROLES.MODERATOR)
 async def unstick(ctx, channel: discord.TextChannel = None):
     try:
         if channel is None:
@@ -361,20 +366,6 @@ async def unstick(ctx, channel: discord.TextChannel = None):
     except Exception as e:
         await ctx.send(f"An error occurred: {e}")
 
-
-sticky_tasks = {}  # Tracks background tasks per channel
-
-def load_sticky_data():
-    if not os.path.exists(STICKY_FILE):
-        return {}
-    with open(STICKY_FILE, "r") as f:
-        return json.load(f)
-
-def save_sticky_data(data):
-    with open(STICKY_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-sticky_data = load_sticky_data()
 
 @bot.event
 async def on_message(message):
@@ -464,31 +455,32 @@ async def process_sticky_queue(channel_id):
 
 @bot.event
 async def on_member_join(member: User):
-    channel = bot.get_channel(963782352931278938)
-    await channel.send(f'Welcome to Elite Eden {member.mention} \n<@&1275923642609303614> say hello to our new member!')
+    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
+    await channel.send(f'Welcome to Elite Eden {member.mention} \n<@&{ROLES.WELCOME_PING}> say hello to our new member!')
 
 @bot.event
 async def on_member_remove(member: User):
     try:
-        await member.guild.fetch_ban(member)  # Check if the member was banned
+        await member.guild.fetch_ban(member)  # type: ignore # Check if the member was banned
         return  # Exit the function if they were banned
+        # Can't on_member_ban just go here?
     except discord.NotFound:
         print(f"{member} left the server (not banned)")
-        channel = bot.get_channel(963782352931278938)
+        channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
         await channel.send(f'{member.mention} just left Elite Eden like a pussy.')
 
        
 
 @bot.event
 async def on_member_ban(guild, member: User):
-    channel = bot.get_channel(963782352931278938)
+    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
     await channel.send(f'Good riddance to {member.mention}.')    
 
 
 @bot.command()
-async def profanity(ctx, member: Member = None):
+async def profanity(ctx: commands.Context, member: Member = None): # type: ignore
     if member is None:
-        member = ctx.author  # Default to command user if no member specified
+        member: Member = ctx.author  # Default to command user if no member specified
 
     user_id = str(member.name)
     profanity_data = load_profanity_data()  # Load stored data
@@ -555,7 +547,7 @@ async def longday(ctx):
 # Moderation commands
 
 @bot.command()
-@commands.has_any_role('MODERATOR', 'happy', 'Bonked by Zi', 968081729027973140)
+@commands.has_any_role('MODERATOR', 'happy', 'Bonked by Zi', ROLES.PRESIDENT)
 async def mute(ctx, member: Member, timelimit):
     if 's' in timelimit:
         gettime = timelimit.strip('s')
@@ -591,12 +583,12 @@ async def mute(ctx, member: Member, timelimit):
 
 
 @bot.command()
-@commands.has_any_role('MODERATOR', 'happy', 968081729027973140)
+@commands.has_any_role('MODERATOR', 'happy', ROLES.PRESIDENT)
 async def unmute(ctx, member: Member):
     await member.edit(timed_out_until=None)
 
 @bot.command(pass_context=True)
-@commands.has_any_role('VANGUARD', 'happy', 968081729027973140)
+@commands.has_any_role('VANGUARD', 'happy', ROLES.PRESIDENT)
 async def ban(ctx, user_id: int = None, *, reason: str = None):
     # Check if a user ID is provided
     if not user_id:
@@ -625,13 +617,13 @@ async def listrole(ctx, member: Member = None):
 
 
 @bot.command()
-@commands.has_any_role('VANGUARD', 'happy', 968081729027973140)
+@commands.has_any_role('VANGUARD', 'happy', ROLES.PRESIDENT)
 async def unban(ctx, user: User):
     await ctx.guild.unban(user)
     await ctx.send(f'**{user}** was unbanned')
 
 @bot.command()
-@commands.has_any_role('GUARDIAN', 'happy', 968081729027973140, 968081927582154752)
+@commands.has_any_role('GUARDIAN', 'happy', ROLES.PRESIDENT, ROLES.GUARDIAN)
 async def kick(ctx, member: Member):
     try:
         await member.kick()
@@ -642,7 +634,7 @@ async def kick(ctx, member: Member):
         await ctx.send("An error occurred while trying to kick the member.")
 
 @bot.command()
-@commands.has_any_role('MODERATOR', 'happy', 968081729027973140)
+@commands.has_any_role('MODERATOR', 'happy', ROLES.PRESIDENT)
 async def purge(ctx, limit: int):
     await ctx.message.delete()
     await ctx.channel.purge(limit=limit)
@@ -666,7 +658,7 @@ async def on_message_delete(message):
     snipe_messages[message.channel.id] = (message.content, message.author, attachments)
 
 @bot.command()
-@commands.has_any_role("MODERATOR", 968081729027973140)
+@commands.has_any_role("MODERATOR", ROLES.PRESIDENT)
 async def snipe(ctx):
     global snipe_messages
     if ctx.channel.id not in snipe_messages:
@@ -690,10 +682,10 @@ async def snipe(ctx):
 
 
 @bot.command()
-@commands.has_any_role('MODERATOR')
+@commands.has_any_role('MODERATOR', ROLES.TOTALLY_MOD)
 async def lurk(ctx):
     try:
-        channel = bot.get_channel(963782352931278938)
+        channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
         LURK_WINDOW_MINUTES = 5.0
         if not channel:
             await ctx.send("Channel not found.")
@@ -713,15 +705,15 @@ async def lurk(ctx):
             selected = random.sample(lurkers, ping_count)
             mentions = ', '.join(member.mention for member in selected)
 
-            await channel.send(f"Hey {mentions}, quit lurking like bitches 🥰")
+            await channel.send(f"Hey {mentions}, {'and everyone else, ' if len(lurkers) > 4 else ''}quit lurking like bitches 🥰")
         else:
             print("No lurkers found right now!")
     except Exception as e:
         await ctx.send(f"Error: {e}")
 
 @bot.command(pass_context=True)
-@commands.has_any_role('MODERATOR', 'happy', 'Midnight Watcher', 997068135112921170, 968081729027973140)
-async def warn(ctx, user: discord.Member = None, *, reason: str = None):
+@commands.has_any_role('MODERATOR', 'happy', 'Midnight Watcher', ROLES.SERVER_BOOSTER, ROLES.PRESIDENT)
+async def warn(ctx, user: discord.Member = None, *, reason: str = None): # type: ignore
     author = ctx.author
     if author.top_role.position > user.top_role.position:
         roles = [role.id for role in ctx.author.roles]
@@ -736,7 +728,7 @@ async def warn(ctx, user: discord.Member = None, *, reason: str = None):
             await ctx.send("Please provide a valid reason.")
             return
         
-        if 995294676385009664 in roles:
+        if ROLES.MODERATOR in roles:
             # Get the next warning ID
             warn_id = report["next_warn_id"]
             report["next_warn_id"] += 1  # Increment the counter
@@ -978,11 +970,11 @@ async def compliment(ctx):
     chance = [0.75, 0.25]
     words = random.choices([good_words, bad_words], weights=chance, k=1)[0]
     roles = [role.id for role in ctx.author.roles]
-    if 995294676385009664 not in roles and 1361023152284635406 not in roles:
+    if ROLES.MODERATOR not in roles and ROLES.SACRIFICE not in roles:
         await ctx.send(random.choice(words))
-    elif 995294676385009664 in roles:
+    elif ROLES.MODERATOR in roles:
         await ctx.send(random.choice(good_words))
-    elif 1361023152284635406 in roles:
+    elif ROLES.SACRIFICE in roles:
         await ctx.send(random.choice(bad_words))
 
 @bot.command()
@@ -999,7 +991,7 @@ async def talk(interaction: Interaction, message: str):
     await interaction.response.defer(ephemeral=True)
     
     # Send the embed
-    await interaction.channel.send(message)
+    await interaction.channel.send(message) # type: ignore
 
     # Optionally delete the original interaction message if visible
     await interaction.delete_original_response()
@@ -1019,12 +1011,13 @@ async def embed(interaction: Interaction, title: str, message: str, color: str =
         # Convert the color from string to integer
         if color == None:
             color = discord.Color.blurple()
-        color = int(color, 16)
-        embed = Embed(title=title, description=formatted_message, color=color)
+        color = color.lstrip('#')  # Remove leading '#' if present
+        color = int(color, 16) # type: ignore
+        embed = Embed(title=title, description=formatted_message, color=color) # type: ignore
         await interaction.response.defer(ephemeral=True)
         
         # Send the embed
-        await interaction.channel.send(embed=embed)
+        await interaction.channel.send(embed=embed) # type: ignore
 
         # Optionally delete the original interaction message if visible
         await interaction.delete_original_response()
@@ -1053,7 +1046,7 @@ async def define(ctx,*,  word: str):
 
 
 @bot.command()
-@commands.has_any_role(997068135112921170, 995294676385009664, 1330722172578037922, 1118650807785619586)
+@commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, ROLES.WORDLES_WIDOWER, 1118650807785619586) # last role is unknown (remove?)
 async def urban(ctx, *, word: str):
     """Fetches the definition of a word from Urban Dictionary"""
     url = f"https://api.urbandictionary.com/v0/define?term={word}"
@@ -1082,12 +1075,12 @@ async def urban_error(ctx, error):
 async def web(ctx,*,search_msg):
     banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']
     eden_meta = {
-        "beautiful member": "<@793932862663032834>",
-        "beautiful mod": "<@954720566231859220>",
+        "beautiful member": f"<@{USERS.ESMERY}>",
+        "beautiful mod": f"<@{USERS.ZI}>",
         "gayest ship": "Emi and Niki.",
-        "average eden iq": "The average eden IQ is below room temperature.",
-        "glorious leader": "<@954720566231859220>",
-        "who stole the cheese": "<@506562538843144193>"
+        "average eden iq": "The average eden IQ is still below room temperature.",
+        "glorious leader": f"<@{USERS.ZI}>",
+        "who stole the cheese": f"<@{USERS.SCAREX}>"
     }
 
 
@@ -1110,7 +1103,7 @@ async def web(ctx,*,search_msg):
 
 
 @bot.command()
-@commands.has_any_role(997068135112921170, 995294676385009664)
+@commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
 @commands.cooldown(1,2, commands.BucketType.channel)
 async def wiki(ctx,*,search_msg):
     wiki_sites = ["https://en.wikipedia.org/wiki/", "fandom.com"]
@@ -1207,7 +1200,7 @@ class ConfessCog(commands.Cog):
 
 
 @bot.command()
-@commands.has_any_role(997068135112921170, 995294676385009664)
+@commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
 async def fuck(ctx, member: Member):
     embed = Embed(title=f'**{ctx.author.display_name}**! Where are you taking **{member.display_name}**', color=0x00FFFF)
     makeouts = ['https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmYwNjUyeXJ6M2l5bTc3anc5bWxnN2szODJjMnd5aXZzZDVweGg3ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/dWrnYmDucWhDvkbLF6/giphy.gif',
@@ -1279,7 +1272,7 @@ def is_unusual_name(name):
 
 
 @bot.command()
-@commands.has_any_role('MODERATOR', 997068135112921170)
+@commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)
 async def rsf(ctx):
     author = ctx.author
     try:
@@ -1302,7 +1295,7 @@ async def rsf(ctx):
 
 
 @bot.command()
-@commands.has_any_role('MODERATOR', 997068135112921170)
+@commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)
 async def murder(ctx, member: Member):
     author = ctx.author
     if author.top_role.position > member.top_role.position:
@@ -1372,9 +1365,9 @@ async def timer(ctx):
 
 # Economy commands
 @bot.command()
-async def bal(ctx, user: Member = None):
+async def bal(ctx, user: Optional[Member] = None): # type: ignore
     if user is None:
-        user = ctx.author
+        user: Member = ctx.author
         pronoun = "Your"
     else:
         pronoun = f"{user.mention}'s"
@@ -1569,7 +1562,7 @@ async def win(ctx):
             else:
                 newcoins = coins - 100000
                 current_acc['balance'] = newcoins
-                channel = bot.get_channel(1006061105895968778)
+                channel: discord.TextChannel = bot.get_channel(CHANNELS.WINNERS) # type: ignore
                 await channel.send(f'{ctx.author.mention} won the prize')
                 break
     if not found:
@@ -1584,71 +1577,6 @@ async def win(ctx):
 
 
 
-@bot.command()
-@commands.cooldown(1,20,commands.BucketType.channel)
-async def invest(ctx, amount: int):
-    userid = ctx.author.name
-    found = False
-    tries = random.randint(1,2)
-    # checks for if account exists
-    for current_acc in bank['users']:
-        if userid == current_acc['name']:
-            found = True
-            coins = int(current_acc['balance'])
-            if coins < amount:
-                await ctx.send('You do not have enough coins')
-                break
-            # balance subtraction
-            else:
-                newcoins = coins - amount
-                current_acc['balance'] = newcoins
-                roles = [role.id for role in ctx.author.roles]
-                if 1361023152284635406 not in roles:
-                    # Debug feature
-                    print(tries)
-                    # Random chance of success of failure
-                    if tries == 2:
-                        # Checks for correct roles
-                        if 991990846964633600 in roles:
-                            # Checks for specific role and sends message in the appropriate thread
-                            channel = bot.get_channel(1361099705135927437)
-                            await ctx.send('Accepted')
-                            await channel.send(f'**{ctx.author.mention}** invested {amount}')
-                            break
-                        elif 991991091744227388 in roles:
-                            channel = bot.get_channel(1361331765486026814)
-                            await ctx.send('Accepted')
-                            await channel.send(f'**{ctx.author.mention}** invested {amount}')
-                            break
-                        elif 991991037251825664 in roles:
-                            channel = bot.get_channel(1361331685014241400)
-                            await ctx.send('Accepted')
-                            await channel.send(f'**{ctx.author.mention}** invested {amount}')
-                            break
-                        elif 991990950400368650 in roles:
-                            channel = bot.get_channel(1361331590575165501)
-                            await ctx.send('Accepted')
-                            await channel.send(f'**{ctx.author.mention}** invested {amount}')
-                            break
-                        else:
-                            await ctx.send('You cannot participate')
-                    else:
-                        await ctx.send('Denied')
-                else:
-                    await ctx.send('Sacrifices cannot participate')
-
-
-    if not found:
-        bank['users'].append({
-                'name': ctx.author.name,
-                'balance': 0
-                })
-        await ctx.send("You do not have enough coins")
-
-
-    with open("users.json", "w+") as s:
-        json.dump(bank, s, indent=4)
-    
 
 @bot.command()
 @commands.cooldown(1,300, commands.BucketType.user)
@@ -1771,7 +1699,7 @@ async def districtclaim(ctx, category_id: int):
     text_channels = category.text_channels
 
     # List of channel IDs to exclude
-    excluded_channels = [1000323113940164608, 1362121637922865392, 963783004361203743, 963783494419505183, 963783632915419197, 963783494419505183, 963782851726307368]  # Replace with actual IDs of channels to skip
+    excluded_channels = [CHANNELS.VIP_LOUNGE, CHANNELS.HONEYMOON, CHANNELS.DISTRICT_SOUTH , CHANNELS.DISTRICT_EAST, CHANNELS.DISTRICT_WEST, CHANNELS.DISTRICT_NORTH]  # Replace with actual IDs of channels to skip
 
     # Filter out excluded channels
     valid_channels = [channel for channel in text_channels if channel.id not in excluded_channels]
@@ -1790,7 +1718,7 @@ async def districtclaim(ctx, category_id: int):
         "West: 🍁",
         "North: 🌲"
     ]
-    role_ids = [991990950400368650, 991991037251825664, 991991091744227388, 991990846964633600]  # Replace with actual role IDs
+    role_ids = [ROLES.DISTRICT_SOUTH, ROLES.DISTRICT_EAST, ROLES.DISTRICT_WEST, ROLES.DISTRICT_NORTH]  # Replace with actual role IDs
 
     # Send messages and map them to roles
     for channel, message, role_id in zip(random_channels, messages, role_ids):

@@ -1776,6 +1776,8 @@ async def reload_error(ctx: commands.Context, error: commands.CommandError):
         await ctx.send("buzz off butterfingers, only an elite few can tinker with me like that")
     elif isinstance(error, commands.ExtensionNotFound):
         await ctx.send("The specified cog does not exist.")
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("What do you want me to do, reload *everything*?")
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
 

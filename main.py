@@ -19,6 +19,9 @@ import unicodedata
 from googlesearch import search
 import webcolors
 from constants import CHANNELS, ROLES, USERS
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Initialize the report dictionary
 if os.path.exists("reports.json"):

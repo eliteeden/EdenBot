@@ -935,7 +935,7 @@ async def halp(ctx):
 
 @bot.command()
 async def howgay(ctx, member: Member = None): # type: ignore
-    member = member or ctx.author
+    member = ctx.author if member is None else member
     await ctx.send(f'{member.mention} is {random.randint(0, 100)}% gay')
 
 @bot.command()

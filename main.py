@@ -3,6 +3,7 @@
 
 
 # Imports
+import importlib
 from dotenv import load_dotenv
 import json
 from typing import Optional
@@ -330,7 +331,7 @@ sticky_data = load_sticky_data()
 
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR)
-async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None):
+async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None): # type: ignore
     try:
         if channel is None:
             channel = ctx.channel
@@ -358,7 +359,7 @@ async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None):
 
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR)
-async def unstick(ctx, channel: discord.TextChannel = None):
+async def unstick(ctx, channel: discord.TextChannel = None): # type: ignore
     try:
         if channel is None:
             channel = ctx.channel
@@ -436,7 +437,7 @@ async def on_message(message):
         global_repeat_counts[channel_id]["last_message"] = content
         global_repeat_counts[channel_id]["repeat_count"] = 1
 
-async def process_sticky_queue(channel_id):
+async def process_sticky_queue(channel_id: str):
     """Processes sticky messages periodically instead of immediately."""
     while True:
         if sticky_queues[channel_id].empty():
@@ -450,7 +451,7 @@ async def process_sticky_queue(channel_id):
             await asyncio.sleep(5)
 
         sticky_info = sticky_data[channel_id]
-        channel = await bot.fetch_channel(int(channel_id))
+        channel: discord.TextChannel = await bot.fetch_channel(int(channel_id)) # type: ignore
 
         try:
             old_msg = await channel.fetch_message(sticky_info["message_id"])
@@ -605,7 +606,7 @@ async def unmute(ctx, member: Member):
 
 @bot.command(pass_context=True)
 @commands.has_any_role('VANGUARD', 'happy', ROLES.PRESIDENT)
-async def ban(ctx, user_id: int = None, *, reason: str = None):
+async def ban(ctx, user_id: int = None, *, reason: str = None): # type: ignore
     # Check if a user ID is provided
     if not user_id:
         await ctx.send("Please provide a valid user ID to ban.")
@@ -625,7 +626,7 @@ async def ban(ctx, user_id: int = None, *, reason: str = None):
 
 
 @bot.command()
-async def listrole(ctx, member: Member = None):
+async def listrole(ctx, member: Member = None): # type: ignore
     if not member:
         member = ctx.author
     roles = [role.name for role in member.roles]
@@ -787,7 +788,7 @@ async def warn(ctx, user: discord.Member = None, *, reason: str = None): # type:
 
 @bot.command(pass_context=True)
 @commands.has_any_role('MODERATOR', 'happy')
-async def removewarn(ctx, warn_id: int = None):
+async def removewarn(ctx, warn_id: int = None): # type: ignore
     if not warn_id:
         await ctx.send("Please provide the warning ID to remove.")
         return
@@ -1003,9 +1004,6 @@ async def ryan(ctx):
 # List of banned words (case-insensitive)
 slur_words = {"retard", "fag", "faggot", "nigga", "tard", "nigger"}
 
-# The ID of the channel where alerts should be sent
-alert_channel_id = 999768498492428398  # Replace with your mod/log/alert channel ID
-
 @bot.tree.command(name="talk")
 async def talk(interaction: Interaction, message: str):
     await interaction.response.defer(ephemeral=True)
@@ -1019,10 +1017,11 @@ async def talk(interaction: Interaction, message: str):
 
     # If flagged, notify a specific channel
     if flagged:
-        alert_channel = bot.get_channel(alert_channel_id)
+        # The ID of the channel where alerts should be sent 
+        alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES) # type: ignore
         if alert_channel:
             await alert_channel.send(
-                f"🚨 Message from {interaction.user.mention} in {interaction.channel.mention} "
+                f"🚨 Message from {interaction.user.mention} in {interaction.channel.mention if isinstance(interaction.channel, discord.TextChannel) else f'(non-text-channel id: {interaction.channel_id})'} "
                 f"contained flagged content: ```{message}```"
             )
 
@@ -1033,7 +1032,7 @@ async def talk(interaction: Interaction, message: str):
 
 @bot.tree.command(name="embed")
 @app_commands.describe(title="The title of the embed", message="The description of the embed", color="The hexadecimal color code for the embed")
-async def embed(interaction: Interaction, title: str, message: str, color: str = None):
+async def embed(interaction: Interaction, title: str, message: str, color: str = str(discord.Color.blurple())):
     """Create an embed with a title, description, and color."""
     try:
 
@@ -1041,8 +1040,6 @@ async def embed(interaction: Interaction, title: str, message: str, color: str =
         formatted_message = "\n".join(lines)
 
         # Convert the color from string to integer
-        if color == None:
-            color = discord.Color.blurple()
         color = color.lstrip('#')  # Remove leading '#' if present
         color = int(color, 16) # type: ignore
         embed = Embed(title=title, description=formatted_message, color=color) # type: ignore
@@ -1142,7 +1139,7 @@ async def wiki(ctx,*,search_msg):
     banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']
     if any(banned_word in search_msg.lower() for banned_word in banned_words):
         await ctx.send("Your search contains banned words and cannot be processed.")
-        wiki.reset_cooldown(ctx)
+        wiki.reset_cooldown(ctx) # type: ignore
         return
     else:
         async with ctx.typing():
@@ -1195,12 +1192,10 @@ class ConfessCog(commands.Cog):
             save_colors(user_colors)  # Save the updated data
 
         hex_code = user_colors[user_name]
-        color_name = closest_color(hex_code)  # Get closest CSS3 color name
-
         embed = discord.Embed(title=f"Anon-{hex_code}".capitalize(), description=message, color=int(hex_code[1:], 16))
 
         await interaction.response.defer(ephemeral=True)  # Prevents errors by deferring the interaction
-        await interaction.channel.send(embed=embed)  # Sends the embed without replying to the trigger
+        await interaction.channel.send(embed=embed)  # type: ignore # Sends the embed without replying to the trigger
         await interaction.delete_original_response()
 
 
@@ -1436,10 +1431,10 @@ async def topbal(ctx):
 @commands.cooldown(1,30, commands.BucketType.user)
 async def work(ctx):
     found = False
+    responses = ['You did a great job and earned', 'You exploited a citizen and earned', 'You forfeited your evening to the mods and earned', 'You stole', 'You were such a cutie you got', 'You begged and got', 'You sent your nudes to the mods and were paid', 'You went to the mines and found', 'You posted on Patreon and got', 'You were so well-behaved you were given', 'You sold your kidney and got', 'You helped an old lady on the street and got', 'Your small business made you', 'Just take these']
     for current_acc in bank['users']:
         if ctx.author.name == current_acc['name']:
             found = True
-            responses = ['You did a great job and earned', 'You exploited a citizen and earned', 'You forfeited your evening to the mods and earned', 'You stole', 'You were such a cutie you got', 'You begged and got', 'You sent your nudes to the mods and were paid', 'You went to the mines and found', 'You posted on Patreon and got', 'You were so well-behaved you were given', 'You sold your kidney and got', 'You helped an old lady on the street and got', 'Your small business made you', 'Just take these']
             coins = int(current_acc['balance'])
             earn = random.randint(1,3001)
             newcoins = coins + earn
@@ -1476,11 +1471,11 @@ async def coinflip(ctx, *, txt:str):
     
     if txt.lower() in sides:
         if txt.lower() == toss:
+            earn = 1000
             for current_acc in bank['users']:
                 if ctx.author.name == current_acc['name']:
                         found = True
                         coins = int(current_acc['balance'])
-                        earn = 1000
                         newcoins = coins + earn
                         current_acc['balance'] = newcoins
                         await ctx.send(f"You won {earn} eden coins")
@@ -1587,7 +1582,7 @@ async def win(ctx):
 @commands.cooldown(1,300, commands.BucketType.user)
 async def roulette(ctx, bullets:int):
     if bullets < 1 or bullets > 5:
-        roulette.reset_cooldown(ctx)
+        roulette.reset_cooldown(ctx) # type: ignore
         await ctx.send('Please choose between 1 and 5 bullets')
         return
         
@@ -1600,18 +1595,18 @@ async def roulette(ctx, bullets:int):
     fired_chamber = random.choice(chamber)
 
     if fired_chamber == 0:
+        earn = 1000 * bullets
         for current_acc in bank['users']:
             found = True
             if userid == current_acc['name']:
-                roulette.reset_cooldown(ctx) #Cooldown is reset
+                roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
                 coins = int(current_acc['balance'])
-                earn = 1000 * bullets
                 newcoins = coins + earn
                 current_acc['balance'] = newcoins
                 await ctx.send(f'You won {earn} eden coins')
                 break
         if not found:
-            roulette.reset_cooldown(ctx) #Cooldown is reset
+            roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
             bank['users'].append({
                 'name': ctx.author.name,
                 'balance': earn

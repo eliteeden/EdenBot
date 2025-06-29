@@ -6,8 +6,8 @@ class ColorCog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-
-    def closest_color(self, hex_code): 
+    @staticmethod
+    def closest_color(hex_code): 
         try:
              return webcolors.hex_to_name(hex_code) 
         except ValueError: # Convert hex to RGB 

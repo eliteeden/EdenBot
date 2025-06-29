@@ -1090,7 +1090,7 @@ async def web(ctx,*,search_msg):
 
     if any(banned_word in search_msg.lower() for banned_word in banned_words):
         await ctx.send("Your search contains banned words and cannot be processed.")
-        web.reset_cooldown(ctx)
+        web.reset_cooldown(ctx) # type: ignore
         return
     else:
         async with ctx.typing():
@@ -1754,6 +1754,19 @@ async def districtclaim(ctx, category_id: int):
     except asyncio.TimeoutError:
         # Stop listening after timeout if no reply occurs
         await ctx.send("No replies detected for remaining messages within the timeout period.")
+
+# Test cog (by Henry)
+bot.load_extension("cogs.test") # type: ignore
+
+@bot.command()
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+async def testreload(ctx: commands.Context):
+    """Reloads the test cog."""
+    try:
+        bot.reload_extension("cogs.test")  # type: ignore
+        await ctx.send("Test cog reloaded successfully!")
+    except Exception as e:
+        await ctx.send(f"Failed to reload test cog: {e}")
 
 # This was created by Happy!
 bot.run(os.environ.get('TOKEN', input("Bot token not found. Please enter your token\n> \x1b[;32m")))  # Use the token from environment variables

@@ -985,6 +985,9 @@ async def ryan(ctx):
 async def cinema(ctx):
     await ctx.send("https://tenor.com/view/me-atrapaste-es-cine-its-cinema-cinema-esto-es-cine-gif-12869046600151364058")
 
+@bot.command()
+async def four(ctx):
+    await ctx.send("https://tenor.com/view/mr-fantastic-fantastic-four-four-fingers-number-four-4-gif-388926182543808560")
 
 @bot.tree.command(name="talk")
 async def talk(interaction: Interaction, message: str):

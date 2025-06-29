@@ -116,6 +116,8 @@ async def check_subreddits():
 
         await asyncio.sleep(60)  # Wait 1 minute before checking again
 
+LOADED_COGS = []
+
 @bot.event
 async def on_ready():
     try:
@@ -133,6 +135,7 @@ async def on_ready():
                 try:
                     await bot.load_extension(f"cogs.{filename[:-3]}")
                     print(f"Loaded cog: {filename[:-3]}")
+                    LOADED_COGS.append(filename) # keep the .py
                 except Exception as e:
                     print(f"Failed to load cog {filename[:-3]}: {e}")
     except Exception as e:
@@ -140,6 +143,10 @@ async def on_ready():
     
 
     print('Systems online')
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+@bot.command()
+async def cogs(ctx: commands.Context):
+    await ctx.send("Loaded cogs: " + ", ".join(LOADED_COGS))
 
 # Global tracking for repeated messages
 global_repeat_counts = {}

@@ -3,6 +3,7 @@
 
 
 # Imports
+from dotenv import load_dotenv
 import json
 from typing import Optional
 from discord import Interaction
@@ -19,9 +20,6 @@ import unicodedata
 from googlesearch import search
 import webcolors
 from constants import CHANNELS, ROLES, USERS
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Initialize the report dictionary
 if os.path.exists("reports.json"):
@@ -1796,5 +1794,12 @@ async def testreload(ctx: commands.Context):
 
 
 
+
 # This was created by Happy!
-bot.run(os.environ.get('TOKEN', input("Bot token not found. Please enter your token\n> \x1b[;32m")))  # Use the token from environment variables
+load_dotenv('token.env')
+
+token = os.environ.get("TOKEN")
+if not token:
+    token = input("Bot token not found. Please enter your token:\n> ")
+
+bot.run(token)

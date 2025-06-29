@@ -14,7 +14,7 @@ class TestCog(commands.Cog):
         """A simple command to test if the bot is working."""
         await ctx.send(f"Test command executed successfully! Random number is {self.randomNumber}. (This number should change every reload)")
 
-def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot):
     """Function to load the cog."""
-    bot.add_cog(TestCog(bot)) # type: ignore
+    await bot.add_cog(TestCog(bot)) # type: ignore
     print("TestCog has been (re-)loaded.")

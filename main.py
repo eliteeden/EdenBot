@@ -992,6 +992,9 @@ async def ryan(ctx):
     await ctx.send('<:ee_Aira:1302116437594210435>')
 
 
+@bot.command()
+async def four(ctx):
+    await ctx.send("https://tenor.com/view/mr-fantastic-fantastic-four-four-fingers-number-four-4-gif-388926182543808560")
 
 
 # List of banned words (case-insensitive)

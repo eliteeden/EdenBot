@@ -17,7 +17,7 @@ import aiohttp
 import asyncio
 
 import webcolors
-from .constants import CHANNELS, ROLES, USERS
+from constants import CHANNELS, ROLES, USERS
 
 # Initialize the report dictionary
 if os.path.exists("reports.json"):
@@ -33,12 +33,12 @@ else:
 
 
 
-with open('users.json', encoding='utf-8') as s:
-    try:
+try:
+    with open('users.json', encoding='utf-8') as s:
         bank = json.load(s)
-    except ValueError:
-        bank = {}
-        bank['users'] = []
+except (ValueError, FileNotFoundError):
+    bank = {}
+    bank['users'] = []
 
 
 bot = commands.Bot(command_prefix=';', intents=Intents.all())
@@ -123,6 +123,9 @@ async def on_ready():
         await bot.tree.sync()
         
         print("Slash commands synced successfully!")
+
+        # Load cogs
+        await bot.load_extension("cogs.test") 
     except Exception as e:
         print(f"Failed to sync commands: {e}")
     
@@ -1755,15 +1758,13 @@ async def districtclaim(ctx, category_id: int):
         # Stop listening after timeout if no reply occurs
         await ctx.send("No replies detected for remaining messages within the timeout period.")
 
-# Test cog (by Henry)
-bot.load_extension("cogs.test") # type: ignore
 
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 async def testreload(ctx: commands.Context):
     """Reloads the test cog."""
     try:
-        bot.reload_extension("cogs.test")  # type: ignore
+        await bot.reload_extension("cogs.test")
         await ctx.send("Test cog reloaded successfully!")
     except Exception as e:
         await ctx.send(f"Failed to reload test cog: {e}")

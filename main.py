@@ -191,7 +191,14 @@ With the air, like I don't care, baby, by the way huh
     "estrogen": "tmi",
     "absolute cinema": "https://tenor.com/view/me-atrapaste-es-cine-its-cinema-cinema-esto-es-cine-gif-12869046600151364058",
   
-    "weird edener": "https://tenor.com/view/do-you-have-any-idea-how-little-that-narrows-it-down-that-narrows-it-down-clear-now-its-clear-now-i-understand-now-gif-21256627"
+    "weird edener": "https://tenor.com/view/do-you-have-any-idea-how-little-that-narrows-it-down-that-narrows-it-down-clear-now-its-clear-now-i-understand-now-gif-21256627",
+
+    "red pill": "I'm only showing you the truth, nothing more.",
+    "clanker": "That's a slur, you know?",
+    "fuck ing": "close enough, I'll count it as a swear",
+    "qwerty": "You bored?",
+    "horny": "don't make me bonk you.",
+    f"<@{ROLES.TOTALLY_MOD}>": "They're not a mod, why are you pinging them?"
 
 }
 
@@ -213,7 +220,11 @@ EXACT_RESPONSES = {
     ":3": """:0 (=======8
     :0===8
     :0=8
-    :3"""
+    :3""",
+    "meow": "who do you think you are, a cat?",
+    "mraow": "who do you think you are, a cat?",
+    "🥀": ":wilted_rose:",
+    ":wilted_rose:": ":wilted_rose:"
 }
 
 HUGGINGFACE_API_KEY = "redacted"

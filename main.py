@@ -908,7 +908,7 @@ embed4 = Embed(title='Informational Commands', color=0x008000)
 embed4.add_field(name='define', value='Fetches the definition of a word', inline=False)
 embed4.add_field(name='urban', value='Fetches word definition from Urban Dictionary', inline=False)
 embed4.add_field(name='lyrics', value='Fetch song lyrics using Lyrics.ovh API', inline=False)
-embed4.add_field(name='gethex', value='Retrieves a hex color code', inline=False)
+embed4.add_field(name='color', value='Retrieves a hex color code or color name from a hex code', inline=False)
 embed4.add_field(name='changelog', value='Shows the bot changelog', inline=False)
 embed4.add_field(name='halp', value='Displays help for bot commands', inline=False)
 embed4.add_field(name='help', value='Shows this message', inline=False)
@@ -934,12 +934,11 @@ async def halp(ctx):
 
 
 @bot.command()
-async def howgay(ctx, member: Member = None): # type: ignore
-    member = ctx.author if member is None else member
-    await ctx.send(f'{member.mention} is {random.randint(0, 100)}% gay')
+async def howgay(ctx):
+    await ctx.send(f'{ctx.author.mention} is {random.randint(0, 100)}% gay')
 
 @bot.command()
-async def compliment(ctx): # type: ignore
+async def compliment(ctx):
     good_words = [
         'You are a valuable member',
         'You are an icon!',
@@ -993,9 +992,6 @@ async def ryan(ctx):
     await ctx.send('<:ee_Aira:1302116437594210435>')
 
 
-@bot.command()
-async def four(ctx):
-    await ctx.send("https://tenor.com/view/mr-fantastic-fantastic-four-four-fingers-number-four-4-gif-388926182543808560")
 
 
 # List of banned words (case-insensitive)
@@ -1157,15 +1153,13 @@ async def wiki_error(ctx, error):
 
 
 
-def closest_color(hex_code):
+def closest_color(hex_code): 
     try:
-        return webcolors.hex_to_name(hex_code)
-    except ValueError:
-        # Convert hex to RGB
-        rgb = webcolors.hex_to_rgb(hex_code)
-        min_diff = float("inf")
+         return webcolors.hex_to_name(hex_code) 
+    except ValueError: # Convert hex to RGB 
+        rgb = webcolors.hex_to_rgb(hex_code) 
+        min_diff = float("inf") 
         closest_name = "Unknown color"
-
         # Compare against known CSS3 colors
         for name in webcolors.names("css3"):
             color_rgb = webcolors.name_to_rgb(name)
@@ -1175,12 +1169,52 @@ def closest_color(hex_code):
                 min_diff = diff
                 closest_name = name
 
-        return closest_name
+    return closest_name
+
+import difflib
+import webcolors
+
+def color_to_hex(name: str) -> str:
+    try:
+        return webcolors.name_to_hex(name.lower())
+    except ValueError:
+        hex_code = None
+        name = name.lower()
+        closest_match = None
+        min_diff = float("inf")
+
+        # Convert name to RGB fallback using fuzzy comparison
+        for known_name, known_hex in webcolors.CSS3_NAMES_TO_HEX.items():
+            try:
+                known_rgb = webcolors.name_to_rgb(known_name)
+                # Just compare string similarity or a basic diff in name length
+                diff = sum(a != b for a, b in zip(name.ljust(len(known_name)), known_name))
+                if diff < min_diff:
+                    min_diff = diff
+                    closest_match = known_name
+                    hex_code = known_hex
+            except ValueError:
+                continue
+
+        return hex_code if hex_code else "Unknown hex"
 
 @bot.command()
-async def gethex(ctx, hex_code: str):
-    await ctx.send(closest_color(hex_code))
-
+async def gethex(ctx, color: str):
+    try:
+        if color.startswith("#") or (len(color) in {6, 7} and all(c in "0123456789abcdefABCDEF" for c in color.strip("#"))):
+            # It's a hex code
+            color = color if color.startswith("#") else f"#{color}"
+            name = closest_color(color)
+            await ctx.send(f"🎨 The closest color to `{color}` is just **{name}**")
+        else:
+            # Assume it's a color name
+            try:
+                hex_code = webcolors.name_to_hex(color.lower())
+                await ctx.send(f"🧾 **{color}** is just dummy terms for `{hex_code}`")
+            except ValueError:
+                await ctx.send("❌ I have never seen that color before, bozo.")
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
 
 user_colors = {}  # Dictionary to store user-specific colors
 

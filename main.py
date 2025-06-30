@@ -236,7 +236,7 @@ With the air, like I don't care, baby, by the way huh
     "fuck ing": "close enough, I'll count it as a swear",
     "qwerty": "You bored?",
     "horny": "don't make me bonk you.",
-    f"<@{ROLES.TOTALLY_MOD}>": "They're not a mod, why are you pinging them?"
+    f"<@&{ROLES.TOTALLY_MOD}>": "They're not a mod, why are you pinging them?"
 
 }
 

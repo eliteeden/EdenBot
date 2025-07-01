@@ -190,6 +190,23 @@ async def blacklist(ctx, user: discord.User):
         users.append(user.id)
         save_blacklist(users)
         await ctx.send(f"✅ {user.name} has been blacklisted.")
+
+
+# Mod command to blacklist a user
+@bot.command()
+@commands.has_any_role(ROLES.MODERATOR)
+async def whitelist(ctx, user: discord.User):
+    try:
+        users = load_blacklist()
+        if user.id in users:
+            users.remove(user.id)
+            save_blacklist(users)
+            await ctx.send(f"{user.name} has been whitelisted.")
+        else:        
+            await ctx.send(f"✅ {user.name} is already whitelisted.")
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+
 # Command error handling
 @bot.event
 async def on_command_error(ctx, error):
@@ -210,64 +227,9 @@ async def on_command_error(ctx, error):
     else:
         raise error
 
-# Autoresponse triggers and responses
-AUTO_RESPONSES = {
-    "might seem crazy": """Sunshine, she's here you can take a break
-I'm a hot balloon that could go to space
-With the air, like I don't care, baby, by the way huh
-(Because I'm happy) clap along if you feel like a room without a roof
-(Because I'm happy) clap along if you feel like happiness is the truth
-(Because I'm happy) clap along if you know what happiness is to you
-(Because I'm happy) clap along if you feel like that's what you wanna do""",
-    "crash out": "Please be respectful in this channel.",
-    "make me mod": "Unfortunately, we are not accepting mod applications at this time.",
-    "ty eden bot": "You're welcome! <3",
-    "arch btw": "bal",
-    "linux user": "They'll tell you before you even ask.",
-    "1984": "You should have never been given rights imo",
-    "say bye to eden bot": "Later guys <3",
-    "estrogen": "tmi",
-    "absolute cinema": "https://tenor.com/view/me-atrapaste-es-cine-its-cinema-cinema-esto-es-cine-gif-12869046600151364058",
-  
-    "weird edener": "https://tenor.com/view/do-you-have-any-idea-how-little-that-narrows-it-down-that-narrows-it-down-clear-now-its-clear-now-i-understand-now-gif-21256627",
-
-    "red pill": "I'm only showing you the truth, nothing more.",
-    "clanker": "That's a slur, you know?",
-    "fuck ing": "close enough, I'll count it as a swear",
-    "qwerty": "You bored?",
-    "horny": "don't make me bonk you.",
-    f"<@&{ROLES.TOTALLY_MOD}>": "They're not a mod, why are you pinging them?"
-
-}
-
-EXACT_RESPONSES = {
-    "boost": """︶꒷꒦︶ ๋࣭ ⭑︶꒷꒦︶ ๋࣭ ⭑︶꒷꒦︶ ๋࣭ ⭑︶꒷꒦︶ ๋࣭ ⭑︶꒷꒦︶ ๋࣭┊Booster Benefits !
-│╭────────────╯
-││• ➛ **Own Custom Role**
-││• ➛ **Access to VIP lounge + Vc**
-││• ➛ **Custom Emojis**
-││• ➛ **Event Priority**
-││• ➛ **Nickname Perms**
-││• ➛ **Booster Role That Displays above Online Members**
-│╰─────────── ·﻿ ﻿ ﻿· ﻿ ·﻿ ﻿ ﻿· ﻿・✦ 
-・┆✦ʚ♡ɞ✦ ┆・・┆✦ʚ♡ɞ✦ ┆・""",
-    "zi": "literally the best member ever",
-    "deadpool": "Shut the fuck up, Wade",
-    "vicky": """I hoeee
-    -Vicky 2025""",
-    ":3": """:0 (=======8
-    :0===8
-    :0=8
-    :3""",
-    "meow": "who do you think you are, a cat?",
-    "mraow": "who do you think you are, a cat?",
-    "🥀": ":wilted_rose:",
-    ":wilted_rose:": ":wilted_rose:"
-}
-
 HUGGINGFACE_API_KEY = "redacted"
 
-swears = ["fuck", "shit", "ass", "dick", "pussy", "hell", "asshole", "douche", "motherfucker", "nonce", "bitch", "cunt", "cocksucker", "wanker", "twat", "bellend", "bastard", "damn", "asshat"]
+swears = ["fuck", "shit", "ass", "dick", "pussy", "hell", "asshole", "douche", "motherfucker", "nonce", "bitch", "cunt", "cocksucker", "wanker", "twat", "bellend", "bastard", "damn", "asshat", "cum", "hubbins", "r/teenagers"]
 
 @bot.command(aliases=["l", "lyric"])
 async def lyrics(ctx, *, query: str):
@@ -440,10 +402,76 @@ async def unstick(ctx, channel: discord.TextChannel = None): # type: ignore
         await ctx.send(f"An error occurred: {e}")
 
 
+# Load responses from file
+def load_responses():
+    with open("autoresponses.json", "r") as f:
+        return json.load(f)
+
+# Save updated responses
+def save_responses(data):
+    with open("autoresponses.json", "w") as f:
+        json.dump(data, f, indent=4)
+@bot.command()
+@commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
+async def responses(ctx):
+    try:
+        with open("autoresponses.json", "r", encoding="utf-8") as file:
+            content = file.read()
+
+        # Discord message limit is 2000 characters
+        if len(content) <= 2000:
+            # Send whole file in one code block
+            await ctx.send(f"```\n{content}\n```")
+        else:
+            # Split into 1024-character chunks for embeds
+            chunks = [content[i:i+1024] for i in range(0, len(content), 1024)]
+
+            for i, chunk in enumerate(chunks):
+                embed = discord.Embed(
+                    title=f"Auto Responses (Part {i+1})",
+                    description=f"```json\n{chunk}\n```",
+                    color=discord.Color.teal()
+                )
+                await ctx.author.send(embed=embed)
+
+    except FileNotFoundError:
+        await ctx.send("File not found. Please make sure `autoresponses.json` exists.")
+    except Exception as e:
+        await ctx.send(f"Unexpected error: `{e}`")
+
+@bot.command()
+@commands.has_any_role(ROLES.MODERATOR)
+async def ar(ctx, category: str, trigger: str, *, reply: str):
+    """
+    Usage:
+      • !ar auto hello Hi there!
+      • !ar exact ping pong
+      • !ar auto hello remove   ← Removes 'hello' from AUTO_RESPONSES
+    """
+    responses = load_responses()
+    category_key = "AUTO_RESPONSES" if category.lower() == "auto" else "EXACT_RESPONSES"
+    trigger = trigger.lower()
+
+    if reply.lower() == "remove":
+        if trigger in responses[category_key]:
+            del responses[category_key][trigger]
+            save_responses(responses)
+            await ctx.send(f"Removed `{trigger}` from {category_key}")
+        else:
+            await ctx.send(f"`{trigger}` not found in {category_key}")
+    else:
+        responses[category_key][trigger] = reply
+        save_responses(responses)
+        await ctx.send(f"Added `{trigger}` to {category_key}")
+
+
+
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
+    
+    responses = load_responses()
 
     channel_id = str(message.channel.id)
 
@@ -462,15 +490,17 @@ async def on_message(message):
     content = message.content.lower()
     channel_id = message.channel.id
 
-    # Auto-response system
-    for trigger, response in AUTO_RESPONSES.items():
+    # Check triggers
+    for trigger, response in responses["AUTO_RESPONSES"].items():
         if trigger in content:
             await message.channel.send(response)
             return
 
-    if content in EXACT_RESPONSES:
-        await message.channel.send(EXACT_RESPONSES[content])
+    # Check exact matches
+    if content in responses["EXACT_RESPONSES"]:
+        await message.channel.send(responses["EXACT_RESPONSES"][content])
         return
+
 
     # Profanity tracking
     for profanity in swears:

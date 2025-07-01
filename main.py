@@ -1293,7 +1293,12 @@ async def hug(ctx, member: Member):
 
 
 
-
+@bot.command()
+async def fox(ctx):
+    foxes = [
+        # fox needs to send me the links lmao
+    ]
+    await ctx.send(url=random.choice(foxes))
 @bot.command()
 async def kiss(ctx, member: Member):
     embed = Embed(title=f'**{ctx.author.display_name}** is giving **{member.display_name}** a kiss', color=0xFFC0CB)

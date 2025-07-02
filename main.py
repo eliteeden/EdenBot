@@ -46,7 +46,7 @@ except (ValueError, FileNotFoundError):
 
 bot = commands.Bot(command_prefix=';', intents=Intents.all())
 
-load_dotenv('token.env')
+load_dotenv()
 
 GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
 token = os.environ.get("TOKEN")

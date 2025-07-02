@@ -3,7 +3,6 @@
 
 
 # Imports
-import importlib
 from dotenv import load_dotenv
 import json
 from typing import Optional
@@ -19,7 +18,8 @@ import aiohttp
 import asyncio
 import unicodedata
 from googlesearch import search
-import webcolors
+
+from utils.paginator import Paginator
 from constants import CHANNELS, ROLES, USERS
 
 # Initialize the report dictionary
@@ -47,40 +47,6 @@ except (ValueError, FileNotFoundError):
 bot = commands.Bot(command_prefix=';', intents=Intents.all())
 
 
-class Paginator:
-    def __init__(self, bot):
-        self.bot = bot
-        self.pages = []
-
-    def add_page(self, embed):
-        self.pages.append(embed)
-
-    async def send(self, ctx):
-        current_page = 0
-        message = await ctx.send(embed=self.pages[current_page])
-
-        await message.add_reaction("◀️")
-        await message.add_reaction("▶️")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
-
-                if str(reaction.emoji) == "▶️" and current_page < len(self.pages) - 1:
-                    current_page += 1
-                    await message.edit(embed=self.pages[current_page])
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and current_page > 0:
-                    current_page -= 1
-                    await message.edit(embed=self.pages[current_page])
-                    await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError:
-                break
 
 SUBREDDITS = ["EliteEden", "memes"]  # Add more subreddits as needed
 LAST_POST_IDS = {subreddit: None for subreddit in SUBREDDITS}  # Track last post ID per subreddit
@@ -147,6 +113,22 @@ async def on_ready():
 @bot.command()
 async def cogs(ctx: commands.Context):
     await ctx.send("Loaded cogs: " + ", ".join(LOADED_COGS))
+@cogs.error
+async def cogs_error(ctx, error):
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("Do you *really* think I'm just going to tell you what goes on in there? That's for you to figure out.")
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+@bot.command()
+async def load(ctx: commands.Context, cog_name: str):
+    try:
+        await bot.load_extension(f"cogs.{cog_name}")
+        await ctx.send(f"Loaded cog: {cog_name}")
+    except Exception as e:
+        await ctx.send(f"Failed to load cog {cog_name}: {e}")
+@load.error
+async def load_error(ctx, error):
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("placeholder message because stupid plebs like you shouldn't be trying to load cogs")
 
 # Global tracking for repeated messages
 global_repeat_counts = {}
@@ -1511,42 +1493,6 @@ async def topbal(ctx):
 
     # Limit to top 100
     top_users = sorted_users[:100]
-
-
-@bot.command()
-@commands.cooldown(1,30, commands.BucketType.user)
-async def work(ctx):
-    found = False
-    responses = ['You did a great job and earned', 'You exploited a citizen and earned', 'You forfeited your evening to the mods and earned', 'You stole', 'You were such a cutie you got', 'You begged and got', 'You sent your nudes to the mods and were paid', 'You went to the mines and found', 'You posted on Patreon and got', 'You were so well-behaved you were given', 'You sold your kidney and got', 'You helped an old lady on the street and got', 'Your small business made you', 'Just take these']
-    for current_acc in bank['users']:
-        if ctx.author.name == current_acc['name']:
-            found = True
-            coins = int(current_acc['balance'])
-            earn = random.randint(1,3001)
-            newcoins = coins + earn
-            current_acc['balance'] = newcoins
-            if earn == 1984:
-                await ctx.send("Your speaking priviledges have been revoked")
-                newtime = newtime = datetime.timedelta(minutes=int("5"))
-                await ctx.author.edit(timed_out_until=discord.utils.utcnow() + newtime)
-            else:    
-                await ctx.send(f"{random.choice(responses)} {earn} eden coins")
-            break
-    if not found:
-        earn = random.randint(1,3000)
-        bank['users'].append({
-            'name': ctx.author.name,
-            'balance': earn
-            })
-        await ctx.send(f"{random.choice(responses)} {earn} eden coins")
-
-    with open("users.json", "w") as s:
-        json.dump(bank, s, indent=4)
-
-@work.error
-async def work_error(ctx, error):
-    if isinstance(error, commands.CommandInvokeError):
-        await ctx.send("Please make an account with `;bal` first.")
 
 
 @bot.command()

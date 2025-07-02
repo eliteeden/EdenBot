@@ -116,7 +116,7 @@ async def cogs(ctx: commands.Context):
 @cogs.error
 async def cogs_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("Do you *really* think I'm just going to tell you what goes on in there? That's for you to figure out.")
+        await ctx.send("Trust me, you can't untangle the spaghetti inside.")
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 @bot.command()
 async def load(ctx: commands.Context, cog_name: str):
@@ -128,7 +128,7 @@ async def load(ctx: commands.Context, cog_name: str):
 @load.error
 async def load_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("placeholder message because stupid plebs like you shouldn't be trying to load cogs")
+        await ctx.send("what are you even *trying* to do, filthy pleb?")
 
 # Global tracking for repeated messages
 global_repeat_counts = {}

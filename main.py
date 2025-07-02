@@ -1864,7 +1864,7 @@ async def reload_error(ctx: commands.Context, error: commands.CommandError):
 
 
 # This was created by Happy!
-load_dotenv('token.env')
+load_dotenv()
 
 token = os.environ.get("TOKEN")
 if not token:

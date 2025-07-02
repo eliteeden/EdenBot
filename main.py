@@ -46,6 +46,28 @@ except (ValueError, FileNotFoundError):
 
 bot = commands.Bot(command_prefix=';', intents=Intents.all())
 
+load_dotenv('token.env')
+
+GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
+token = os.environ.get("TOKEN")
+if not token:
+    token = input("Bot token not found. Please enter your token:\n> ")
+
+
+DISABLED_COMMAND_CHANNEL_ID = 963782352931278938
+BLOCK_MESSAGE = f"No commands in <#{963782352931278938}>\nUse bot commands in <#{982590233667330109}>, you brat"
+EXEMPT_COMMANDS = ["purge", "ping", "botpurge"]
+
+@bot.check
+async def block_commands_in_channel(ctx):
+    if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
+        if ctx.command.name not in EXEMPT_COMMANDS:
+            try:
+                await ctx.send(BLOCK_MESSAGE)
+            except discord.Forbidden:
+                pass
+            return False  # Block execution
+    return True  # Allow execution
 
 class Paginator:
     def __init__(self, bot):
@@ -82,7 +104,7 @@ class Paginator:
             except asyncio.TimeoutError:
                 break
 
-SUBREDDITS = ["EliteEden", "memes"]  # Add more subreddits as needed
+SUBREDDITS = ["EliteEden"]  # Add more subreddits as needed
 LAST_POST_IDS = {subreddit: None for subreddit in SUBREDDITS}  # Track last post ID per subreddit
 
 async def check_subreddits():
@@ -231,41 +253,71 @@ HUGGINGFACE_API_KEY = "redacted"
 
 swears = ["fuck", "shit", "ass", "dick", "pussy", "hell", "asshole", "douche", "motherfucker", "nonce", "bitch", "cunt", "cocksucker", "wanker", "twat", "bellend", "bastard", "damn", "asshat", "cum", "hubbins", "r/teenagers"]
 
+
+from bs4 import BeautifulSoup
+
+
+
 @bot.command(aliases=["l", "lyric"])
 async def lyrics(ctx, *, query: str):
-    """Fetch song lyrics using the Lyrics.ovh API (format: Song - Artist)"""
+    """Fetch song lyrics from Genius (format: Song Title - Artist)"""
     try:
         async with ctx.typing():
             if "-" not in query:
                 return await ctx.send("Please use the format: `Song Title - Artist`")
+
             title, artist = map(str.strip, query.split("-", 1))
+            search_query = f"{title} {artist}"
+
+            headers = {
+                "Authorization": f"Bearer {GENIUS_API_TOKEN}"
+            }
 
             async with aiohttp.ClientSession() as session:
-                url = f"https://api.lyrics.ovh/v1/{artist}/{title}"
-                async with session.get(url) as response:
-                    if response.status != 200:
-                        return await ctx.send(f"Error: Could not fetch lyrics. Status {response.status}")
+                # Search for the song
+                search_url = f"https://api.genius.com/search?q={search_query}"
+                async with session.get(search_url, headers=headers) as resp:
+                    if resp.status != 200:
+                        return await ctx.send("Could not search Genius.")
+                    data = await resp.json()
+                    hits = data["response"]["hits"]
+                    if not hits:
+                        return await ctx.send("No lyrics found.")
+                    song_url = hits[0]["result"]["url"]
 
-                    data = await response.json()
-                    lyrics_text = data.get("lyrics", None)
-                    if not lyrics_text:
-                        return await ctx.send("Lyrics not found.")
+                # Scrape the lyrics
+                async with session.get(song_url) as song_resp:
+                    html = await song_resp.text()
+                    soup = BeautifulSoup(html, "lxml")
+                    # Look for <div> with data-lyrics-container
+                    # Scrape and clean only valid lyrics lines
+                    containers = soup.find_all("div", attrs={"data-lyrics-container": "true"})
+                    lyrics_lines = []
 
-                    # Clean up formatting
-                    lyrics_text = lyrics_text.replace("\n\n", "\n")  # Reduce excess breaks
+                    for tag in containers:
+                        for element in tag.stripped_strings:
+                            lyrics_lines.append(element)
 
-                    # Split into chunks of 1024 characters
-                    chunks = [lyrics_text[i:i+1024] for i in range(0, len(lyrics_text), 1024)]
+                    lyrics = "\n".join(lyrics_lines)
 
-                    for i, chunk in enumerate(chunks):
-                        embed = discord.Embed(
-                            title=f"{title} - {artist}" if i == 0 else f"{title} - {artist} (Part {i+1})",
-                            description=chunk,
-                            color=discord.Color.blurple()
-                        )
-                        await ctx.send(embed=embed)
+            if not lyrics:
+                return await ctx.send("Lyrics not found on the page.")
+
+            # Chunk lyrics for Discord embeds (max 1024 chars per embed description)
+            chunks = [lyrics[i:i+1024] for i in range(0, len(lyrics), 1024)]
+
+            for i, chunk in enumerate(chunks):
+                embed = discord.Embed(
+                    title=f"{title} - {artist}" if i == 0 else f"{title} - {artist} (Part {i+1})",
+                    description=chunk,
+                    color=discord.Color.blurple()
+                )
+                await ctx.send(embed=embed)
+
     except Exception as e:
         await ctx.send(f"An error occurred: `{e}`")
+
+
 @bot.command()
 @commands.has_any_role("Bonked by Zi")
 async def eat(ctx, *, victim):
@@ -618,23 +670,32 @@ async def profanities(ctx):
 @bot.command()
 async def ping(ctx):
     await ctx.send('Pong')
-
 @bot.command()
 async def changelog(ctx):
-      # Update with the correct path
-
     try:
         with open("eden bot changelog.txt", "r", encoding="utf-8") as file:
-            content = file.read()
-            
-        if len(content) > 2000:
-            await ctx.send("The file is too long to send as a message.")
-        else:
-            await ctx.send(f"```\n{content}\n```")  # Sends it in a code block for formatting
+            lines = file.readlines()
+
+        chunks = []
+        current_chunk = ""
+
+        for line in lines:
+            # If adding this line would push us over Discord's 2000-char limit…
+            if len(current_chunk) + len(line) + 7 > 2000:  # 7 accounts for code block syntax
+                chunks.append(current_chunk)
+                current_chunk = ""
+            current_chunk += line
+
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        for i, chunk in enumerate(chunks):
+            await ctx.send(f"```txt\n{chunk}\n```")
+
     except FileNotFoundError:
-        await ctx.send("File not found. Please check the path.")
+        await ctx.send("File not found. Please check the path: `eden bot changelog.txt`.")
     except Exception as e:
-        await ctx.send(f"Error: {e}")
+        await ctx.send(f"Error: `{e}`")
 
 
 
@@ -1472,7 +1533,7 @@ async def bal(ctx, user: Optional[Member] = None): # type: ignore
     with open("users.json", "w+") as s:
         json.dump(bank, s, indent=4)
 
-@bot.command()
+@bot.command(aliases=["bals"])
 async def topbal(ctx):
     """Displays the top 10 users with the highest balance"""
     try:
@@ -1564,7 +1625,7 @@ async def coinflip(ctx, *, txt:str):
                         coins = int(current_acc['balance'])
                         newcoins = coins + earn
                         current_acc['balance'] = newcoins
-                        await ctx.send(f"You won {earn} eden coins")
+                        await ctx.send(f"{toss.capitalize()}! You won {earn} eden coins")
                         break
 
             if not found:
@@ -1572,10 +1633,10 @@ async def coinflip(ctx, *, txt:str):
                         'name': ctx.author.name,
                         'balance': earn
                         })
-                await ctx.send(f"You won {earn} eden coins")
+                await ctx.send(f"{toss.capitalize()}! You won {earn} eden coins")
 
         else:
-                await ctx.send('You lost')
+                await ctx.send(f'{toss.capitalize()}! You lost')
     else:
         await ctx.send('Pick either ``heads`` or ``tails``')
 

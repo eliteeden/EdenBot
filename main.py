@@ -35,7 +35,7 @@ else:
         "next_warn_id": 1  # Start with warning ID 1
     }
 
-
+# Elite bot for a server of bitches
 
 try:
     with open('users.json', encoding='utf-8') as s:
@@ -57,7 +57,7 @@ if not token:
 
 DISABLED_COMMAND_CHANNEL_ID = 963782352931278938
 BLOCK_MESSAGE = f"No commands in <#{963782352931278938}>\nUse bot commands in <#{982590233667330109}>, you brat"
-EXEMPT_COMMANDS = ["purge", "ping", "botpurge"]
+EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web"]
 
 @bot.check
 async def block_commands_in_channel(ctx):
@@ -71,50 +71,12 @@ async def block_commands_in_channel(ctx):
     return True  # Allow execution
 
 
-SUBREDDITS = ["EliteEden"]  # Add more subreddits as needed
-LAST_POST_IDS = {subreddit: None for subreddit in SUBREDDITS}  # Track last post ID per subreddit
-
-async def check_subreddits():
-    """Background task to monitor multiple subreddits for new posts."""
-    global LAST_POST_IDS
-    await bot.wait_until_ready()  # Ensure bot is ready
-
-    while not bot.is_closed():
-        for subreddit in SUBREDDITS:
-            url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=5"
-            headers = {"User-Agent": "Mozilla/5.0"}
-
-            response = requests.get(url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                posts = data["data"]["children"]
-
-                if posts:
-                    latest_post = posts[0]["data"]
-                    post_id = latest_post["id"]
-
-                    if LAST_POST_IDS[subreddit] is None:
-                        LAST_POST_IDS[subreddit] = post_id  # Initialize on first run
-                    elif LAST_POST_IDS[subreddit] != post_id:
-                        LAST_POST_IDS[subreddit] = post_id
-                        channel: discord.TextChannel = bot.get_channel(CHANNELS.REDDIT)  # type: ignore
-                        post_embed = Embed(title=latest_post["title"])
-                        post_embed.set_image(url=latest_post["url"])
-                        await channel.send(f"New post detected in r/{subreddit}: ")
-                        await channel.send(embed=post_embed)
-
-        await asyncio.sleep(60)  # Wait 1 minute before checking again
-
-LOADED_COGS = []
-
 @bot.event
 async def on_ready():
     try:
         # Syncing the bot's command tree with Discord
         bot.tree.add_command(ConfessCog(bot).confess)
-        bot.loop.create_task(check_subreddits())  # Start monitoring subreddit
-        
-        await bot.tree.sync()
+        # Reddit background task got moved to the cog
         
         print("Slash commands synced successfully!")
 
@@ -124,9 +86,11 @@ async def on_ready():
                 try:
                     await bot.load_extension(f"cogs.{filename[:-3]}")
                     print(f"Loaded cog: {filename[:-3]}")
-                    LOADED_COGS.append(filename) # keep the .py
                 except Exception as e:
                     print(f"Failed to load cog {filename[:-3]}: {e}")
+        
+        # TODO: this needs to be a command
+        await bot.tree.sync()
     except Exception as e:
         print(f"Failed to sync commands: {e}")
     
@@ -290,38 +254,6 @@ async def eat(ctx, *, victim):
 async def eat_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("That command doesn't exist, stupid. Use `;help` to look for available commands")
-
-@bot.command()
-async def meme(ctx, subreddit: str = "memes"):
-    """Fetches a random image from the specified subreddit using Reddit's JSON API."""
-    try:
-        async with ctx.typing():
-            url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=120"
-            headers = {"User-Agent": "Mozilla/5.0"}
-            
-            response = requests.get(url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                posts = [post["data"]["url"] for post in data["data"]["children"] if post["data"]["url"].endswith(("jpg", "png", "gif"))]
-                embed = Embed(title="Here's your meme!", color=discord.colour.Color.orange())
-                if posts:
-                    random.shuffle(posts)
-                
-                chosen_post = random.choice(posts)
-                embed.set_image(url=chosen_post)
-                
-                if posts:
-                    await ctx.send(embed=embed)
-                else:
-                    await ctx.send("No images found in this subreddit.")
-            else:
-                await ctx.send(f"Error fetching data: {response.status_code}")
-    except Exception as e:
-        await ctx.send(f"Error: {e}")
-
-
-
-
 
 def load_profanity_data():
     try:
@@ -1025,7 +957,7 @@ embed4 = Embed(title='Informational Commands', color=0x008000)
 embed4.add_field(name='define', value='Fetches the definition of a word', inline=False)
 embed4.add_field(name='urban', value='Fetches word definition from Urban Dictionary', inline=False)
 embed4.add_field(name='lyrics', value='Fetch song lyrics using Lyrics.ovh API', inline=False)
-embed4.add_field(name='color', value='Retrieves a hex color code or color name from a hex code', inline=False)
+embed4.add_field(name='gethex', value='Retrieves a hex color code or color name from a hex code', inline=False)
 embed4.add_field(name='changelog', value='Shows the bot changelog', inline=False)
 embed4.add_field(name='halp', value='Displays help for bot commands', inline=False)
 embed4.add_field(name='help', value='Shows this message', inline=False)
@@ -1123,12 +1055,18 @@ async def talk(interaction: Interaction, message: str):
     flagged = any(bad_word in lowered for bad_word in slur_words)
 
     # Send the original message to the current channel
-    await interaction.channel.send(message)  # type: ignore
+    try:
+        await interaction.channel.send(message)  # type: ignore
+    except Exception as e:
+        if isinstance(e, discord.Forbidden):
+            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
+            return
+        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
 
     # If flagged, notify a specific channel
     if flagged:
-        # The ID of the channel where alerts should be sent 
-        alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES) # type: ignore
+        # The ID of the channel where alerts should be sent
+        alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
         if alert_channel:
             await alert_channel.send(
                 f"🚨 Message from {interaction.user.mention} in {interaction.channel.mention if isinstance(interaction.channel, discord.TextChannel) else f'(non-text-channel id: {interaction.channel_id})'} "
@@ -1554,7 +1492,15 @@ async def districtclaim(ctx, category_id: int):
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 @bot.command()
 async def cogs(ctx: commands.Context):
-    await ctx.send("Loaded cogs: " + ", ".join(LOADED_COGS))
+    await ctx.send("Loaded cogs: `" + "`, `".join(bot.cogs.keys()) + "`")
+    # List available cogs in the cogs directory
+    cogs = os.listdir("cogs")
+    send_cogs = []
+    for cog in cogs:
+        if cog.endswith(".py"):
+            cog_name = cog[:-3]
+            send_cogs.append(cog_name)
+    await ctx.send("Available cogs: `" + "`, `".join(send_cogs) + "`")
 @cogs.error
 async def cogs_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, commands.MissingAnyRole):

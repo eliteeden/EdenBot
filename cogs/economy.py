@@ -7,10 +7,11 @@ import random
 class EconomyCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bank = self.__load_bank()
+        self.bank = self.__load_bank() # Load the bank every reload
     def __load_bank(self):
         try:
             with open("users.json", "r") as s:
+                print("Reloading bank from users.json!")
                 return json.load(s)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             return {'users': []}
@@ -45,8 +46,7 @@ class EconomyCog(commands.Cog):
                 })
             await ctx.send(f"{random.choice(responses)} {earn} eden coins")
 
-        with open("users.json", "w") as s:
-            json.dump(self.bank, s, indent=4)
+        self.__save_bank()
 
     @work.error
     async def work_error(self, ctx, error):

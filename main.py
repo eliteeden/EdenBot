@@ -423,7 +423,7 @@ async def responses(ctx):
 
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR)
-async def ar(ctx, category: str, trigger: str, *, reply: str):
+async def ar(ctx, category: str, trigger: str, *, reply: str = "remove"):
     """
     Usage:
       • !ar auto hello Hi there!
@@ -801,12 +801,12 @@ async def lurk(ctx):
 async def warn(ctx, user: discord.Member = None, *, reason: str = None): # type: ignore
     author = ctx.author
     if author.top_role.position > user.top_role.position:
-        roles = [role.id for role in ctx.author.roles]
-    
         # Check if the user is valid
         if not user:
             await ctx.send("Please specify a valid member to warn.")
             return
+    
+        roles = [role.id for role in ctx.author.roles]
 
         # Ensure reason is not empty
         if not reason or not reason.strip():

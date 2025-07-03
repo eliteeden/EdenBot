@@ -56,7 +56,7 @@ if not token:
 
 DISABLED_COMMAND_CHANNEL_ID = 963782352931278938
 BLOCK_MESSAGE = f"No commands in <#{963782352931278938}>\nUse bot commands in <#{982590233667330109}>, you brat"
-EXEMPT_COMMANDS = ["purge", "ping", "botpurge"]
+EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web"]
 
 @bot.check
 async def block_commands_in_channel(ctx):
@@ -339,8 +339,9 @@ async def meme(ctx, subreddit: str = "memes"):
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
-                posts = [post["data"]["url"] for post in data["data"]["children"] if post["data"]["url"].endswith(("jpg", "png", "gif"))]
-                embed = Embed(title="Here's your meme!", color=discord.colour.Color.orange())
+                posts = [post["data"]["url"] for post in data["data"]["children"] if post["data"]["url"].endswith(("jpg", "png", "gif")) and not post["data"].get("over_18", False)]
+                embed = Embed(title=latest_post["title"], color=discord.colour.Color.yellow())
+                
                 if posts:
                     random.shuffle(posts)
                 
@@ -348,6 +349,7 @@ async def meme(ctx, subreddit: str = "memes"):
                 embed.set_image(url=chosen_post)
                 
                 if posts:
+                    await ctx.send("Here's your meme")
                     await ctx.send(embed=embed)
                 else:
                     await ctx.send("No images found in this subreddit.")
@@ -1062,7 +1064,7 @@ embed4 = Embed(title='Informational Commands', color=0x008000)
 embed4.add_field(name='define', value='Fetches the definition of a word', inline=False)
 embed4.add_field(name='urban', value='Fetches word definition from Urban Dictionary', inline=False)
 embed4.add_field(name='lyrics', value='Fetch song lyrics using Lyrics.ovh API', inline=False)
-embed4.add_field(name='color', value='Retrieves a hex color code or color name from a hex code', inline=False)
+embed4.add_field(name='gethex', value='Retrieves a hex color code or color name from a hex code', inline=False)
 embed4.add_field(name='changelog', value='Shows the bot changelog', inline=False)
 embed4.add_field(name='halp', value='Displays help for bot commands', inline=False)
 embed4.add_field(name='help', value='Shows this message', inline=False)

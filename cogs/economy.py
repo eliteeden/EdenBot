@@ -4,10 +4,12 @@ import discord
 from discord import Member
 import json
 import random
+from typing import Optional
+from ..constants import CHANNELS
 from ..utils.paginator import Paginator
 
 class EconomyCog(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.bank = self.__load_bank() # Load the bank every reload
     def __load_bank(self):
@@ -25,7 +27,25 @@ class EconomyCog(commands.Cog):
     @commands.cooldown(1,30, commands.BucketType.user)
     async def work(self, ctx: commands.Context):
         found = False
-        responses = ['You did a great job and earned', 'You exploited a citizen and earned', 'You forfeited your evening to the mods and earned', 'You stole', 'You were such a cutie you got', 'You begged and got', 'You sent your nudes to the mods and were paid', 'You went to the mines and found', 'You posted on Patreon and got', 'You were so well-behaved you were given', 'You sold your kidney and got', 'You helped an old lady on the street and got', 'Your small business made you', 'Just take these']
+        responses = [
+            'You did a great job and earned', 
+            'You exploited a citizen and earned', 
+            'You forfeited your evening to the mods and earned', 
+            'You stole', 
+            'You were such a cutie you got', 
+            'You begged and got', 
+            'You sent your nudes to the mods and were paid', 
+            'You went to the mines and found', 
+            'You posted on Patreon and got', 
+            'You were so well-behaved you were given', 
+            'You sold your kidney and got', 
+            'You helped an old lady on the street and got', 
+            'Your small business made you', 
+            'Just take these',
+            'You cleaned the streets and got',
+            'You bought a lottery ticket and won',
+            'You "found"',
+        ]
         for current_acc in self.bank['users']:
             if ctx.author.name == current_acc['name']:
                 found = True
@@ -51,14 +71,14 @@ class EconomyCog(commands.Cog):
         self.__save_bank()
 
     @work.error
-    async def work_error(self, ctx, error):
+    async def work_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send("Please make an account with `;bal` first.")
     # Economy commands
     @commands.command()
-    async def bal(self,ctx, user: Optional[Member] = None): # type: ignore
+    async def bal(self, ctx: commands.Context, user: Optional[Member] = None): # type: ignore
         if user is None:
-            user: Member = ctx.author
+            user: Member = ctx.author # type: ignore
             pronoun = "Your"
         else:
             pronoun = f"{user.mention}'s"
@@ -69,20 +89,19 @@ class EconomyCog(commands.Cog):
                 await ctx.send(f"{pronoun} balance is {current_acc['balance']} eden coins")
                 break
         if not found:
-              self.bank['users'].append({
-                  'name': user.name,
-                  'balance': 0
-              })
-              await ctx.send(f"{pronoun} balance is 0 eden coins")
-        with open("users.json", "w+") as s:
-            json.dump(self.bank, s, indent=4)
+            self.bank['users'].append({
+                'name': user.name,
+                'balance': 0
+            })
+            await ctx.send(f"{pronoun} balance is 0 eden coins")
+            self.__save_bank()
 
     @commands.command(name="topbal")
-    async def topbal(self, ctx):
+    async def topbal(self, ctx: commands.Context):
         """Displays the top 10 users with the highest balance"""
         try:
             if 'users' not in self.bank:
-                await ctx.send("No users found in the economy system.")
+                await ctx.send("No users found in the economy system. Is the .json file empty?")
                 return
 
             # Sort users by balance (highest first)
@@ -105,10 +124,10 @@ class EconomyCog(commands.Cog):
             await paginator.send(ctx)  # Send paginated leaderboard
 
         except Exception as e:
-            await ctx.send(e)
+            await ctx.send(e) # type: ignore
 
     @commands.command(name='coinflip', aliases=['cf'])
-    async def coinflip(self, ctx, *, txt:str):
+    async def coinflip(self, ctx: commands.Context, *, txt: str):
         found = False
         sides = ['heads', 'tails']
         toss = random.choice(sides)
@@ -137,14 +156,13 @@ class EconomyCog(commands.Cog):
         else:
             await ctx.send('Pick either ``heads`` or ``tails``')
 
-        with open("users.json", "w+") as s:
-            json.dump(self.bank, s, indent=4)
+        self.__save_bank()
 
 
     @commands.command(name='subbal')
     @commands.has_any_role('MODERATOR', 'happy')
     @commands.cooldown(1,500, commands.BucketType.user)
-    async def subbal(self, ctx, member: Member):
+    async def subbal(self, ctx: commands.Context, member: Member):
         userid = member.name
         found = False
         for current_acc in self.bank['users']:
@@ -159,15 +177,14 @@ class EconomyCog(commands.Cog):
                   'name': userid,
                   'balance': 0
               })
-              await ctx.send(f"{Member} 's balance is 0 eden coins")
+              await ctx.send(f"{member.mention} 's balance is 0 eden coins")
 
-        with open("users.json", "w+") as s:
-            json.dump(self.bank, s, indent=4)
+        self.__save_bank()
 
 
     @commands.command(name='setbal')
     @commands.has_any_role('Bonked by Zi')
-    async def setbal(self, ctx, member: Member, coins: int):
+    async def setbal(self, ctx: commands.Context, member: Member, coins: int):
         userid = member.name
         found = False
         for current_acc in self.bank['users']:
@@ -182,18 +199,17 @@ class EconomyCog(commands.Cog):
                   'name': userid,
                   'balance': coins
               })
-              await ctx.send(f"{Member} 's balance is {coins} eden coins")
+              await ctx.send(f"{member.mention} 's balance is {coins} eden coins")
 
-        with open("users.json", "w+") as s:
-            json.dump(self.bank, s, indent=4)
+        self.__save_bank()
 
     @setbal.error
-    async def setbal_error(self, ctx, error):
+    async def setbal_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingAnyRole):
-            await ctx.send('Only the bot dev is allowed to use this.')
+            await ctx.send('You do not have permission to use this command.')
 
     @commands.command(name='win')
-    async def win(self, ctx):
+    async def win(self, ctx: commands.Context):
         userid = ctx.author.name
         found = False
         for current_acc in self.bank['users']:
@@ -206,7 +222,7 @@ class EconomyCog(commands.Cog):
                 else:
                     newcoins = coins - 100000
                     current_acc['balance'] = newcoins
-                    channel: discord.TextChannel = bot.get_channel(CHANNELS.WINNERS) # type: ignore
+                    channel: discord.TextChannel = self.bot.get_channel(CHANNELS.WINNERS) # type: ignore
                     await channel.send(f'{ctx.author.mention} won the prize')
                     break
         if not found:
@@ -216,15 +232,14 @@ class EconomyCog(commands.Cog):
                     })
             await ctx.send("You do not have an account")
 
-            with open("users.json", "w+") as s:
-                json.dump(self.bank, s, indent=4)
+        self.__save_bank()
 
 
 
 
     @commands.command(name='roulette')
     @commands.cooldown(1,300, commands.BucketType.user)
-    async def roulette(self, ctx, bullets:int):
+    async def roulette(self, ctx: commands.Context, bullets: int):
         if bullets < 1 or bullets > 5:
             self.roulette.reset_cooldown(ctx) # type: ignore
             await ctx.send('Please choose between 1 and 5 bullets')
@@ -243,35 +258,34 @@ class EconomyCog(commands.Cog):
             for current_acc in self.bank['users']:
                 found = True
                 if userid == current_acc['name']:
-                    roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
+                    self.roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
                     coins = int(current_acc['balance'])
                     newcoins = coins + earn
                     current_acc['balance'] = newcoins
                     await ctx.send(f'You won {earn} eden coins')
                     break
             if not found:
-                roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
+                self.roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
                 self.bank['users'].append({
                     'name': ctx.author.name,
                     'balance': earn
                 })
                 await ctx.send(f'You won {earn} eden coins')
 
-            with open("users.json", "w+") as s:
-                json.dump(self.bank, s, indent=4)
+            self.__save_bank()
 
 
         else:
             await ctx.send(f'You died! Try again in 5 minutes')
 
     @roulette.error
-    async def roulette_error(self, ctx, error):
+    async def roulette_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.BadArgument):
             await ctx.send('Only numbers please!')
 
     @commands.command(name='gamble')
     @commands.cooldown(1,5, commands.BucketType.user)
-    async def gamble(self, ctx):
+    async def gamble(self, ctx: commands.Context):
         userid = ctx.author.name
         found = False
         nega_earn = 6500
@@ -281,7 +295,7 @@ class EconomyCog(commands.Cog):
                 found = True
                 if userid == current_acc['name']:
                     coins = int(current_acc['balance'])
-                    if coins >= 6500:
+                    if coins >= nega_earn:
                         earn = 1000000
                         newcoins = coins + earn
                         current_acc['balance'] = newcoins
@@ -295,8 +309,8 @@ class EconomyCog(commands.Cog):
                     'balance': 0
                     })
                 await ctx.send('You do not have an account')
-            with open('users.json', 'w+') as s:
-                json.dump(self.bank, s)
+            
+            self.__save_bank()
         else:
             for current_acc in self.bank['users']:
                 if userid == current_acc['name']:
@@ -316,10 +330,7 @@ class EconomyCog(commands.Cog):
                 })
                 await ctx.send(f'You do not have an account')
 
-            with open("users.json", "w+") as s:
-                json.dump(self.bank, s, indent=4)
-
-
+            self.__save_bank()
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

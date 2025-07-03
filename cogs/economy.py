@@ -4,14 +4,20 @@ import discord
 from discord import Member
 import json
 import random
-from typing import Optional
+from typing import Literal, Optional
 from ..constants import CHANNELS
 from ..utils.paginator import Paginator
+
+from typing import TypedDict
+
+class BankEntry(TypedDict):
+    name: str
+    balance: int
 
 class EconomyCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.bank = self.__load_bank() # Load the bank every reload
+        self.bank: dict[Literal["users"], list[BankEntry]] = self.__load_bank() # type: ignore # Load the bank every reload
     def __load_bank(self):
         try:
             with open("users.json", "r") as s:
@@ -22,6 +28,20 @@ class EconomyCog(commands.Cog):
     def __save_bank(self):
         with open("users.json", "w") as s:
             json.dump(self.bank, s, indent=4)
+    def set(self, user: str, coins: int):
+        """Sets the balance of a user."""
+        found = False
+        for current_acc in self.bank['users']:
+            if user == current_acc['name']:
+                found = True
+                current_acc['balance'] = coins
+                break
+        if not found:
+            self.bank['users'].append({
+                'name': user,
+                'balance': coins
+            })
+        self.__save_bank()
 
     @commands.command(name='work', aliases=['w'])
     @commands.cooldown(1,30, commands.BucketType.user)
@@ -48,11 +68,10 @@ class EconomyCog(commands.Cog):
         ]
         for current_acc in self.bank['users']:
             if ctx.author.name == current_acc['name']:
-                found = True
                 coins = int(current_acc['balance'])
                 earn = random.randint(1,3001)
                 newcoins = coins + earn
-                current_acc['balance'] = newcoins
+                self.set(ctx.author.name, newcoins)
                 if earn == 1984:
                     await ctx.send("Your speaking priviledges have been revoked")
                     newtime = newtime = datetime.timedelta(minutes=int("5"))
@@ -62,10 +81,7 @@ class EconomyCog(commands.Cog):
                 break
         if not found:
             earn = random.randint(1,3000)
-            self.bank['users'].append({
-                'name': ctx.author.name,
-                'balance': earn
-                })
+            self.set(ctx.author.name, earn)
             await ctx.send(f"{random.choice(responses)} {earn} eden coins")
 
         self.__save_bank()
@@ -82,13 +98,11 @@ class EconomyCog(commands.Cog):
             pronoun = "Your"
         else:
             pronoun = f"{user.mention}'s"
-        found = False
         for current_acc in self.bank['users']:
             if user.name == current_acc['name']:
-                found = True
                 await ctx.send(f"{pronoun} balance is {current_acc['balance']} eden coins")
                 break
-        if not found:
+        else:
             self.bank['users'].append({
                 'name': user.name,
                 'balance': 0
@@ -127,6 +141,7 @@ class EconomyCog(commands.Cog):
             await ctx.send(e) # type: ignore
 
     @commands.command(name='coinflip', aliases=['cf'])
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def coinflip(self, ctx: commands.Context, *, txt: str):
         found = False
         sides = ['heads', 'tails']
@@ -140,15 +155,12 @@ class EconomyCog(commands.Cog):
                             found = True
                             coins = int(current_acc['balance'])
                             newcoins = coins + earn
-                            current_acc['balance'] = newcoins
+                            self.set(ctx.author.name, newcoins)
                             await ctx.send(f"You won {earn} eden coins")
                             break
 
                 if not found:
-                    self.bank['users'].append({
-                            'name': ctx.author.name,
-                            'balance': earn
-                            })
+                    self.set(ctx.author.name, earn)
                     await ctx.send(f"You won {earn} eden coins")
 
             else:
@@ -156,7 +168,6 @@ class EconomyCog(commands.Cog):
         else:
             await ctx.send('Pick either ``heads`` or ``tails``')
 
-        self.__save_bank()
 
 
     @commands.command(name='subbal')
@@ -168,7 +179,7 @@ class EconomyCog(commands.Cog):
         for current_acc in self.bank['users']:
             if userid == current_acc['name']:
                 found = True
-                current_acc['balance'] = 0
+                self.set(userid, 0)  # Set balance to 0
 
                 await ctx.send(f"{member.mention} 's balance is {current_acc['balance']} eden coins")
                 break
@@ -186,22 +197,8 @@ class EconomyCog(commands.Cog):
     @commands.has_any_role('Bonked by Zi')
     async def setbal(self, ctx: commands.Context, member: Member, coins: int):
         userid = member.name
-        found = False
-        for current_acc in self.bank['users']:
-            if userid == current_acc['name']:
-                found = True
-                current_acc['balance'] = coins
-
-                await ctx.send(f"{member.mention} 's balance is {current_acc['balance']} eden coins")
-                break
-        if not found:
-              self.bank['users'].append({
-                  'name': userid,
-                  'balance': coins
-              })
-              await ctx.send(f"{member.mention} 's balance is {coins} eden coins")
-
-        self.__save_bank()
+        self.set(userid, coins)  # Set balance to specified coins
+        await ctx.send(f"{member.mention} 's balance is {coins} eden coins")
 
     @setbal.error
     async def setbal_error(self, ctx: commands.Context, error):
@@ -211,28 +208,23 @@ class EconomyCog(commands.Cog):
     @commands.command(name='win')
     async def win(self, ctx: commands.Context):
         userid = ctx.author.name
-        found = False
+        price = 100_000
         for current_acc in self.bank['users']:
             if userid == current_acc['name']:
-                found = True
                 coins = int(current_acc['balance'])
-                if coins < 100000:
-                    await ctx.send('You do not have enough coins, you need 100,000')
+                if coins < price:
+                    await ctx.send(f'You do not have enough coins, you need {price:,}')
                     break
                 else:
-                    newcoins = coins - 100000
+                    newcoins = coins - price
                     current_acc['balance'] = newcoins
                     channel: discord.TextChannel = self.bot.get_channel(CHANNELS.WINNERS) # type: ignore
                     await channel.send(f'{ctx.author.mention} won the prize')
                     break
-        if not found:
-            self.bank['users'].append({
-                    'name': ctx.author.name,
-                    'balance': 0
-                    })
+        else:
+            self.set(userid, 0)
             await ctx.send("You do not have an account")
 
-        self.__save_bank()
 
 
 
@@ -246,7 +238,6 @@ class EconomyCog(commands.Cog):
             return
 
         userid = ctx.author.name
-        found = False
         chamber = [1] * bullets + [0] * (6 - bullets)
         random.shuffle(chamber)
         print(f'shuffled chambers: {chamber}') # Debug feature
@@ -256,25 +247,17 @@ class EconomyCog(commands.Cog):
         if fired_chamber == 0:
             earn = 1000 * bullets
             for current_acc in self.bank['users']:
-                found = True
                 if userid == current_acc['name']:
                     self.roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
                     coins = int(current_acc['balance'])
                     newcoins = coins + earn
-                    current_acc['balance'] = newcoins
+                    self.set(userid, newcoins)
                     await ctx.send(f'You won {earn} eden coins')
                     break
-            if not found:
+            else:
                 self.roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
-                self.bank['users'].append({
-                    'name': ctx.author.name,
-                    'balance': earn
-                })
+                self.set(userid, earn)
                 await ctx.send(f'You won {earn} eden coins')
-
-            self.__save_bank()
-
-
         else:
             await ctx.send(f'You died! Try again in 5 minutes')
 
@@ -282,55 +265,45 @@ class EconomyCog(commands.Cog):
     async def roulette_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.BadArgument):
             await ctx.send('Only numbers please!')
+            self.roulette.reset_cooldown(ctx) # type: ignore
 
     @commands.command(name='gamble')
     @commands.cooldown(1,5, commands.BucketType.user)
     async def gamble(self, ctx: commands.Context):
         userid = ctx.author.name
-        found = False
         nega_earn = 6500
         bot_choice = random.randint(1, 35)
         if bot_choice == 5:
             for current_acc in self.bank['users']:
-                found = True
                 if userid == current_acc['name']:
                     coins = int(current_acc['balance'])
                     if coins >= nega_earn:
-                        earn = 1000000
+                        earn = 1_000_000
                         newcoins = coins + earn
-                        current_acc['balance'] = newcoins
-                        await ctx.send(f'You won {earn} eden coins')
+                        self.set(userid, newcoins)
+                        await ctx.send(f'You won {earn:,} eden coins')
                         break
                     else:
-                        await ctx.send(f'You do not have enough coins, you need {nega_earn} to participate')
-            if not found:
-                self.bank['users'].append({
-                    'name': ctx.author.name,
-                    'balance': 0
-                    })
+                        await ctx.send(f'You do not have enough coins, you need {nega_earn:,} to participate')
+            else:
+                self.set(userid, 0)
                 await ctx.send('You do not have an account')
             
             self.__save_bank()
         else:
             for current_acc in self.bank['users']:
                 if userid == current_acc['name']:
-                    found = True
                     coins = int(current_acc['balance'])
                     if coins >= nega_earn:
                         newcoins = coins - nega_earn
-                        current_acc['balance'] = newcoins
-                        await ctx.send(f'You lost {nega_earn} eden coins')
+                        self.set(userid, newcoins)
+                        await ctx.send(f'You lost {nega_earn:,} eden coins')
                         break
                     else:
-                        await ctx.send(f'You do not have enough coins, you need {nega_earn} to participate')
-            if not found:
-                self.bank['users'].append({
-                    'name': ctx.author.name,
-                    'balance': 0
-                })
+                        await ctx.send(f'You do not have enough coins, you need {nega_earn:,} to participate')
+            else:
+                self.set(userid, 0)
                 await ctx.send(f'You do not have an account')
-
-            self.__save_bank()
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

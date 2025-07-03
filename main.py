@@ -104,41 +104,6 @@ class Paginator:
             except asyncio.TimeoutError:
                 break
 
-SUBREDDITS = ["EliteEden"]  # Add more subreddits as needed
-LAST_POST_IDS = {subreddit: None for subreddit in SUBREDDITS}  # Track last post ID per subreddit
-
-async def check_subreddits():
-    """Background task to monitor multiple subreddits for new posts."""
-    global LAST_POST_IDS
-    await bot.wait_until_ready()  # Ensure bot is ready
-
-    while not bot.is_closed():
-        for subreddit in SUBREDDITS:
-            url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=5"
-            headers = {"User-Agent": "Mozilla/5.0"}
-
-
-            response = requests.get(url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                posts = data["data"]["children"]
-
-                if posts:
-                    latest_post = posts[0]["data"]
-                    post_id = latest_post["id"]
-
-                    if LAST_POST_IDS[subreddit] is None:
-                        LAST_POST_IDS[subreddit] = post_id  # Initialize on first run
-                    elif LAST_POST_IDS[subreddit] != post_id:
-                        LAST_POST_IDS[subreddit] = post_id
-                        channel: discord.TextChannel = bot.get_channel(CHANNELS.REDDIT)  # type: ignore
-                        post_embed = Embed(title=latest_post["title"])
-                        post_embed.set_image(url=latest_post["url"])
-                        await channel.send(f"New post detected in r/{subreddit}: ")
-                        await channel.send(embed=post_embed)
-
-        await asyncio.sleep(60)  # Wait 1 minute before checking again
-
 LOADED_COGS = []
 
 @bot.event
@@ -328,57 +293,6 @@ async def eat(ctx, *, victim):
 async def eat_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("That command doesn't exist, stupid. Use `;help` to look for available commands")
-
-@bot.command(aliases=["memes", "funny"])
-async def meme(ctx, subreddit: str = "memes"):
-    """Fetches a random safe-for-work meme from Reddit."""
-    try:
-        async with ctx.typing():
-            url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=120"
-            headers = {"User-Agent": "Mozilla/5.0"}
-
-            response = requests.get(url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Filter out NSFW posts and preserve full post data
-                valid_posts = [
-                    post["data"] for post in data["data"]["children"]
-                    if post["data"]["url"].endswith(("jpg", "png", "gif")) and not post["data"].get("over_18", False)
-                ]
-                
-                if valid_posts:
-                    random.shuffle(valid_posts)
-                    latest_post = valid_posts[0]
-                    post_id = latest_post["id"]
-
-                    # Track and send new posts to designated channel
-                    if LAST_POST_IDS.get(subreddit) is None:
-                        LAST_POST_IDS[subreddit] = post_id
-                    elif LAST_POST_IDS[subreddit] != post_id:
-                        LAST_POST_IDS[subreddit] = post_id
-                        channel: discord.TextChannel = bot.get_channel(CHANNELS.REDDIT)  # type: ignore
-                        post_embed = Embed(title=latest_post["title"], color=discord.Color.orange())
-                        post_embed.set_image(url=latest_post["url"])
-                        await channel.send("Here's your meme!")
-                        await channel.send(embed=post_embed)
-
-                    # Show a random meme to user
-                    chosen_post = random.choice(valid_posts)
-                    embed = Embed(title=chosen_post["title"], color=discord.Color.yellow())
-                    embed.set_image(url=chosen_post["url"])
-                    meme_footer_responses = [f"unfunny image brought to you by {ctx.author.mention}","mildly amusing, this one","take this meme and leave me alone","LOL","I find this one rather amusing","This is humor for dummies but enjoy","", "hehehe", "memes are great", "of course you'd find this funny"]
-                    embed.set_footer(text=f"{random.choice(meme_footer_responses)}")
-                    await ctx.send(embed=embed)
-                else:
-                    await ctx.send("No safe images found in this subreddit.")
-            else:
-                await ctx.send(f"Error fetching data: {response.status_code}")
-    except Exception as e:
-        await ctx.send(f"Error: {e}")
-
-
-
 
 def load_profanity_data():
     try:

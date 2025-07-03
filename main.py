@@ -3,6 +3,7 @@
 
 
 # Imports
+from asyncio import subprocess
 from dotenv import load_dotenv
 import json
 from typing import Optional
@@ -131,26 +132,6 @@ async def on_ready():
     
 
     print('Systems online')
-@commands.has_any_role(ROLES.TOTALLY_MOD)
-@bot.command()
-async def cogs(ctx: commands.Context):
-    await ctx.send("Loaded cogs: " + ", ".join(LOADED_COGS))
-@cogs.error
-async def cogs_error(ctx, error):
-    if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("Trust me, you can't untangle the spaghetti inside.")
-@commands.has_any_role(ROLES.TOTALLY_MOD)
-@bot.command()
-async def load(ctx: commands.Context, cog_name: str):
-    try:
-        await bot.load_extension(f"cogs.{cog_name}")
-        await ctx.send(f"Loaded cog: {cog_name}")
-    except Exception as e:
-        await ctx.send(f"Failed to load cog {cog_name}: {e}")
-@load.error
-async def load_error(ctx, error):
-    if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("what are you even *trying* to do, filthy pleb?")
 
 # Global tracking for repeated messages
 global_repeat_counts = {}
@@ -1569,6 +1550,17 @@ async def districtclaim(ctx, category_id: int):
         # Stop listening after timeout if no reply occurs
         await ctx.send("No replies detected for remaining messages within the timeout period.")
 
+# Cog commands
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+@bot.command()
+async def cogs(ctx: commands.Context):
+    await ctx.send("Loaded cogs: " + ", ".join(LOADED_COGS))
+@cogs.error
+async def cogs_error(ctx: commands.Context, error: commands.CommandError):
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("Trust me, you can't untangle the spaghetti inside.")
+    else:
+        await ctx.send(f"An unexpected error occurred: {error}")
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 async def reload(ctx: commands.Context, cog: str):
@@ -1589,7 +1581,53 @@ async def reload_error(ctx: commands.Context, error: commands.CommandError):
         await ctx.send("What do you want me to do, reload *everything*?")
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
+@bot.command()
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+async def load(ctx: commands.Context, cog: str):
+    """Loads a specific cog."""
+    try:
+        await bot.load_extension(f"cogs.{cog}")
+        await ctx.send(f"{cog} cog loaded successfully!")
+    except Exception as e:
+        await ctx.send(f"Failed to load {cog} cog: {e}")
+@load.error
+async def load_error(ctx: commands.Context, error: commands.CommandError):
+    """Handles errors for the load command."""
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("what do you even mean to do with that command, filthy peasant?")
+    elif isinstance(error, commands.ExtensionNotFound):
+        await ctx.send("The specified cog does not exist.")
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("What even is there to load?")
+    else:
+        await ctx.send(f"An unexpected error occurred: {error}")
+@bot.command()
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+async def pull(ctx: commands.Context):
+    """Fetches the latest changes from git."""
+    try:
+        # Run the git pull command
+        result = await subprocess.create_subprocess_shell("git pull", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+        stdout, stderr = await result.communicate()
+        if stdout:
+            print(stdout.decode())
+        if stderr:
+            print(stderr.decode())
+        if result.returncode == 0:
+            await ctx.send("Successfully pulled the latest changes from git.")
+            await ctx.author.send("Git pull output:\n" + stdout.decode())
+        else:
+            await ctx.send(f"Failed to pull changes: {stderr.decode()}")
+    except Exception as e:
+        await ctx.send(f"An error occurred while pulling changes: {e}")
+@pull.error
+async def pull_error(ctx: commands.Context, error: commands.CommandError):
+    """Handles errors for the pull command."""
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("Where are you trying to pull from, the depths of hell? Only the elite can do that.")
+    else:
+        await ctx.send(f"An unexpected error occurred: {error}")
 
 # This was created by Happy!
 load_dotenv()

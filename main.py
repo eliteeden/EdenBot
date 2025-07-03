@@ -1096,12 +1096,18 @@ async def talk(interaction: Interaction, message: str):
     flagged = any(bad_word in lowered for bad_word in slur_words)
 
     # Send the original message to the current channel
-    await interaction.channel.send(message)  # type: ignore
+    try:
+        await interaction.channel.send(message)  # type: ignore
+    except Exception as e:
+        if isinstance(e, discord.Forbidden):
+            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
+            return
+        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
 
     # If flagged, notify a specific channel
     if flagged:
-        # The ID of the channel where alerts should be sent 
-        alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES) # type: ignore
+        # The ID of the channel where alerts should be sent
+        alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
         if alert_channel:
             await alert_channel.send(
                 f"🚨 Message from {interaction.user.mention} in {interaction.channel.mention if isinstance(interaction.channel, discord.TextChannel) else f'(non-text-channel id: {interaction.channel_id})'} "

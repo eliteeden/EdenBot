@@ -117,6 +117,7 @@ async def check_subreddits():
             url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=5"
             headers = {"User-Agent": "Mozilla/5.0"}
 
+
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
@@ -328,38 +329,51 @@ async def eat_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("That command doesn't exist, stupid. Use `;help` to look for available commands")
 
-@bot.command()
+@bot.command(alias=["memes", "funny"])
 async def meme(ctx, subreddit: str = "memes"):
-    """Fetches a random image from the specified subreddit using Reddit's JSON API."""
+    """Fetches a random safe-for-work meme from Reddit."""
     try:
         async with ctx.typing():
             url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=120"
             headers = {"User-Agent": "Mozilla/5.0"}
-            
+
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
-                posts = [post["data"]["url"] for post in data["data"]["children"] if post["data"]["url"].endswith(("jpg", "png", "gif")) and not post["data"].get("over_18", False)]
-                embed = Embed(title=latest_post["title"], color=discord.colour.Color.yellow())
                 
-                if posts:
-                    latest_post = posts[0]["data"]
-                    random.shuffle(posts)
-                    
+                # Filter out NSFW posts and preserve full post data
+                valid_posts = [
+                    post["data"] for post in data["data"]["children"]
+                    if post["data"]["url"].endswith(("jpg", "png", "gif")) and not post["data"].get("over_18", False)
+                ]
                 
-                chosen_post = random.choice(posts)
-                embed.set_image(url=chosen_post)
-                
-                if posts:
-                    await ctx.send("Here's your meme")
+                if valid_posts:
+                    random.shuffle(valid_posts)
+                    latest_post = valid_posts[0]
+                    post_id = latest_post["id"]
+
+                    # Track and send new posts to designated channel
+                    if LAST_POST_IDS.get(subreddit) is None:
+                        LAST_POST_IDS[subreddit] = post_id
+                    elif LAST_POST_IDS[subreddit] != post_id:
+                        LAST_POST_IDS[subreddit] = post_id
+                        channel: discord.TextChannel = bot.get_channel(CHANNELS.REDDIT)  # type: ignore
+                        post_embed = Embed(title=latest_post["title"], color=discord.Color.orange())
+                        post_embed.set_image(url=latest_post["url"])
+                        await channel.send("Here's your meme!")
+                        await channel.send(embed=post_embed)
+
+                    # Show a random meme to user
+                    chosen_post = random.choice(valid_posts)
+                    embed = Embed(title="Here's your meme!", color=discord.Color.orange())
+                    embed.set_image(url=chosen_post["url"])
                     await ctx.send(embed=embed)
                 else:
-                    await ctx.send("No images found in this subreddit.")
+                    await ctx.send("No safe images found in this subreddit.")
             else:
                 await ctx.send(f"Error fetching data: {response.status_code}")
     except Exception as e:
         await ctx.send(f"Error: {e}")
-
 
 
 

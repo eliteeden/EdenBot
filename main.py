@@ -365,9 +365,9 @@ async def meme(ctx, subreddit: str = "memes"):
 
                     # Show a random meme to user
                     chosen_post = random.choice(valid_posts)
-                    embed = Embed(title=chosen_post["title"], color=discord.Color.orange())
+                    embed = Embed(title=chosen_post["title"], color=discord.Color.yellow())
                     embed.set_image(url=chosen_post["url"])
-                    embed.set_footer("Here's your meme!")
+                    embed.set_footer(text="Here's your meme!")
                     await ctx.send(embed=embed)
                 else:
                     await ctx.send("No safe images found in this subreddit.")

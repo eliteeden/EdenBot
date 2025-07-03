@@ -104,17 +104,12 @@ class Paginator:
             except asyncio.TimeoutError:
                 break
 
-LOADED_COGS = []
-
 @bot.event
 async def on_ready():
     try:
         # Syncing the bot's command tree with Discord
         bot.tree.add_command(ConfessCog(bot).confess)
-        # TODO: fixme
-        # bot.loop.create_task(bot.cogs.get("reddit").check_subreddits())  # Start monitoring subreddit
-
-        await bot.tree.sync()
+        # Reddit background task got moved to the cog
         
         print("Slash commands synced successfully!")
 
@@ -124,9 +119,11 @@ async def on_ready():
                 try:
                     await bot.load_extension(f"cogs.{filename[:-3]}")
                     print(f"Loaded cog: {filename[:-3]}")
-                    LOADED_COGS.append(filename) # keep the .py
                 except Exception as e:
                     print(f"Failed to load cog {filename[:-3]}: {e}")
+        
+        # TODO: this needs to be a command
+        await bot.tree.sync()
     except Exception as e:
         print(f"Failed to sync commands: {e}")
     
@@ -135,8 +132,15 @@ async def on_ready():
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 @bot.command()
 async def cogs(ctx: commands.Context):
-    await ctx.send("Loaded cogs: " + ", ".join(LOADED_COGS))
-    await ctx.send("Available (loaded?) cogs: " + ", ".join(bot.cogs.keys()))
+    await ctx.send("Loaded cogs: `" + "`, `".join(bot.cogs.keys()) + "`")
+    # List available cogs in the cogs directory
+    cogs = os.listdir("cogs")
+    send_cogs = []
+    for cog in cogs:
+        if cog.endswith(".py"):
+            cog_name = cog[:-3]
+            send_cogs.append(cog_name)
+    await ctx.send("Available cogs: `" + "`, `".join(send_cogs) + "`")
 
 # Global tracking for repeated messages
 global_repeat_counts = {}

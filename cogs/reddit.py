@@ -88,6 +88,18 @@ class RedditCog(commands.Cog):
                     await ctx.send(f"Error fetching data: {response.status_code}")
         except Exception as e:
             await ctx.send(f"Error: {e}")
+    async def cog_load(self) -> None:
+        """This fires when the cog is loaded."""
+        # Start the background task to check subreddits
+        if not self.check_subreddits.is_running():
+            self.check_subreddits.start()
+        return await super().cog_load()
+    async def cog_unload(self) -> None:
+        """This fires when the cog is unloaded."""
+        # Stop the background task to check subreddits
+        if self.check_subreddits.is_running():
+            self.check_subreddits.stop()
+        return await super().cog_unload()
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

@@ -305,6 +305,51 @@ class EconomyCog(commands.Cog):
                 self.set(userid, 0)
                 await ctx.send(f'You do not have an account')
 
+    @commands.command(name='give')
+    async def give(self, ctx: commands.Context, member: Member, coins: int):
+        """Gives a specified amount of coins to another user."""
+        if coins <= 0:
+            await ctx.send("You must give a positive amount of coins.")
+            return
+
+        if member.bot:
+            if member.id == self.bot.user.id: # type: ignore
+                await ctx.send("Why are you giving me these coins? I don't need them!")
+            else: 
+                await ctx.send("You cannot give coins to bots.")
+            return
+        if member == ctx.author:
+            await ctx.send("No, I won't let you commit tax fraud.") # TODO: change?
+            return
+
+        for current_acc in self.bank['users']:
+            if ctx.author.name == current_acc['name']:
+                if current_acc['balance'] < coins:
+                    await ctx.send(random.choice([
+                        "{mention} is so broke they can't even afford to give {amount} coins.",
+                        "{mention} tried to help the poor but didn't realize they were the poor",
+                        "{amount} coins? {mention}, you need to work harder!",
+                        "{recipient} won't be receiving any coins from {mention} today.",
+                    ]).replace("{mention}", ctx.author.mention).replace("{amount}", f"{coins:,}").replace("{recipient}", member.mention)) # format coins with commas
+                    return
+                self.set(ctx.author.name, current_acc['balance'] - coins)
+                break
+        else:
+            await ctx.send("You do not have an account. Use `;bal` to create one.")
+            return
+        for current_acc in self.bank['users']:
+            if member.name == current_acc['name']:
+                self.set(member.name, current_acc['balance'] + coins)
+                break
+        else:
+            self.set(member.name, coins)
+        await ctx.send(random.choice([
+            "{mention} gave {amount} eden coins.",
+            "{mention} generously donated {amount} eden coins.",
+            "{mention} is feeling generous and gave away {amount} eden coins.",
+        ]).replace("{mention}", ctx.author.mention).replace("{amount}", f"{coins:,}").replace("{recipient}", member.mention)) # format coins with commas
+
+
 async def setup(bot: commands.Bot):
     """Function to load the cog."""
     await bot.add_cog(EconomyCog(bot))

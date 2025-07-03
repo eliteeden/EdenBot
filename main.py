@@ -34,7 +34,7 @@ else:
         "next_warn_id": 1  # Start with warning ID 1
     }
 
-
+# Elite bot for a server of bitches
 
 try:
     with open('users.json', encoding='utf-8') as s:

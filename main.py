@@ -367,7 +367,7 @@ async def meme(ctx, subreddit: str = "memes"):
                     chosen_post = random.choice(valid_posts)
                     embed = Embed(title=chosen_post["title"], color=discord.Color.yellow())
                     embed.set_image(url=chosen_post["url"])
-                    meme_footer_responses = ["LOL","I find this one rather amusing","This is humor for dummies but enjoy","", "hehehe", "memes are great", "of course you'd find this funny"]
+                    meme_footer_responses = [f"unfunny image brought to you by {ctx.author.mention}","mildly amusing, this one","take this meme and leave me alone","LOL","I find this one rather amusing","This is humor for dummies but enjoy","", "hehehe", "memes are great", "of course you'd find this funny"]
                     embed.set_footer(text=f"{random.choice(meme_footer_responses)}")
                     await ctx.send(embed=embed)
                 else:

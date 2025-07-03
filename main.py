@@ -111,8 +111,9 @@ async def on_ready():
     try:
         # Syncing the bot's command tree with Discord
         bot.tree.add_command(ConfessCog(bot).confess)
-        bot.loop.create_task(check_subreddits())  # Start monitoring subreddit
-        
+        # TODO: fixme
+        # bot.loop.create_task(bot.cogs.get("reddit").check_subreddits())  # Start monitoring subreddit
+
         await bot.tree.sync()
         
         print("Slash commands synced successfully!")
@@ -135,6 +136,7 @@ async def on_ready():
 @bot.command()
 async def cogs(ctx: commands.Context):
     await ctx.send("Loaded cogs: " + ", ".join(LOADED_COGS))
+    await ctx.send("Available (loaded?) cogs: " + ", ".join(bot.cogs.keys()))
 
 # Global tracking for repeated messages
 global_repeat_counts = {}

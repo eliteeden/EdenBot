@@ -343,7 +343,9 @@ async def meme(ctx, subreddit: str = "memes"):
                 embed = Embed(title=latest_post["title"], color=discord.colour.Color.yellow())
                 
                 if posts:
+                    latest_post = posts[0]["data"]
                     random.shuffle(posts)
+                    
                 
                 chosen_post = random.choice(posts)
                 embed.set_image(url=chosen_post)

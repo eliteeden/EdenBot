@@ -407,7 +407,16 @@ class EconomyCog(commands.Cog):
             await ctx.send(random.choice([
                 "Aw dang it.",
                 "maybe next time?",
-                "99% of gamblers quit before they hit big"
+                "99% of gamblers quit before they hit big",
+                "'Let's go gambling' you said, 'I would win big' you said",
+                "You might as well quit and save what's left of your balance",
+                "You're addicted to this, aren't you?",
+                "You are so lucky eden coins aren't real money",
+                "~~Just one more~~ Just one more",
+                "Don't quit your day job.",
+                "Not my tempo. Do it again.",
+                "Stopping so soon? Lame-o. Keep gambling!",
+                "You almost made me feel pity and give it to you. Almost."
             ]))
     
     # Jackpot tasks
@@ -416,7 +425,7 @@ class EconomyCog(commands.Cog):
         """A task that runs every minute to check if the jackpot should be increased."""
         if self.jackpot['jackpot'] < 10_000_000:
             self.jackpot['jackpot'] += 3600
-            print(f"Jackpot increased to {self.jackpot['jackpot']} coins")
+            # print(f"Jackpot increased to {self.jackpot['jackpot']} coins")
     @tasks.loop(hours=1)
     async def save_jackpot_task(self):
         """A task that runs every hour to save the jackpot data."""

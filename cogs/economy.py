@@ -141,7 +141,7 @@ class EconomyCog(commands.Cog):
             top_users = sorted_users[:100]
 
 
-            paginator = self.bot.cogs["PaginatorCog"].paginator()  # type: ignore
+            paginator = self.bot.cogs["PaginatorCog"]()  # type: ignore
 
             # Create paginated embeds
             for i in range(0, len(top_users), 10):  # Show 10 users per page

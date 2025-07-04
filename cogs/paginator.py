@@ -40,6 +40,8 @@ class PaginatorCog(commands.Cog):
 
                 except asyncio.TimeoutError:
                     break
+    def __call__(self):
+        return self.paginator()
 
 
 async def setup(bot: commands.Bot):

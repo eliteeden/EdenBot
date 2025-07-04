@@ -553,7 +553,7 @@ async def profanities(ctx):
     # Limit to top 100
     top_users = sorted_users[:100]
 
-    paginator = bot.cogs["PaginatorCog"].paginator()  # type: ignore # Initialize paginator
+    paginator = bot.cogs["PaginatorCog"]()  # type: ignore # Initialize paginator
 
     # Create paginated embeds
     for i in range(0, len(top_users), 10):  # Show 10 users per page
@@ -915,7 +915,7 @@ async def endslow(ctx):
 async def halp(ctx):
     try:
         """Displays paginated bot command list"""
-        paginator = bot.cogs["PaginatorCog"].paginator() # type: ignore
+        paginator = bot.cogs["PaginatorCog"]() # type: ignore
 
         # Text commands
 

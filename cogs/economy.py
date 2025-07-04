@@ -8,7 +8,6 @@ import os
 import random
 from typing import Literal, Optional
 from ..constants import CHANNELS
-from ..utils.paginator import Paginator
 
 from typing import TypedDict
 
@@ -142,7 +141,7 @@ class EconomyCog(commands.Cog):
             top_users = sorted_users[:100]
 
 
-            paginator = Paginator(bot=self.bot)  # Initialize paginator
+            paginator = self.bot.cogs["PaginatorCog"].paginator()  # type: ignore
 
             # Create paginated embeds
             for i in range(0, len(top_users), 10):  # Show 10 users per page

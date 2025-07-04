@@ -88,3 +88,29 @@ Eden bot Changelog
 -New list role command
 -Updated help command
 -Temporary subreddit event
+
+9:59 pm 29/06/2025
+
+-Edited gethex to make it also work in reverse and also renamed it to color
+-Minor bug fixes
+-Some new autoresponses
+-New test cog 
+7:23 am 01/07/2025
+
+-New whitelist and blacklist command
+-Reworked autoresponses by moving them to a json file the bot can access
+-New autoresposne command to add/remove autoresponses
+
+3:22 pm 01/07/2025
+
+-Added channel restrictions for the bot
+
+1:19 am 04/07/2025
+
+-Moved color, confess and reddit commands to a new cog
+-Added resetconfess command
+-Added media options to confess
+-Edited the meme command a bit
+-New economy cog coming soon...
+
+4:49 pm 04/07/2025

@@ -20,7 +20,6 @@ import asyncio
 import unicodedata
 from googlesearch import search
 
-from utils.paginator import Paginator
 from constants import CHANNELS, ROLES, USERS
 
 # Initialize the report dictionary
@@ -70,12 +69,15 @@ async def block_commands_in_channel(ctx):
             return False  # Block execution
     return True  # Allow execution
 
-
 @bot.event
 async def on_ready():
     try:
+        print("starting!")
         # Syncing the bot's command tree with Discord
-        bot.tree.add_command(ConfessCog(bot).confess)
+        await bot.add_cog(ConfessCog(bot))  # Add the ConfessCog to the bot
+    except Exception as e:
+        print(f"Failed to start confessions: {e}")
+    try:
         # Reddit background task got moved to the cog
         
         print("Slash commands synced successfully!")
@@ -93,8 +95,8 @@ async def on_ready():
         await bot.tree.sync()
     except Exception as e:
         print(f"Failed to sync commands: {e}")
-    
-
+    channel: discord.TextChannel = CHANNELS.CAPITAL # type: ignore
+    await channel.send("I'm backkkkk")
     print('Systems online')
 
 # Global tracking for repeated messages
@@ -549,7 +551,7 @@ async def profanities(ctx):
     # Limit to top 100
     top_users = sorted_users[:100]
 
-    paginator = Paginator(bot=bot)  # Initialize paginator
+    paginator = bot.cogs["PaginatorCog"].paginator()  # type: ignore # Initialize paginator
 
     # Create paginated embeds
     for i in range(0, len(top_users), 10):  # Show 10 users per page
@@ -906,85 +908,94 @@ async def endslow(ctx):
     await ctx.send("Slow-mode is off!")
     
 
-paginator = Paginator(bot)
-
-# Text commands
-
-# Red embed for moderation commands
-embed1 = Embed(title='Moderation Commands', color=0xff0000)
-embed1.add_field(name='ban', value='This command bans a member', inline=False)
-embed1.add_field(name='unban', value='This command unbans a member', inline=False)
-embed1.add_field(name='kick', value='This command kicks a member', inline=False)
-embed1.add_field(name='mute', value='This command mutes a member', inline=False)
-embed1.add_field(name='purge', value='This command purges messages', inline=False)
-embed1.add_field(name='warn', value='This command warns a member', inline=False)
-embed1.add_field(name='warns', value='This command checks member warns', inline=False)
-embed1.add_field(name='removewarn', value='This command removes member warns', inline=False)
-embed1.add_field(name='botpurge', value='Clears bot messages', inline=False)
-embed1.add_field(name='listrole', value='Lists all roles in the server', inline=False)
-paginator.add_page(embed1)
-
-# Orange embed for economy commands
-embed2 = Embed(title='Economy Commands', color=0xffa500)
-embed2.add_field(name='bal', value='Shows the user balance', inline=False)
-embed2.add_field(name='coinflip', value='Play Heads or Tails to win coins', inline=False)
-embed2.add_field(name='roulette', value='Guess bullets for a chance to win coins', inline=False)
-embed2.add_field(name='work', value='Earn Eden coins by working', inline=False)
-embed2.add_field(name='invest', value='Invest coins to increase your balance', inline=False)
-embed2.add_field(name='gamble', value='Try gambling to win coins', inline=False)
-embed2.add_field(name='setbal', value='Manually set user balance', inline=False)
-embed2.add_field(name='subbal', value='Subtract coins from user balance', inline=False)
-embed2.add_field(name='topbal', value='Shows the top 10 richest users', inline=False)
-embed2.add_field(name='districtclaim', value='Claim a district', inline=False)
-paginator.add_page(embed2)
-
-# Yellow embed for fun commands
-embed3 = Embed(title='Fun Commands', color=0xFFFF00)
-embed3.add_field(name='meme', value='Fetches a random image from Reddit', inline=False)
-embed3.add_field(name='hug', value='Hug a user', inline=False)
-embed3.add_field(name='kiss', value='Kiss a user', inline=False)
-embed3.add_field(name='cheer', value='Cheer up a user', inline=False)
-embed3.add_field(name='compliment', value='Compliment a user', inline=False)
-embed3.add_field(name='howgay', value='Checks how gay a user is', inline=False)
-embed3.add_field(name='fuck', value='Random fun response', inline=False)
-embed3.add_field(name='longday', value="It's been a long day...", inline=False)
-embed3.add_field(name='web', value='Fetch search results from the web', inline=False)
-embed3.add_field(name='wiki', value='Fetch information from Wikipedia', inline=False)
-paginator.add_page(embed3)
-
-# Green embed for informational commands
-embed4 = Embed(title='Informational Commands', color=0x008000)
-embed4.add_field(name='define', value='Fetches the definition of a word', inline=False)
-embed4.add_field(name='urban', value='Fetches word definition from Urban Dictionary', inline=False)
-embed4.add_field(name='lyrics', value='Fetch song lyrics using Lyrics.ovh API', inline=False)
-embed4.add_field(name='gethex', value='Retrieves a hex color code or color name from a hex code', inline=False)
-embed4.add_field(name='changelog', value='Shows the bot changelog', inline=False)
-embed4.add_field(name='halp', value='Displays help for bot commands', inline=False)
-embed4.add_field(name='help', value='Shows this message', inline=False)
-paginator.add_page(embed4)
-
-# Blue embed for miscellaneous commands
-embed5 = Embed(title='Miscellaneous Commands', color=0x0000FF)
-embed5.add_field(name='ping', value='Returns Pong', inline=False)
-embed5.add_field(name='slowmode', value='Sets a slow mode duration', inline=False)
-embed5.add_field(name='endslow', value='Ends slow mode', inline=False)
-embed5.add_field(name='snipe', value='Retrieves last deleted message', inline=False)
-embed5.add_field(name='stick', value='Sticks a message', inline=False)
-embed5.add_field(name='unstick', value='Removes a stuck message', inline=False)
-embed5.add_field(name='timer', value='Sets a countdown timer', inline=False)
-embed5.add_field(name='cinema', value='Movie-related command', inline=False)
-embed5.set_footer(text='This bot was made by Happy')
-paginator.add_page(embed5)
 
 @bot.command()
 async def halp(ctx):
-    """Displays paginated bot command list"""
-    await paginator.send(ctx)
+    try:
+        """Displays paginated bot command list"""
+        paginator = bot.cogs["PaginatorCog"].paginator() # type: ignore
+
+        # Text commands
+
+        # Red embed for moderation commands
+        embed1 = Embed(title='Moderation Commands', color=0xff0000)
+        embed1.add_field(name='ban', value='This command bans a member', inline=False)
+        embed1.add_field(name='unban', value='This command unbans a member', inline=False)
+        embed1.add_field(name='kick', value='This command kicks a member', inline=False)
+        embed1.add_field(name='mute', value='This command mutes a member', inline=False)
+        embed1.add_field(name='purge', value='This command purges messages', inline=False)
+        embed1.add_field(name='warn', value='This command warns a member', inline=False)
+        embed1.add_field(name='warns', value='This command checks member warns', inline=False)
+        embed1.add_field(name='removewarn', value='This command removes member warns', inline=False)
+        embed1.add_field(name='botpurge', value='Clears bot messages', inline=False)
+        embed1.add_field(name='listrole', value='Lists all roles in the server', inline=False)
+        paginator.add_page(embed1)
+
+        # Orange embed for economy commands
+        embed2 = Embed(title='Economy Commands', color=0xffa500)
+        embed2.add_field(name='bal', value='Shows the user balance', inline=False)
+        embed2.add_field(name='coinflip', value='Play Heads or Tails to win coins', inline=False)
+        embed2.add_field(name='roulette', value='Guess bullets for a chance to win coins', inline=False)
+        embed2.add_field(name='work', value='Earn Eden coins by working', inline=False)
+        embed2.add_field(name='invest', value='Invest coins to increase your balance', inline=False)
+        embed2.add_field(name='gamble', value='Try gambling to win coins', inline=False)
+        embed2.add_field(name='setbal', value='Manually set user balance', inline=False)
+        embed2.add_field(name='subbal', value='Subtract coins from user balance', inline=False)
+        embed2.add_field(name='topbal', value='Shows the top 10 richest users', inline=False)
+        embed2.add_field(name='districtclaim', value='Claim a district', inline=False)
+        paginator.add_page(embed2)
+
+        # Yellow embed for fun commands
+        embed3 = Embed(title='Fun Commands', color=0xFFFF00)
+        embed3.add_field(name='meme', value='Fetches a random image from Reddit', inline=False)
+        embed3.add_field(name='hug', value='Hug a user', inline=False)
+        embed3.add_field(name='kiss', value='Kiss a user', inline=False)
+        embed3.add_field(name='cheer', value='Cheer up a user', inline=False)
+        embed3.add_field(name='compliment', value='Compliment a user', inline=False)
+        embed3.add_field(name='howgay', value='Checks how gay a user is', inline=False)
+        embed3.add_field(name='fuck', value='Random fun response', inline=False)
+        embed3.add_field(name='longday', value="It's been a long day...", inline=False)
+        embed3.add_field(name='web', value='Fetch search results from the web', inline=False)
+        embed3.add_field(name='wiki', value='Fetch information from Wikipedia', inline=False)
+        paginator.add_page(embed3)
+
+        # Green embed for informational commands
+        embed4 = Embed(title='Informational Commands', color=0x008000)
+        embed4.add_field(name='define', value='Fetches the definition of a word', inline=False)
+        embed4.add_field(name='urban', value='Fetches word definition from Urban Dictionary', inline=False)
+        embed4.add_field(name='lyrics', value='Fetch song lyrics using Lyrics.ovh API', inline=False)
+        embed4.add_field(name='gethex', value='Retrieves a hex color code or color name from a hex code', inline=False)
+        embed4.add_field(name='changelog', value='Shows the bot changelog', inline=False)
+        embed4.add_field(name='halp', value='Displays help for bot commands', inline=False)
+        embed4.add_field(name='help', value='Shows this message', inline=False)
+        paginator.add_page(embed4)
+
+        # Blue embed for miscellaneous commands
+        embed5 = Embed(title='Miscellaneous Commands', color=0x0000FF)
+        embed5.add_field(name='ping', value='Returns Pong', inline=False)
+        embed5.add_field(name='slowmode', value='Sets a slow mode duration', inline=False)
+        embed5.add_field(name='endslow', value='Ends slow mode', inline=False)
+        embed5.add_field(name='snipe', value='Retrieves last deleted message', inline=False)
+        embed5.add_field(name='stick', value='Sticks a message', inline=False)
+        embed5.add_field(name='unstick', value='Removes a stuck message', inline=False)
+        embed5.add_field(name='timer', value='Sets a countdown timer', inline=False)
+        embed5.add_field(name='cinema', value='Movie-related command', inline=False)
+        embed5.set_footer(text='This bot was made by Happy')
+        paginator.add_page(embed5)
+
+        await paginator.send(ctx)
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
 
 
 @bot.command()
-async def howgay(ctx):
-    await ctx.send(f'{ctx.author.mention} is {random.randint(0, 100)}% gay')
+async def howgay(ctx, user: Member = None): # type: ignore
+    try:
+        if user is None:
+            user = ctx.author
+        await ctx.send(f'{user.mention} is {random.randint(0, 100)}% gay')
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
 
 @bot.command()
 async def compliment(ctx):
@@ -1232,19 +1243,38 @@ class ConfessCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="confess", description="Send an anonymous confession")
-    async def confess(self, interaction: discord.Interaction, message: str):
+    async def confess(self, interaction: discord.Interaction, message: str, image: str = ""):
         user_name = str(interaction.user.name)  # Convert username to string for JSON compatibility
 
         if user_name not in user_colors:
             user_colors[user_name] = generate_hex_color()
             save_colors(user_colors)  # Save the updated data
 
-        hex_code = user_colors[user_name]
-        embed = discord.Embed(title=f"Anon-{hex_code}".capitalize(), description=message, color=int(hex_code[1:], 16))
+        hex_code: str = user_colors[user_name]
+        embed = discord.Embed(title=f"Anon-{hex_code.removeprefix('#')}".capitalize(), description=message, color=int(hex_code[1:], 16))
+
+        if image != "":
+            embed.set_image(url=image)
 
         await interaction.response.defer(ephemeral=True)  # Prevents errors by deferring the interaction
         await interaction.channel.send(embed=embed)  # type: ignore # Sends the embed without replying to the trigger
         await interaction.delete_original_response()
+
+    
+    @commands.command(name="resetconfessions")
+    @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
+    async def reset_confessions(self, ctx: commands.Context):
+        """Reset everyone's colors."""
+        global user_colors
+        user_colors = {}
+        save_colors(user_colors)  # Save the reset data
+        await ctx.send("All user colors have been reset.")
+    
+    async def cog_load(self):
+        try:
+            self.bot.tree.add_command(ConfessCog(bot).confess)
+        finally:
+            return await super().cog_load()
 
 
 @bot.command()

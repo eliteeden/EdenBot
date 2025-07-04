@@ -1006,7 +1006,7 @@ async def halp(ctx):
 
 
 @bot.command()
-async def howgay(ctx, user = None):
+async def howgay(ctx, user: Member = None):
     try:
         if user is None:
             user = ctx.author

@@ -1309,8 +1309,10 @@ class ConfessCog(commands.Cog):
         await ctx.send("All user colors have been reset.")
     
     async def cog_load(self):
-        self.bot.tree.add_command(ConfessCog(bot).confess)
-        return await super().cog_load()
+        try:
+            self.bot.tree.add_command(ConfessCog(bot).confess)
+        finally:
+            return await super().cog_load()
 
 
 @bot.command()

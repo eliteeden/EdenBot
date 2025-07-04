@@ -2,6 +2,10 @@ import asyncio
 from discord.ext import commands
 
 class PaginatorCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+    def paginator(self):
+        return self.Paginator(self.bot)
     class Paginator():
         def __init__(self, bot):
             self.bot = bot
@@ -10,9 +14,6 @@ class PaginatorCog(commands.Cog):
         def add_page(self, embed):
             self.pages.append(embed)
         
-        def paginator(self):
-            return self.Paginator(self.bot)
-
         async def send(self, ctx):
             current_page = 0
             message = await ctx.send(embed=self.pages[current_page])

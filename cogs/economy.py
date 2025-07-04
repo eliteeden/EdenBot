@@ -1,8 +1,10 @@
 import datetime
-from discord.ext import commands
+import math
+from discord.ext import commands, tasks
 import discord
 from discord import Member
 import json
+import os
 import random
 from typing import Literal, Optional
 from ..constants import CHANNELS
@@ -18,6 +20,13 @@ class EconomyCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.bank: dict[Literal["users"], list[BankEntry]] = self.__load_bank() # type: ignore # Load the bank every reload
+        # TODO: not destroy my micro sd card with this
+        self.jackpot_file = open("jackpot.json", "w") # Open file descriptor 3 for writing
+        with open("jackpot.json", "r") as f:
+            try:
+                self.jackpot = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError, ValueError):
+                self.jackpot = {'jackpot': 0}
     def __load_bank(self):
         try:
             with open("users.json", "r") as s:
@@ -42,6 +51,14 @@ class EconomyCog(commands.Cog):
                 'balance': coins
             })
         self.__save_bank()
+    def get(self, user: str) -> int:
+        """Gets the balance of a user."""
+        for current_acc in self.bank['users']:
+            if user == current_acc['name']:
+                return int(current_acc['balance'])
+        else:
+            self.set(user, 0)  # Create an account with 0 balance if not found
+            return 0
 
     @commands.command(name='work', aliases=['w'])
     @commands.cooldown(1,30, commands.BucketType.user)
@@ -267,9 +284,9 @@ class EconomyCog(commands.Cog):
             await ctx.send('Only numbers please!')
             self.roulette.reset_cooldown(ctx) # type: ignore
 
-    @commands.command(name='gamble')
+    @commands.command(name='slots', aliases=['slot', 'oldgamble'])
     @commands.cooldown(1,5, commands.BucketType.user)
-    async def gamble(self, ctx: commands.Context):
+    async def slots(self, ctx: commands.Context):
         userid = ctx.author.name
         nega_earn = 6500
         bot_choice = random.randint(1, 35)
@@ -326,11 +343,11 @@ class EconomyCog(commands.Cog):
             if ctx.author.name == current_acc['name']:
                 if current_acc['balance'] < coins:
                     await ctx.send(random.choice([
-                        "{mention} is so broke they can't even afford to give {amount} coins.",
-                        "{mention} tried to help the poor but didn't realize they were the poor",
-                        "{amount} coins? {mention}, you need to work harder!",
-                        "{recipient} won't be receiving any coins from {mention} today.",
-                    ]).replace("{mention}", ctx.author.mention).replace("{amount}", f"{coins:,}").replace("{recipient}", member.mention)) # format coins with commas
+                        f"{ctx.author.mention} is so broke they can't even afford to give {coins:,} coins.",
+                        f"{ctx.author.mention} tried to help the poor but didn't realize they were the poor",
+                        f"{coins:,} coins? {ctx.author.mention}, you need to work harder!",
+                        f"{member.mention} won't be receiving any coins from {ctx.author.mention} today.",
+                    ]))
                     return
                 self.set(ctx.author.name, current_acc['balance'] - coins)
                 break
@@ -344,11 +361,81 @@ class EconomyCog(commands.Cog):
         else:
             self.set(member.name, coins)
         await ctx.send(random.choice([
-            "{mention} gave {amount} eden coins.",
-            "{mention} generously donated {amount} eden coins.",
-            "{mention} is feeling generous and gave away {amount} eden coins.",
-        ]).replace("{mention}", ctx.author.mention).replace("{amount}", f"{coins:,}").replace("{recipient}", member.mention)) # format coins with commas
+            f"{member.mention} gave {coins} eden coins.",
+            f"{member.mention} generously donated {coins} eden coins.",
+            f"{member.mention} is feeling generous and gave away {coins} eden coins.",
+        ]))
 
+    @commands.command(name='gamble', aliases=['newgamble'])
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def gamble(self, ctx: commands.Context):
+        """Let's go gambling!"""
+        cost = 6_500
+        userid = ctx.author.name
+        balance = self.get(userid)
+        if balance < cost:
+            await ctx.send(random.choice([
+                f"{ctx.author.mention} is so broke they can't even afford to gamble {cost:,} coins.",
+                f"{ctx.author.mention} tried to gamble but didn't have enough coins.",
+                f"{balance:,} coins? {ctx.author.mention}, you need to work harder!",
+                f"I'm afraid {balance:,} coins isn't quite {cost:,} just yet",
+                f"{ctx.author.mention} you need coins to blow if you wanna gamble.",
+                f"{ctx.author.mention}, come back after earning {cost-balance:,} more coins.",
+                f"You're still {cost-balance:,} coins short, buddy.",
+                f"Only {balance:,} coins? Skill issue.",
+            ]))
+            return
+        # https://www.desmos.com/calculator/o3meaagvzc
+        chance = math.floor(math.log(self.jackpot['jackpot'], 10) * 50)
+        # TODO: chance logic
+        if random.randint(1, chance) <= 235: # replace with actual chance logic
+            # User wins
+            win_amount = max(10_000_000, self.jackpot['jackpot'] * 2)  # Maximum win amount is 10 million
+            self.set(userid, balance + win_amount)
+            self.jackpot['jackpot'] = min(100_000, self.jackpot['jackpot'] - win_amount)  # Reset jackpot after win
+            await self.save_jackpot_task()
+            await ctx.send(random.choice([
+                f"{ctx.author.mention} won {win_amount:,} coins! The jackpot is now {self.jackpot['jackpot']:,} coins.",
+                f"Congratulations {ctx.author.mention}! You hit the jackpot and won {win_amount:,} coins!",
+                f"{ctx.author.mention} just won big! {win_amount:,} coins added to your balance.",
+            ]))
+        else:
+            # User loses
+            self.set(userid, balance - cost)
+            self.jackpot['jackpot'] += 6_000  # Increase jackpot by 6,000 coins
+            await self.save_jackpot_task()
+            await ctx.send(random.choice([
+                "Aw dang it.",
+                "maybe next time?",
+                "99% of gamblers quit before they hit big"
+            ]))
+    
+    # Jackpot tasks
+    @tasks.loop(minutes=1)
+    async def jackpot_task(self):
+        """A task that runs every minute to check if the jackpot should be increased."""
+        if self.jackpot['jackpot'] < 10_000_000:
+            self.jackpot['jackpot'] += 3600
+            print(f"Jackpot increased to {self.jackpot['jackpot']} coins")
+    @tasks.loop(hours=1)
+    async def save_jackpot_task(self):
+        """A task that runs every hour to save the jackpot data."""
+        self.jackpot_file.buffer.write(json.dumps(self.jackpot).encode('utf-8'))
+        self.jackpot_file.buffer.flush()
+        self.jackpot_file.seek(0)
+        self.jackpot_file.flush()
+        print("Jackpot data saved.")
+
+    async def cog_unload(self):
+        """Fires when the cog is unloaded."""
+        self.__save_bank()
+        # Save jackpot data
+        self.jackpot_file.buffer.write(json.dumps(self.jackpot).encode('utf-8'))
+        self.jackpot_file.buffer.flush()
+        self.jackpot_file.seek(0)
+        self.jackpot_file.flush()
+        self.jackpot_file.close()
+        return await super().cog_unload()
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

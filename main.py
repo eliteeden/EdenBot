@@ -1072,27 +1072,28 @@ async def ryan(ctx):
 
 
 # List of banned words (case-insensitive)
-slur_words = {"retard", "fag", "faggot", "nigga", "tard", "nigger"}
+slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
+
+def has_any_role(*role_names):
+    async def predicate(interaction: discord.Interaction) -> bool:
+        return any(role.name in role_names for role in interaction.user.roles)
+    return app_commands.check(predicate)
+
 
 @bot.tree.command(name="talk")
+@has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def talk(interaction: Interaction, message: str):
     await interaction.response.defer(ephemeral=True)
 
     # Check for bad words
     lowered = message.lower()
     flagged = any(bad_word in lowered for bad_word in slur_words)
+    blocked = False
 
-    # Send the original message to the current channel
-    try:
-        await interaction.channel.send(message)  # type: ignore
-    except Exception as e:
-        if isinstance(e, discord.Forbidden):
-            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
-            return
-        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
 
     # If flagged, notify a specific channel
     if flagged:
+        blocked = True
         # The ID of the channel where alerts should be sent
         alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
         if alert_channel:
@@ -1101,6 +1102,17 @@ async def talk(interaction: Interaction, message: str):
                 f"contained flagged content: ```{message}```"
             )
 
+    # Send the original message to the current channel
+    try:
+        if not blocked:
+            await interaction.channel.send(message)  # type: ignore
+    except Exception as e:
+        if isinstance(e, discord.Forbidden):
+            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
+            return
+        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
+
+    
     # Clean up original interaction
     await interaction.delete_original_response()
 
@@ -1674,11 +1686,11 @@ async def win(ctx):
 
 
 @bot.command()
-@commands.cooldown(1,300, commands.BucketType.user)
+@commands.cooldown(1,60, commands.BucketType.user)
 async def roulette(ctx, bullets:int):
     if bullets < 1 or bullets > 5:
         roulette.reset_cooldown(ctx) # type: ignore
-        await ctx.send('Please choose between 1 and 5 bullets')
+        await ctx.send('Please choose between 1 to 5 bullets')
         return
         
     userid = ctx.author.name
@@ -1713,7 +1725,7 @@ async def roulette(ctx, bullets:int):
 
         
     else:
-        await ctx.send(f'You died! Try again in 5 minutes')
+        await ctx.send(f'You died! Try again in 1 minute')
 
 @roulette.error
 async def roulette_error(ctx, error):

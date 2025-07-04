@@ -1007,9 +1007,12 @@ async def halp(ctx):
 
 @bot.command()
 async def howgay(ctx, user = None):
-    if not user:
-        user = ctx.author
-    await ctx.send(f'{user.mention} is {random.randint(0, 100)}% gay')
+    try:
+        if user is None:
+            user = ctx.author
+        await ctx.send(f'{user.mention} is {random.randint(0, 100)}% gay')
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
 
 @bot.command()
 async def compliment(ctx):

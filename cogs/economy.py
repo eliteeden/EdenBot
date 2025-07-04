@@ -298,6 +298,8 @@ class EconomyCog(commands.Cog):
                         newcoins = coins + earn
                         self.set(userid, newcoins)
                         await ctx.send(f'You won {earn:,} eden coins')
+                        bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+                        await bot_updates_channel.send(f"User {ctx.author.mention} won {earn:,} coins in slots!")
                         break
                     else:
                         await ctx.send(f'You do not have enough coins, you need {nega_earn:,} to participate')
@@ -398,6 +400,8 @@ class EconomyCog(commands.Cog):
                 f"Congratulations {ctx.author.mention}! You hit the jackpot and won {win_amount:,} coins!",
                 f"{ctx.author.mention} just won big! {win_amount:,} coins added to your balance.",
             ]))
+            bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+            await bot_updates_channel.send(f"User {ctx.author.mention} won {win_amount:,} coins in the jackpot!")
         else:
             # User loses
             self.set(userid, balance - cost)

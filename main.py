@@ -1074,14 +1074,8 @@ async def ryan(ctx):
 # List of banned words (case-insensitive)
 slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
 
-def has_any_role(*role_names):
-    async def predicate(interaction: discord.Interaction) -> bool:
-        return any(role.name in role_names for role in interaction.user.roles)
-    return app_commands.check(predicate)
-
-
 @bot.tree.command(name="talk")
-@has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
+@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def talk(interaction: Interaction, message: str):
     await interaction.response.defer(ephemeral=True)
 

@@ -1277,7 +1277,7 @@ class ConfessCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="confess", description="Send an anonymous confession")
-    async def confess(self, interaction: discord.Interaction, message: str, image: Optional[str] = None):
+    async def confess(self, interaction: discord.Interaction, message: str, image: str = ""):
         user_name = str(interaction.user.name)  # Convert username to string for JSON compatibility
 
         if user_name not in user_colors:
@@ -1287,13 +1287,23 @@ class ConfessCog(commands.Cog):
         hex_code: str = user_colors[user_name]
         embed = discord.Embed(title=f"Anon-{hex_code.removeprefix('#')}".capitalize(), description=message, color=int(hex_code[1:], 16))
 
-        if image not in [None, ""]:
+        if image != "":
             embed.set_image(url=image)
 
         await interaction.response.defer(ephemeral=True)  # Prevents errors by deferring the interaction
         await interaction.channel.send(embed=embed)  # type: ignore # Sends the embed without replying to the trigger
         await interaction.delete_original_response()
 
+    
+    @commands.command(name="resetconfessions")
+    @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
+    async def reset_confessions(self, ctx: commands.Context):
+        """Reset everyone's colors."""
+        global user_colors
+        user_colors = {}
+        save_colors(user_colors)  # Save the reset data
+        await ctx.send("All user colors have been reset.")
+        
 
 @bot.command()
 @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)

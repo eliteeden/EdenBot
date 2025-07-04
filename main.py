@@ -116,10 +116,6 @@ async def on_ready():
                     print(f"Loaded cog: {filename[:-3]}")
                 except Exception as e:
                     print(f"Failed to load cog {filename[:-3]}: {e}")
-        
-        # TODO: this needs to be a command
-        await bot.tree.sync()
-        print("Slash commands synced successfully!")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
     
@@ -1800,6 +1796,15 @@ async def districtclaim(ctx, category_id: int):
         # Stop listening after timeout if no reply occurs
         await ctx.send("No replies detected for remaining messages within the timeout period.")
 
+@bot.command()
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+async def sync(ctx: commands.Context):
+    """Syncs the bot's commands with Discord."""
+    try:
+        await bot.tree.sync()
+        await ctx.send("Commands synced successfully!")
+    except Exception as e:
+        await ctx.send(f"Failed to sync commands: {e}")
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 async def reload(ctx: commands.Context, cog: str):

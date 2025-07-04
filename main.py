@@ -568,7 +568,7 @@ async def profanities(ctx):
     # Limit to top 100
     top_users = sorted_users[:100]
 
-    paginator = bot.cogs[“PaginatorCog”].paginator() # Initialize paginator
+    paginator = bot.cogs["PaginatorCog"].paginator() # Initialize paginator
 
     # Create paginated embeds
     for i in range(0, len(top_users), 10):  # Show 10 users per page
@@ -925,7 +925,7 @@ async def endslow(ctx):
     await ctx.send("Slow-mode is off!")
     
 
-paginator = bot.cogs[“PaginatorCog”].paginator()
+paginator = bot.cogs["PaginatorCog"].paginator()
 
 # Text commands
 
@@ -1487,7 +1487,7 @@ async def topbal(ctx):
         top_users = sorted_users[:100]
 
         
-        paginator = bot.cogs[“PaginatorCog”].paginator()  # Initialize paginator
+        paginator = bot.cogs["PaginatorCog"].paginator()  # Initialize paginator
 
         # Create paginated embeds
         for i in range(0, len(top_users), 10):  # Show 10 users per page

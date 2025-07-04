@@ -108,7 +108,7 @@ class Paginator:
 async def on_ready():
     try:
         # Syncing the bot's command tree with Discord
-        bot.tree.add_command(ConfessCog(bot).confess)
+        await bot.add_cog(ConfessCog(bot))  # Add the ConfessCog to the bot
         # Reddit background task got moved to the cog
         
         print("Slash commands synced successfully!")
@@ -1303,7 +1303,11 @@ class ConfessCog(commands.Cog):
         user_colors = {}
         save_colors(user_colors)  # Save the reset data
         await ctx.send("All user colors have been reset.")
-        
+    
+    async def cog_load(self):
+        self.bot.tree.add_command(ConfessCog(bot).confess)
+        return await super().cog_load()
+
 
 @bot.command()
 @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)

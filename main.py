@@ -106,12 +106,7 @@ class Paginator:
 
 @bot.event
 async def on_ready():
-    try:
-        # Syncing the bot's command tree with Discord
-        await bot.add_cog(ConfessCog(bot))  # Add the ConfessCog to the bot
-        # Reddit background task got moved to the cog
-        
-        print("Slash commands synced successfully!")
+    try:        
 
         # Load cogs
         for filename in os.listdir("cogs"):
@@ -124,6 +119,7 @@ async def on_ready():
         
         # TODO: this needs to be a command
         await bot.tree.sync()
+        print("Slash commands synced successfully!")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
     
@@ -1246,67 +1242,6 @@ async def wiki(ctx,*,search_msg):
 async def wiki_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("Exclusive to boosters")
-
-user_colors = {}  # Dictionary to store user-specific colors
-
-
-
-def load_colors():
-    if not os.path.exists("user_colors.json"):
-        return {}  # Return an empty dictionary if the file doesn't exist
-
-    try:
-        with open("user_colors.json", "r") as file:
-            data = json.load(file)
-            return data if isinstance(data, dict) else {}  # Ensure it's a dictionary
-    except json.JSONDecodeError:
-        return {}  # Return an empty dictionary if JSON is invalid
-
-# Save updated user colors to JSON
-def save_colors(data):
-    with open("user_colors.json", "w") as file:
-        json.dump(data, file, indent=4)
-
-# Generate a random hex color
-def generate_hex_color():
-    return f"#{random.randint(0, 0xFFFFFF):06x}"
-
-user_colors = load_colors()  # Load colors at startup
-class ConfessCog(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-
-    @app_commands.command(name="confess", description="Send an anonymous confession")
-    async def confess(self, interaction: discord.Interaction, message: str, image: str = ""):
-        user_name = str(interaction.user.name)  # Convert username to string for JSON compatibility
-
-        if user_name not in user_colors:
-            user_colors[user_name] = generate_hex_color()
-            save_colors(user_colors)  # Save the updated data
-
-        hex_code: str = user_colors[user_name]
-        embed = discord.Embed(title=f"Anon-{hex_code.removeprefix('#')}".capitalize(), description=message, color=int(hex_code[1:], 16))
-
-        if image != "":
-            embed.set_image(url=image)
-
-        await interaction.response.defer(ephemeral=True)  # Prevents errors by deferring the interaction
-        await interaction.channel.send(embed=embed)  # type: ignore # Sends the embed without replying to the trigger
-        await interaction.delete_original_response()
-
-    
-    @commands.command(name="resetconfessions")
-    @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
-    async def reset_confessions(self, ctx: commands.Context):
-        """Reset everyone's colors."""
-        global user_colors
-        user_colors = {}
-        save_colors(user_colors)  # Save the reset data
-        await ctx.send("All user colors have been reset.")
-    
-    async def cog_load(self):
-        self.bot.tree.add_command(ConfessCog(bot).confess)
-        return await super().cog_load()
 
 
 @bot.command()

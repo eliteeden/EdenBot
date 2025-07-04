@@ -107,8 +107,12 @@ class Paginator:
 @bot.event
 async def on_ready():
     try:
+        print("starting!")
         # Syncing the bot's command tree with Discord
         await bot.add_cog(ConfessCog(bot))  # Add the ConfessCog to the bot
+    except Exception as e:
+        print(f"Failed to start confessions: {e}")
+    try:
         # Reddit background task got moved to the cog
         
         print("Slash commands synced successfully!")

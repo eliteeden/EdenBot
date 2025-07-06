@@ -16,17 +16,17 @@ class DiceCog(commands.Cog):
             return
         
         result = random.randint(1, sides)
-        await ctx.send(f"You rolled a {result} on a {sides}-sided die.")
+        await ctx.send(f"{ctx.author.mention} rolled a {result} on a {sides}-sided die.")
     @commands.command(name='d20')
     async def roll_d20(self, ctx: commands.Context):
         """Roll a 20-sided die."""
         result = random.randint(1, 20)
         if result == 20:
-            await ctx.send("Critical hit! You rolled a 20!")
+            await ctx.send(f"{ctx.author.mention}, you rolled a 20. Congratulations!")
         elif result == 1:
-            await ctx.send("Critical fail! You rolled a 1!")
+            await ctx.send(f"{ctx.author.mention}, you rolled a 1. Good luck...")
         else:
-            await ctx.send(f"You rolled a {result}.")
+            await ctx.send(f"{ctx.author.mention}, you rolled a {result}.")
     @commands.command(name='d6')
     async def roll_d6(self, ctx: commands.Context):
         return await self.roll_dice(ctx, 6)

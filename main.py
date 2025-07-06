@@ -54,14 +54,14 @@ if not token:
     token = input("Bot token not found. Please enter your token:\n> ")
 
 
-DISABLED_COMMAND_CHANNEL_ID = 963782352931278938
-BLOCK_MESSAGE = f"No commands in <#{963782352931278938}>\nUse bot commands in <#{982590233667330109}>, you brat"
-EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web"]
+DISABLED_COMMAND_CHANNEL_ID = CHANNELS.CAPITAL
+BLOCK_MESSAGE = f"No commands in <#{CHANNELS.CAPITAL}>\nUse bot commands in <#{CHANNELS.BOT_COMMANDS}>, you brat"
+EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web", "roll", "d20", "d6", "d100"]
 
 @bot.check
-async def block_commands_in_channel(ctx):
+async def block_commands_in_channel(ctx: commands.Context):
     if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
-        if ctx.command.name not in EXEMPT_COMMANDS:
+        if ctx.command.name not in EXEMPT_COMMANDS:  # type: ignore
             try:
                 await ctx.send(BLOCK_MESSAGE)
             except discord.Forbidden:

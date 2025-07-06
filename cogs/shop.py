@@ -31,7 +31,7 @@ def shopitem(name: str, price: int, *required_roles: int):
         price (int): The price of the item in Eden Coins.
         *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
     """
-    def decorator(func: Callable[[ShopCog.Shop, commands.Bot, commands.Context], Coroutine]) -> ShopCog.ShopItem:
+    def decorator(func: Callable[[ShopCog.Shop, commands.Bot, discord.Interaction], Coroutine[None, None, None]]) -> ShopCog.ShopItem:
         item = ShopCog.ShopItem(
             *required_roles,
             name=name,
@@ -50,7 +50,7 @@ class ShopCog(commands.Cog):
                 self, 
                 name: str,
                 price: int,
-                on_buy: Callable[["ShopCog.Shop", commands.Bot, commands.Context], Awaitable] | Coroutine,
+                on_buy: Callable[["ShopCog.Shop", commands.Bot, discord.Interaction], Coroutine[None, None, None]],
                 *required_roles: Optional[int]
             ) -> None:
             """Initializes a shop item. This should be created using the `shopitem` decorator.
@@ -107,36 +107,30 @@ class ShopCog(commands.Cog):
 
         @requires_roles(ROLES.TOTALLY_MOD)
         @shopitem(name="test", price=100)
-        async def test_item(self, bot: commands.Bot, ctx: commands.Context):
+        async def test_item(self, bot: commands.Bot, ctx: discord.Interaction):
             updates_channel: discord.TextChannel = bot.get_channel(ROLES.BOT_LOGS) # type: ignore
-            await updates_channel.send(f"Test item purchased by {ctx.author.name}")
+            await updates_channel.send(f"Test item purchased by {ctx.user.name}")
 
     def __init__(self, bot):
         self.bot = bot
     
-    def buttons(self, price: int) -> discord.ui.View:
-        """Returns a view with buttons for the shop."""
-        view = discord.ui.View(timeout=None)
-        
-        view.add_item(discord.ui.Button(
-            label="◀️",
-            style=discord.ButtonStyle.blurple,
-            custom_id="previous_item",
-            row=0
-        ))
-        view.add_item(discord.ui.Button(
-            label=f"{price} Eden Coins",
-            style=discord.ButtonStyle.green,
-            custom_id="buy_item",
-            row=0
-        ))
-        view.add_item(discord.ui.Button(
-            label="▶️",
-            style=discord.ButtonStyle.blurple,
-            custom_id="next_item",
-            row=0
-        ))
-        return view
+    class ShopButtons(discord.ui.View):
+        def __init__(self, bot: commands.Bot, item: "ShopCog.ShopItem"):
+            super().__init__(timeout=None)
+            self.item = item
+            self.bot = bot
+            if not isinstance(item, ShopCog.ShopItem):
+                raise TypeError("item must be an instance of ShopCog.ShopItem")
+
+        @discord.ui.button(label="◀️", style=discord.ButtonStyle.secondary, custom_id="back-btn")
+        async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+            pass
+        @discord.ui.button(label=f"Buy", style=discord.ButtonStyle.green, custom_id="buy-btn")
+        async def buy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await self.item.on_buy(self.bot, interaction) # TODO: fix this (what should I pass for `self`)
+        @discord.ui.button(label="▶️", style=discord.ButtonStyle.secondary, custom_id="next-btn")
+        async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+            pass
     
     @commands.command(name="shop")
     async def shop(self, ctx):
@@ -146,11 +140,12 @@ class ShopCog(commands.Cog):
             description="Welcome to the Eden Shop! Here are the items you can purchase:",
             color=discord.Color.green()
         )
-        
+        selected: ShopCog.ShopItem = None # type: ignore
         for item in self.Shop:
             print(item.name, item.value)
-        
-        await ctx.send(embed=embed, view=self.buttons(0))
+            selected = item.value
+
+        await ctx.send(embed=embed, view=self.ShopButtons(bot=self.bot, item=selected))
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

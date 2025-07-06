@@ -4,10 +4,9 @@ from discord.ext import commands, tasks
 import discord
 from discord import Member
 import json
-import os
 import random
 from typing import Literal, Optional
-from ..constants import CHANNELS
+from constants import CHANNELS
 
 from typing import TypedDict
 

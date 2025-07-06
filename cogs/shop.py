@@ -1,7 +1,7 @@
-from enum import Enum
-from typing import Awaitable, Callable, Coroutine, Optional, Self
-from discord.ext import commands
 import discord
+from discord.ext import commands
+from enum import Enum
+from typing import Awaitable, Callable, Coroutine, Optional, overload
 
 from constants import ROLES
 
@@ -31,7 +31,7 @@ def shopitem(name: str, price: int, *required_roles: int):
         price (int): The price of the item in Eden Coins.
         *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
     """
-    def decorator(func: Callable[[ShopCog.Shop, commands.Context], Coroutine]) -> ShopCog.ShopItem:
+    def decorator(func: Callable[[ShopCog.Shop, commands.Bot, commands.Context], Coroutine]) -> ShopCog.ShopItem:
         item = ShopCog.ShopItem(
             *required_roles,
             name=name,
@@ -50,7 +50,7 @@ class ShopCog(commands.Cog):
                 self, 
                 name: str,
                 price: int,
-                on_buy: Callable[["ShopCog.Shop", commands.Context], Awaitable] | Coroutine,
+                on_buy: Callable[["ShopCog.Shop", commands.Bot, commands.Context], Awaitable] | Coroutine,
                 *required_roles: Optional[int]
             ) -> None:
             """Initializes a shop item. This should be created using the `shopitem` decorator.
@@ -58,7 +58,7 @@ class ShopCog(commands.Cog):
                 bot (commands.Bot): The bot instance.
                 name (str): The name of the item.
                 price (int): The price of the item in Eden Coins.
-                on_buy (commands.Command | Coroutine): The command or coroutine to execute when the item is purchased.
+                on_buy (commands.Command | Coroutine): The command or coroutine to execute when the item is purchased. This function should take three arguments: the shop, the bot, and the context.
                 required_roles (optional: int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
             """
             self.name = name
@@ -82,17 +82,34 @@ class ShopCog(commands.Cog):
 
     class Shop(Enum):
         """Enum for shop items."""
-        def __init__(self, bot: commands.Bot):
-            self.bot = bot
-        
+        @overload
+        def __getitem__(self, name: str, /) -> "ShopCog.ShopItem":
+            """Get a shop item by its name."""
+            ...
+        @overload
+        def __getitem__(self, index: int, /) -> "ShopCog.ShopItem":
+            """Get a shop item by its index."""
+            ...
+        def __getitem__(self, val: str | int, /) -> "ShopCog.ShopItem":
+            if isinstance(val, str):
+                return self.__getattribute__(val).value
+            elif isinstance(val, int):
+                i = 0
+                for item in self:
+                    if i == val:
+                        return item.value # type: ignore
+                    i += 1
+                raise IndexError(f"Shop item index {val} out of range.")
+
         ############################
         # ADD YOUR SHOP ITEMS HERE #
         ############################
 
         @requires_roles(ROLES.TOTALLY_MOD)
         @shopitem(name="test", price=100)
-        async def test_item(self, ctx: commands.Context):
-            print(f"Test item purchased by {ctx.author.name}")
+        async def test_item(self, bot: commands.Bot, ctx: commands.Context):
+            updates_channel: discord.TextChannel = bot.get_channel(ROLES.BOT_LOGS) # type: ignore
+            await updates_channel.send(f"Test item purchased by {ctx.author.name}")
 
     def __init__(self, bot):
         self.bot = bot
@@ -131,12 +148,12 @@ class ShopCog(commands.Cog):
         )
         
         for item in self.Shop:
-            embed.add_field(name=item.value.replace("_", " ").title(), value=item.value, inline=False)
+            print(item.name, item.value)
         
-        embed.set_footer(text="Use ;buy <item_name> to purchase an item.")
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, view=self.buttons(0))
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""
+    return # Still WIP
     await bot.add_cog(ShopCog(bot))
     print("ShopCog has been (re-)loaded.")

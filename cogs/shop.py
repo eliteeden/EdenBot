@@ -12,14 +12,23 @@ from constants import ROLES
 # -Henry (jul 4, 2025)
 
 def requires_roles(*roles: int):
-    """Decorator to require specific roles for a command."""
+    """Decorator to require specific roles for a command.
+    This is the same as adding the roles into the `shopitem` decorator.
+    Args:
+        *roles (int): The role IDs required to use the command.
+    """
     def decorator(func: ShopCog.ShopItem):
         func.required_roles = roles
         return func
     return decorator
 def shopitem(name: str, price: int, *required_roles: int):
-    """Decorator to create a shop item."""
-    def decorator(func: Callable[[ShopCog.Shop, commands.Context], Coroutine]):
+    """Creates a shop item.
+    Args:
+        name (str): The name of the item.
+        price (int): The price of the item in Eden Coins.
+        *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
+    """
+    def decorator(func: Callable[[ShopCog.Shop, commands.Context], Coroutine]) -> ShopCog.ShopItem:
         item = ShopCog.ShopItem(
             *required_roles,
             name=name,
@@ -33,6 +42,7 @@ class ShopCog(commands.Cog):
     """The shop is here because economy got too large lmao"""
 
     class ShopItem:
+        """Represents an item in the shop."""
         def __init__(
                 self, 
                 name: str,
@@ -40,7 +50,7 @@ class ShopCog(commands.Cog):
                 on_buy: Callable[["ShopCog.Shop", commands.Context], Awaitable] | Coroutine,
                 *required_roles: Optional[int]
             ) -> None:
-            """Initializes a shop item.
+            """Initializes a shop item. This should be created using the `shopitem` decorator.
             Args:
                 bot (commands.Bot): The bot instance.
                 name (str): The name of the item.
@@ -83,7 +93,31 @@ class ShopCog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-
+    
+    def buttons(self, price: int) -> discord.ui.View:
+        """Returns a view with buttons for the shop."""
+        view = discord.ui.View(timeout=None)
+        
+        view.add_item(discord.ui.Button(
+            label="◀️",
+            style=discord.ButtonStyle.blurple,
+            custom_id="previous_item",
+            row=0
+        ))
+        view.add_item(discord.ui.Button(
+            label=f"{price} Eden Coins",
+            style=discord.ButtonStyle.green,
+            custom_id="buy_item",
+            row=0
+        ))
+        view.add_item(discord.ui.Button(
+            label="▶️",
+            style=discord.ButtonStyle.blurple,
+            custom_id="next_item",
+            row=0
+        ))
+        return view
+    
     @commands.command(name="shop")
     async def shop(self, ctx):
         """Displays the shop items."""

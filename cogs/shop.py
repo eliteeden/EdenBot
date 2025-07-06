@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
 from enum import Enum
-from typing import Awaitable, Callable, Coroutine, Optional, overload
+from typing import Callable, Coroutine, Optional, overload
 
-from constants import ROLES
+from constants import ROLES, CHANNELS
 
 # idk if these will get reloaded or not, but they're not supposed to be used in other files
 # so they're outside of the cog
@@ -108,7 +108,7 @@ class ShopCog(commands.Cog):
         @requires_roles(ROLES.TOTALLY_MOD)
         @shopitem(name="test", price=100)
         async def test_item(self, bot: commands.Bot, ctx: discord.Interaction):
-            updates_channel: discord.TextChannel = bot.get_channel(ROLES.BOT_LOGS) # type: ignore
+            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await updates_channel.send(f"Test item purchased by {ctx.user.name}")
 
     def __init__(self, bot):

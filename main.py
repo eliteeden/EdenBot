@@ -1057,27 +1057,22 @@ async def ryan(ctx):
 
 
 # List of banned words (case-insensitive)
-slur_words = {"retard", "fag", "faggot", "nigga", "tard", "nigger"}
+slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
 
 @bot.tree.command(name="talk")
+@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def talk(interaction: Interaction, message: str):
     await interaction.response.defer(ephemeral=True)
 
     # Check for bad words
     lowered = message.lower()
     flagged = any(bad_word in lowered for bad_word in slur_words)
+    blocked = False
 
-    # Send the original message to the current channel
-    try:
-        await interaction.channel.send(message)  # type: ignore
-    except Exception as e:
-        if isinstance(e, discord.Forbidden):
-            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
-            return
-        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
 
     # If flagged, notify a specific channel
     if flagged:
+        blocked = True
         # The ID of the channel where alerts should be sent
         alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
         if alert_channel:
@@ -1086,6 +1081,17 @@ async def talk(interaction: Interaction, message: str):
                 f"contained flagged content: ```{message}```"
             )
 
+    # Send the original message to the current channel
+    try:
+        if not blocked:
+            await interaction.channel.send(message)  # type: ignore
+    except Exception as e:
+        if isinstance(e, discord.Forbidden):
+            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
+            return
+        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
+
+    
     # Clean up original interaction
     await interaction.delete_original_response()
 
@@ -1440,6 +1446,7 @@ async def cheer(ctx, member: Member):
 @bot.command()
 async def timer(ctx):
     await ctx.send('WIP')
+
 
 # Event commands
 

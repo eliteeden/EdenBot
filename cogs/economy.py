@@ -246,11 +246,11 @@ class EconomyCog(commands.Cog):
 
 
     @commands.command(name='roulette')
-    @commands.cooldown(1,300, commands.BucketType.user)
+    @commands.cooldown(1,60, commands.BucketType.user)
     async def roulette(self, ctx: commands.Context, bullets: int):
         if bullets < 1 or bullets > 5:
             self.roulette.reset_cooldown(ctx) # type: ignore
-            await ctx.send('Please choose between 1 and 5 bullets')
+            await ctx.send('Please choose between 1 to 5 bullets')
             return
 
         userid = ctx.author.name

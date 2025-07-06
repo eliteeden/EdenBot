@@ -8,6 +8,9 @@ from constants import ROLES
 # idk if these will get reloaded or not, but they're not supposed to be used in other files
 # so they're outside of the cog
 
+# If you try and find a better way, update this counter
+hours_wasted = 1.5
+
 # Sorry
 # -Henry (jul 4, 2025)
 

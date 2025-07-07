@@ -1368,14 +1368,14 @@ def is_unusual_name(name):
         return False
     
     normalized_name = unicodedata.normalize('NFKD', name)  # Normalize Unicode characters
-    standard_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' ")
+    standard_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
     
     return any(char not in standard_chars for char in normalized_name)
 
 
 @bot.command()
-@commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)
-async def rsf(ctx):
+@commands.has_any_role(ROLES.MODERATOR)
+async def rfs(ctx):
     author = ctx.author
     try:
         """Resets usernames of members whose names exceed the given length."""

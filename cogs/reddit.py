@@ -51,7 +51,7 @@ class RedditCog(commands.Cog):
                 print(f"Error processing subreddit {subreddit}: {e}")
 
     @commands.command(name="meme")
-    async def meme(self, ctx, subreddit: str = "memes"):
+    async def meme(self, ctx: commands.Context, subreddit: str = "memes"):
         """Fetches a random safe-for-work meme from Reddit."""
         headers = {"User-Agent": "Mozilla/5.0"}
         url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=120"
@@ -79,7 +79,19 @@ class RedditCog(commands.Cog):
                         chosen_post = random.choice(valid_posts)
                         embed = Embed(title=chosen_post["title"], color=discord.Color.yellow())
                         embed.set_image(url=chosen_post["url"])
-                        meme_footer_responses = [f"unfunny image brought to you by {ctx.author.mention}","mildly amusing, this one","take this meme and leave me alone","LOL","I find this one rather amusing","This is humor for dummies but enjoy","", "hehehe", "memes are great", "of course you'd find this funny"]
+                        meme_footer_responses = [
+                            f"unfunny image brought to you by {ctx.author.name}",
+                            "mildly amusing, this one","take this meme and leave me alone",
+                            "LOL",
+                            "I find this one rather amusing",
+                            "This is humor for dummies but enjoy",
+                            "",
+                            "hehehe",
+                            "memes are great",
+                            "of course you'd find this funny",
+                            "I don't get it but here you go",
+                            "Is this good enough for you?",
+                        ]
                         embed.set_footer(text=f"{random.choice(meme_footer_responses)}")
                         await ctx.send(embed=embed)
                     else:

@@ -54,73 +54,40 @@ if not token:
     token = input("Bot token not found. Please enter your token:\n> ")
 
 
-DISABLED_COMMAND_CHANNEL_ID = 963782352931278938
-BLOCK_MESSAGE = f"No commands in <#{963782352931278938}>\nUse bot commands in <#{982590233667330109}>, you brat"
-EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web"]
+DISABLED_COMMAND_CHANNEL_ID = CHANNELS.CAPITAL
+BLOCK_MESSAGE = f"No commands in <#{CHANNELS.CAPITAL}>\nUse bot commands in <#{CHANNELS.BOT_COMMANDS}>, you brat"
+EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web", "roll", "d20", "d6", "d100"]
 
 @bot.check
-async def block_commands_in_channel(ctx):
+async def block_commands_in_channel(ctx: commands.Context):
     if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
-        if ctx.command.name not in EXEMPT_COMMANDS:
+        if ctx.command.name not in EXEMPT_COMMANDS:  # type: ignore
             try:
                 await ctx.send(BLOCK_MESSAGE)
             except discord.Forbidden:
                 pass
             return False  # Block execution
     return True  # Allow execution
-
-class Paginator:
-    def __init__(self, bot):
-        self.bot = bot
-        self.pages = []
-
-    def add_page(self, embed):
-        self.pages.append(embed)
-
-    async def send(self, ctx):
-        current_page = 0
-        message = await ctx.send(embed=self.pages[current_page])
-
-        await message.add_reaction("◀️")
-        await message.add_reaction("▶️")
-
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
-
-        while True:
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
-
-                if str(reaction.emoji) == "▶️" and current_page < len(self.pages) - 1:
-                    current_page += 1
-                    await message.edit(embed=self.pages[current_page])
-                    await message.remove_reaction(reaction, user)
-
-                elif str(reaction.emoji) == "◀️" and current_page > 0:
-                    current_page -= 1
-                    await message.edit(embed=self.pages[current_page])
-                    await message.remove_reaction(reaction, user)
-
-            except asyncio.TimeoutError:
-                break
-
+    
 @bot.event
 async def on_ready():
-    try:        
-
-        # Load cogs
-        for filename in os.listdir("cogs"):
-            if filename.endswith(".py"):
-                try:
-                    await bot.load_extension(f"cogs.{filename[:-3]}")
-                    print(f"Loaded cog: {filename[:-3]}")
-                except Exception as e:
-                    print(f"Failed to load cog {filename[:-3]}: {e}")
-    except Exception as e:
-        print(f"Failed to sync commands: {e}")
-    
-
+    # Load cogs
+    for filename in os.listdir("cogs"):
+        if filename.endswith(".py"):
+            try:
+                await bot.load_extension(f"cogs.{filename[:-3]}")
+                print(f"Loaded cog: {filename[:-3]}")
+            except Exception as e:
+                print(f"Failed to load cog {filename[:-3]}: {e}")
+    # TODO: switch to bot updates channel?
+    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
+    await channel.send("I'm backkkkk")
     print('Systems online')
+
+# Paginator class
+
+
+
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 @bot.command()
 async def cogs(ctx: commands.Context):
@@ -586,7 +553,7 @@ async def profanities(ctx):
     # Limit to top 100
     top_users = sorted_users[:100]
 
-    paginator = Paginator(bot=bot)  # Initialize paginator
+    paginator = bot.cogs["PaginatorCog"].paginator() # Initialize paginator
 
     # Create paginated embeds
     for i in range(0, len(top_users), 10):  # Show 10 users per page
@@ -943,85 +910,94 @@ async def endslow(ctx):
     await ctx.send("Slow-mode is off!")
     
 
-paginator = Paginator(bot)
-
-# Text commands
-
-# Red embed for moderation commands
-embed1 = Embed(title='Moderation Commands', color=0xff0000)
-embed1.add_field(name='ban', value='This command bans a member', inline=False)
-embed1.add_field(name='unban', value='This command unbans a member', inline=False)
-embed1.add_field(name='kick', value='This command kicks a member', inline=False)
-embed1.add_field(name='mute', value='This command mutes a member', inline=False)
-embed1.add_field(name='purge', value='This command purges messages', inline=False)
-embed1.add_field(name='warn', value='This command warns a member', inline=False)
-embed1.add_field(name='warns', value='This command checks member warns', inline=False)
-embed1.add_field(name='removewarn', value='This command removes member warns', inline=False)
-embed1.add_field(name='botpurge', value='Clears bot messages', inline=False)
-embed1.add_field(name='listrole', value='Lists all roles in the server', inline=False)
-paginator.add_page(embed1)
-
-# Orange embed for economy commands
-embed2 = Embed(title='Economy Commands', color=0xffa500)
-embed2.add_field(name='bal', value='Shows the user balance', inline=False)
-embed2.add_field(name='coinflip', value='Play Heads or Tails to win coins', inline=False)
-embed2.add_field(name='roulette', value='Guess bullets for a chance to win coins', inline=False)
-embed2.add_field(name='work', value='Earn Eden coins by working', inline=False)
-embed2.add_field(name='invest', value='Invest coins to increase your balance', inline=False)
-embed2.add_field(name='gamble', value='Try gambling to win coins', inline=False)
-embed2.add_field(name='setbal', value='Manually set user balance', inline=False)
-embed2.add_field(name='subbal', value='Subtract coins from user balance', inline=False)
-embed2.add_field(name='topbal', value='Shows the top 10 richest users', inline=False)
-embed2.add_field(name='districtclaim', value='Claim a district', inline=False)
-paginator.add_page(embed2)
-
-# Yellow embed for fun commands
-embed3 = Embed(title='Fun Commands', color=0xFFFF00)
-embed3.add_field(name='meme', value='Fetches a random image from Reddit', inline=False)
-embed3.add_field(name='hug', value='Hug a user', inline=False)
-embed3.add_field(name='kiss', value='Kiss a user', inline=False)
-embed3.add_field(name='cheer', value='Cheer up a user', inline=False)
-embed3.add_field(name='compliment', value='Compliment a user', inline=False)
-embed3.add_field(name='howgay', value='Checks how gay a user is', inline=False)
-embed3.add_field(name='fuck', value='Random fun response', inline=False)
-embed3.add_field(name='longday', value="It's been a long day...", inline=False)
-embed3.add_field(name='web', value='Fetch search results from the web', inline=False)
-embed3.add_field(name='wiki', value='Fetch information from Wikipedia', inline=False)
-paginator.add_page(embed3)
-
-# Green embed for informational commands
-embed4 = Embed(title='Informational Commands', color=0x008000)
-embed4.add_field(name='define', value='Fetches the definition of a word', inline=False)
-embed4.add_field(name='urban', value='Fetches word definition from Urban Dictionary', inline=False)
-embed4.add_field(name='lyrics', value='Fetch song lyrics using Lyrics.ovh API', inline=False)
-embed4.add_field(name='gethex', value='Retrieves a hex color code or color name from a hex code', inline=False)
-embed4.add_field(name='changelog', value='Shows the bot changelog', inline=False)
-embed4.add_field(name='halp', value='Displays help for bot commands', inline=False)
-embed4.add_field(name='help', value='Shows this message', inline=False)
-paginator.add_page(embed4)
-
-# Blue embed for miscellaneous commands
-embed5 = Embed(title='Miscellaneous Commands', color=0x0000FF)
-embed5.add_field(name='ping', value='Returns Pong', inline=False)
-embed5.add_field(name='slowmode', value='Sets a slow mode duration', inline=False)
-embed5.add_field(name='endslow', value='Ends slow mode', inline=False)
-embed5.add_field(name='snipe', value='Retrieves last deleted message', inline=False)
-embed5.add_field(name='stick', value='Sticks a message', inline=False)
-embed5.add_field(name='unstick', value='Removes a stuck message', inline=False)
-embed5.add_field(name='timer', value='Sets a countdown timer', inline=False)
-embed5.add_field(name='cinema', value='Movie-related command', inline=False)
-embed5.set_footer(text='This bot was made by Happy')
-paginator.add_page(embed5)
 
 @bot.command()
 async def halp(ctx):
-    """Displays paginated bot command list"""
-    await paginator.send(ctx)
+    try:
+        """Displays paginated bot command list"""
+        paginator = bot.cogs["PaginatorCog"].paginator()
+
+        # Text commands
+
+        # Red embed for moderation commands
+        embed1 = Embed(title='Moderation Commands', color=0xff0000)
+        embed1.add_field(name='ban', value='This command bans a member', inline=False)
+        embed1.add_field(name='unban', value='This command unbans a member', inline=False)
+        embed1.add_field(name='kick', value='This command kicks a member', inline=False)
+        embed1.add_field(name='mute', value='This command mutes a member', inline=False)
+        embed1.add_field(name='purge', value='This command purges messages', inline=False)
+        embed1.add_field(name='warn', value='This command warns a member', inline=False)
+        embed1.add_field(name='warns', value='This command checks member warns', inline=False)
+        embed1.add_field(name='removewarn', value='This command removes member warns', inline=False)
+        embed1.add_field(name='botpurge', value='Clears bot messages', inline=False)
+        embed1.add_field(name='listrole', value='Lists all roles in the server', inline=False)
+        paginator.add_page(embed1)
+
+        # Orange embed for economy commands
+        embed2 = Embed(title='Economy Commands', color=0xffa500)
+        embed2.add_field(name='bal', value='Shows the user balance', inline=False)
+        embed2.add_field(name='coinflip', value='Play Heads or Tails to win coins', inline=False)
+        embed2.add_field(name='roulette', value='Guess bullets for a chance to win coins', inline=False)
+        embed2.add_field(name='work', value='Earn Eden coins by working', inline=False)
+        embed2.add_field(name='invest', value='Invest coins to increase your balance', inline=False)
+        embed2.add_field(name='gamble', value='Try gambling to win coins', inline=False)
+        embed2.add_field(name='setbal', value='Manually set user balance', inline=False)
+        embed2.add_field(name='subbal', value='Subtract coins from user balance', inline=False)
+        embed2.add_field(name='topbal', value='Shows the top 10 richest users', inline=False)
+        embed2.add_field(name='districtclaim', value='Claim a district', inline=False)
+        paginator.add_page(embed2)
+
+        # Yellow embed for fun commands
+        embed3 = Embed(title='Fun Commands', color=0xFFFF00)
+        embed3.add_field(name='meme', value='Fetches a random image from Reddit', inline=False)
+        embed3.add_field(name='hug', value='Hug a user', inline=False)
+        embed3.add_field(name='kiss', value='Kiss a user', inline=False)
+        embed3.add_field(name='cheer', value='Cheer up a user', inline=False)
+        embed3.add_field(name='compliment', value='Compliment a user', inline=False)
+        embed3.add_field(name='howgay', value='Checks how gay a user is', inline=False)
+        embed3.add_field(name='fuck', value='Random fun response', inline=False)
+        embed3.add_field(name='longday', value="It's been a long day...", inline=False)
+        embed3.add_field(name='web', value='Fetch search results from the web', inline=False)
+        embed3.add_field(name='wiki', value='Fetch information from Wikipedia', inline=False)
+        paginator.add_page(embed3)
+
+        # Green embed for informational commands
+        embed4 = Embed(title='Informational Commands', color=0x008000)
+        embed4.add_field(name='define', value='Fetches the definition of a word', inline=False)
+        embed4.add_field(name='urban', value='Fetches word definition from Urban Dictionary', inline=False)
+        embed4.add_field(name='lyrics', value='Fetch song lyrics using Lyrics.ovh API', inline=False)
+        embed4.add_field(name='gethex', value='Retrieves a hex color code or color name from a hex code', inline=False)
+        embed4.add_field(name='changelog', value='Shows the bot changelog', inline=False)
+        embed4.add_field(name='halp', value='Displays help for bot commands', inline=False)
+        embed4.add_field(name='help', value='Shows this message', inline=False)
+        paginator.add_page(embed4)
+
+        # Blue embed for miscellaneous commands
+        embed5 = Embed(title='Miscellaneous Commands', color=0x0000FF)
+        embed5.add_field(name='ping', value='Returns Pong', inline=False)
+        embed5.add_field(name='slowmode', value='Sets a slow mode duration', inline=False)
+        embed5.add_field(name='endslow', value='Ends slow mode', inline=False)
+        embed5.add_field(name='snipe', value='Retrieves last deleted message', inline=False)
+        embed5.add_field(name='stick', value='Sticks a message', inline=False)
+        embed5.add_field(name='unstick', value='Removes a stuck message', inline=False)
+        embed5.add_field(name='timer', value='Sets a countdown timer', inline=False)
+        embed5.add_field(name='cinema', value='Movie-related command', inline=False)
+        embed5.set_footer(text='This bot was made by Happy')
+        paginator.add_page(embed5)
+
+        await paginator.send(ctx)
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
 
 
 @bot.command()
-async def howgay(ctx):
-    await ctx.send(f'{ctx.author.mention} is {random.randint(0, 100)}% gay')
+async def howgay(ctx, user: Member = None):
+    try:
+        if user is None:
+            user = ctx.author
+        await ctx.send(f'{user.mention} is {random.randint(0, 100)}% gay')
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
 
 @bot.command()
 async def compliment(ctx):
@@ -1081,27 +1057,22 @@ async def ryan(ctx):
 
 
 # List of banned words (case-insensitive)
-slur_words = {"retard", "fag", "faggot", "nigga", "tard", "nigger"}
+slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
 
 @bot.tree.command(name="talk")
+@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def talk(interaction: Interaction, message: str):
     await interaction.response.defer(ephemeral=True)
 
     # Check for bad words
     lowered = message.lower()
     flagged = any(bad_word in lowered for bad_word in slur_words)
+    blocked = False
 
-    # Send the original message to the current channel
-    try:
-        await interaction.channel.send(message)  # type: ignore
-    except Exception as e:
-        if isinstance(e, discord.Forbidden):
-            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
-            return
-        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
 
     # If flagged, notify a specific channel
     if flagged:
+        blocked = True
         # The ID of the channel where alerts should be sent
         alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
         if alert_channel:
@@ -1110,6 +1081,17 @@ async def talk(interaction: Interaction, message: str):
                 f"contained flagged content: ```{message}```"
             )
 
+    # Send the original message to the current channel
+    try:
+        if not blocked:
+            await interaction.channel.send(message)  # type: ignore
+    except Exception as e:
+        if isinstance(e, discord.Forbidden):
+            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
+            return
+        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
+
+    
     # Clean up original interaction
     await interaction.delete_original_response()
 
@@ -1239,7 +1221,6 @@ async def wiki_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("Exclusive to boosters")
 
-
 @bot.command()
 @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
 async def fuck(ctx, member: Member):
@@ -1307,14 +1288,14 @@ def is_unusual_name(name):
         return False
     
     normalized_name = unicodedata.normalize('NFKD', name)  # Normalize Unicode characters
-    standard_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' ")
+    standard_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
     
     return any(char not in standard_chars for char in normalized_name)
 
 
 @bot.command()
-@commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)
-async def rsf(ctx):
+@commands.has_any_role(ROLES.MODERATOR)
+async def rfs(ctx):
     author = ctx.author
     try:
         """Resets usernames of members whose names exceed the given length."""
@@ -1442,7 +1423,7 @@ async def topbal(ctx):
         top_users = sorted_users[:100]
 
         
-        paginator = Paginator(bot=bot)  # Initialize paginator
+        paginator = bot.cogs["PaginatorCog"].paginator()  # Initialize paginator
 
         # Create paginated embeds
         for i in range(0, len(top_users), 10):  # Show 10 users per page
@@ -1620,11 +1601,11 @@ async def win(ctx):
 
 
 @bot.command()
-@commands.cooldown(1,300, commands.BucketType.user)
+@commands.cooldown(1,60, commands.BucketType.user)
 async def roulette(ctx, bullets:int):
     if bullets < 1 or bullets > 5:
         roulette.reset_cooldown(ctx) # type: ignore
-        await ctx.send('Please choose between 1 and 5 bullets')
+        await ctx.send('Please choose between 1 to 5 bullets')
         return
         
     userid = ctx.author.name
@@ -1659,7 +1640,7 @@ async def roulette(ctx, bullets:int):
 
         
     else:
-        await ctx.send(f'You died! Try again in 5 minutes')
+        await ctx.send(f'You died! Try again in 1 minute')
 
 @roulette.error
 async def roulette_error(ctx, error):

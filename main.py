@@ -54,14 +54,14 @@ if not token:
     token = input("Bot token not found. Please enter your token:\n> ")
 
 
-DISABLED_COMMAND_CHANNEL_ID = 963782352931278938
-BLOCK_MESSAGE = f"No commands in <#{963782352931278938}>\nUse bot commands in <#{982590233667330109}>, you brat"
-EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web"]
+DISABLED_COMMAND_CHANNEL_ID = CHANNELS.CAPITAL
+BLOCK_MESSAGE = f"No commands in <#{CHANNELS.CAPITAL}>\nUse bot commands in <#{CHANNELS.BOT_COMMANDS}>, you brat"
+EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web", "roll", "d20", "d6", "d100"]
 
 @bot.check
-async def block_commands_in_channel(ctx):
+async def block_commands_in_channel(ctx: commands.Context):
     if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
-        if ctx.command.name not in EXEMPT_COMMANDS:
+        if ctx.command.name not in EXEMPT_COMMANDS:  # type: ignore
             try:
                 await ctx.send(BLOCK_MESSAGE)
             except discord.Forbidden:
@@ -95,7 +95,7 @@ async def on_ready():
         await bot.tree.sync()
     except Exception as e:
         print(f"Failed to sync commands: {e}")
-    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
+    channel = CHANNELS.CAPITAL
     await channel.send("I'm backkkkk")
     print('Systems online')
 
@@ -1352,14 +1352,14 @@ def is_unusual_name(name):
         return False
     
     normalized_name = unicodedata.normalize('NFKD', name)  # Normalize Unicode characters
-    standard_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' ")
+    standard_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
     
     return any(char not in standard_chars for char in normalized_name)
 
 
 @bot.command()
-@commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)
-async def rsf(ctx):
+@commands.has_any_role(ROLES.MODERATOR)
+async def rfs(ctx):
     author = ctx.author
     try:
         """Resets usernames of members whose names exceed the given length."""

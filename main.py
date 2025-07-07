@@ -991,16 +991,16 @@ async def halp(ctx):
 
 
 @bot.command()
-async def howgay(ctx, user: Member = None):
+async def howgay(ctx: commands.Context, user: Optional[Member] = None): # type: ignore
     try:
-        if user is None:
-            user = ctx.author
+        if not user:
+            user: Member = ctx.author # type: ignore
         await ctx.send(f'{user.mention} is {random.randint(0, 100)}% gay')
     except Exception as e:
         await ctx.send(f"Error: {e}")
 
 @bot.command()
-async def compliment(ctx):
+async def compliment(ctx: commands.Context):
     good_words = [
         'You are a valuable member',
         'You are an icon!',

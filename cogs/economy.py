@@ -5,57 +5,81 @@ import discord
 from discord import Member
 import json
 import random
-from typing import Literal, Optional
+from typing import Optional, overload
 from constants import CHANNELS
 
-from typing import TypedDict
-
-class BankEntry(TypedDict):
-    name: str
-    balance: int
-
 class EconomyCog(commands.Cog):
+    """All economy related commands and tasks."""
+    ECONOMY_FILE = "users.json"
+    JACKPOT_FILE = "jackpot.json"
+    type strint = str # Contains an ID, not a string
+    type MemberLike = discord.User | discord.Member | str | int | strint
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.bank: dict[Literal["users"], list[BankEntry]] = self.__load_bank() # type: ignore # Load the bank every reload
+        self.bank: dict[strint, int] = self.__load_bank() # type: ignore # New bank maps ID directly to balance
+        # self.bank: dict[Literal["users"], list[BankEntry]] = self.__load_bank() # type: ignore # Load the bank every reload
         # TODO: not destroy my micro sd card with this
-        self.jackpot_file = open("jackpot.json", "w") # Open file descriptor 3 for writing
-        with open("jackpot.json", "r") as f:
+        self.jackpot_file = open(self.JACKPOT_FILE, "w") # Open file descriptor 3 for writing
+        with open(self.JACKPOT_FILE, "r") as f:
             try:
                 self.jackpot = json.load(f)
             except (FileNotFoundError, json.JSONDecodeError, ValueError):
                 self.jackpot = {'jackpot': 0}
+    def __get_id(self, member: MemberLike) -> strint:
+        if isinstance(member, (discord.User, discord.Member)):
+            return str(member.id)
+        elif isinstance(member, int):
+            return str(member)
+        elif isinstance(member, str):
+            member = member.lower()
+            if member.startswith("<@") and member.endswith(">"):
+                return member[2:-1]
+            elif member[0] in [str(i) for i in range(10)]:
+                return member
+            else:
+                for m in self.bot.get_all_members():
+                    if member == m.name.lower() or member == m.display_name.lower():
+                        return str(m.id)
+        raise ValueError("Invalid member type")
+
     def __load_bank(self):
         try:
-            with open("users.json", "r") as s:
-                print("Reloading bank from users.json!")
+            with open(self.ECONOMY_FILE, "r") as s:
+                print(f"Reloading bank from {self.ECONOMY_FILE}!")
                 return json.load(s)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             return {'users': []}
     def __save_bank(self):
-        with open("users.json", "w") as s:
+        with open(self.ECONOMY_FILE, "w") as s:
             json.dump(self.bank, s, indent=4)
     def set(self, user: str, coins: int):
         """Sets the balance of a user."""
-        found = False
-        for current_acc in self.bank['users']:
-            if user == current_acc['name']:
-                found = True
-                current_acc['balance'] = coins
-                break
-        if not found:
-            self.bank['users'].append({
-                'name': user,
-                'balance': coins
-            })
+        self.bank[user] = coins
         self.__save_bank()
+    @overload
     def get(self, user: str) -> int:
         """Gets the balance of a user."""
-        for current_acc in self.bank['users']:
-            if user == current_acc['name']:
-                return int(current_acc['balance'])
+        ...
+    @overload
+    def get(self, user: Member) -> int:
+        """Gets the balance of a user."""
+        ...
+    @overload
+    def get(self, user: discord.User | discord.Member) -> int:
+        """Gets the balance of a user."""
+        ...
+    @overload
+    def get(self, user: int) -> int:
+        """Gets the balance of a user."""
+        ...
+    def get(self, user: MemberLike) -> int:
+        """Gets the balance of a user."""
+        user_id = self.__get_id(user)
+        if self.bank[user_id]:
+            return self.bank[user_id]
         else:
-            self.set(user, 0)  # Create an account with 0 balance if not found
+            self.bank[user_id] = 0
+            self.__save_bank()
             return 0
 
     @commands.command(name='work', aliases=['w'])
@@ -81,6 +105,7 @@ class EconomyCog(commands.Cog):
             'You bought a lottery ticket and won',
             'You "found"',
         ]
+        # TODO: fix
         for current_acc in self.bank['users']:
             if ctx.author.name == current_acc['name']:
                 coins = int(current_acc['balance'])
@@ -88,7 +113,7 @@ class EconomyCog(commands.Cog):
                 newcoins = coins + earn
                 self.set(ctx.author.name, newcoins)
                 if earn == 1984:
-                    await ctx.send("Your speaking priviledges have been revoked")
+                    await ctx.send("Your speaking privileges have been revoked")
                     newtime = newtime = datetime.timedelta(minutes=int("5"))
                     await ctx.author.edit(timed_out_until=discord.utils.utcnow() + newtime) # type: ignore
                 else:    

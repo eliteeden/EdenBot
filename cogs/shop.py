@@ -1,45 +1,11 @@
+from __future__ import annotations
+
 import discord
 from discord.ext import commands
-from enum import Enum
-from typing import Callable, Coroutine, Optional, overload
+from typing import Callable, Coroutine, Generator, Optional, overload
 
+from cogs.economy import EconomyCog # TypeDef only
 from constants import ROLES, CHANNELS
-
-# idk if these will get reloaded or not, but they're not supposed to be used in other files
-# so they're outside of the cog
-
-# If you try and find a better way, update this counter
-hours_wasted = 1.5
-
-# Sorry
-# -Henry (jul 4, 2025)
-
-def requires_roles(*roles: int):
-    """Decorator to require specific roles for a command.
-    This is the same as adding the roles into the `shopitem` decorator.
-    Args:
-        *roles (int): The role IDs required to use the command.
-    """
-    def decorator(func: ShopCog.ShopItem):
-        func.required_roles = roles
-        return func
-    return decorator
-def shopitem(name: str, price: int, *required_roles: int):
-    """Creates a shop item.
-    Args:
-        name (str): The name of the item.
-        price (int): The price of the item in Eden Coins.
-        *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
-    """
-    def decorator(func: Callable[[ShopCog.Shop, commands.Bot, discord.Interaction], Coroutine[None, None, None]]) -> ShopCog.ShopItem:
-        item = ShopCog.ShopItem(
-            *required_roles,
-            name=name,
-            price=price,
-            on_buy=func,
-        )
-        return item
-    return decorator
 
 class ShopCog(commands.Cog):
     """The shop is here because economy got too large lmao"""
@@ -50,7 +16,7 @@ class ShopCog(commands.Cog):
                 self, 
                 name: str,
                 price: int,
-                on_buy: Callable[["ShopCog.Shop", commands.Bot, discord.Interaction], Coroutine[None, None, None]],
+                on_buy: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, None]],
                 *required_roles: Optional[int]
             ) -> None:
             """Initializes a shop item. This should be created using the `shopitem` decorator.
@@ -80,17 +46,17 @@ class ShopCog(commands.Cog):
         def __repr__(self) -> str:
             return f"ShopItem(name={self.name}, price={self.price}, required_roles={self.required_roles})"
 
-    class Shop(Enum):
+    class Shop:
         """Enum for shop items."""
         @overload
-        def __getitem__(self, name: str, /) -> "ShopCog.ShopItem":
+        def __getitem__(self, name: str, /) -> ShopCog.ShopItem:
             """Get a shop item by its name."""
             ...
         @overload
-        def __getitem__(self, index: int, /) -> "ShopCog.ShopItem":
+        def __getitem__(self, index: int, /) -> ShopCog.ShopItem:
             """Get a shop item by its index."""
             ...
-        def __getitem__(self, val: str | int, /) -> "ShopCog.ShopItem":
+        def __getitem__(self, val: str | int, /) -> ShopCog.ShopItem:
             if isinstance(val, str):
                 return self.__getattribute__(val).value
             elif isinstance(val, int):
@@ -100,6 +66,47 @@ class ShopCog(commands.Cog):
                         return item.value # type: ignore
                     i += 1
                 raise IndexError(f"Shop item index {val} out of range.")
+        # Length
+        def __len__(self) -> int:
+            """Returns the number of shop items."""
+            items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
+            return len(items)
+        # Iteration
+        def __iter__(self) -> Generator[ShopCog.ShopItem, None, None]:
+            """Iterates over the shop items."""
+            items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
+            for item in items:
+                yield item
+        @staticmethod
+        def requires_roles(*roles: int):
+            """Decorator to require specific roles for a command.
+            This is the same as adding the roles into the `shopitem` decorator.
+            Args:
+                *roles (int): The role IDs required to use the command.
+            """
+            def decorator(func: ShopCog.ShopItem):
+                func.required_roles = roles
+                return func
+            return decorator
+        @staticmethod
+        def shopitem(name: str, price: int, *required_roles: int):
+            """Creates a shop item.
+            Args:
+                name (str): The name of the item.
+                price (int): The price of the item in Eden Coins.
+                *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
+            """
+            def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, None]]) -> ShopCog.ShopItem:
+                item = ShopCog.ShopItem(
+                    *required_roles,
+                    name=name,
+                    price=price,
+                    on_buy=func,
+                )
+                return item
+            return decorator
+
+
 
         ############################
         # ADD YOUR SHOP ITEMS HERE #
@@ -107,28 +114,51 @@ class ShopCog(commands.Cog):
 
         @requires_roles(ROLES.TOTALLY_MOD)
         @shopitem(name="test", price=100)
-        async def test_item(self, bot: commands.Bot, ctx: discord.Interaction):
+        @staticmethod
+        async def test_item(bot: commands.Bot, ctx: discord.Interaction):
             updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await updates_channel.send(f"Test item purchased by {ctx.user.name}")
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
     
     class ShopButtons(discord.ui.View):
-        def __init__(self, bot: commands.Bot, item: "ShopCog.ShopItem"):
+        def __init__(self, bot: commands.Bot, item: ShopCog.ShopItem):
             super().__init__(timeout=None)
             self.item = item
             self.bot = bot
+            self.economy: EconomyCog = self.bot.get_cog("EconomyCog") # type: ignore
             if not isinstance(item, ShopCog.ShopItem):
                 raise TypeError("item must be an instance of ShopCog.ShopItem")
 
-        @discord.ui.button(label="◀️", style=discord.ButtonStyle.secondary, custom_id="back-btn")
+        @discord.ui.button(label="◀️", style=discord.ButtonStyle.secondary)
         async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
             pass
-        @discord.ui.button(label=f"Buy", style=discord.ButtonStyle.green, custom_id="buy-btn")
+        @discord.ui.button(label=f"Buy", style=discord.ButtonStyle.green)
         async def buy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await self.item.on_buy(self.bot, interaction) # TODO: fix this (what should I pass for `self`)
-        @discord.ui.button(label="▶️", style=discord.ButtonStyle.secondary, custom_id="next-btn")
+            button.disabled = True
+            await interaction.response.defer()  # defer the response to avoid timeout
+            if not self.economy:
+                await interaction.response.send_message("Economy cog not found. Please try again later.", ephemeral=True)
+                return False
+            if not self.item.purchasable(self.bot, interaction.user): # type: ignore
+                await interaction.response.send_message(
+                    f"You no longer are able to purchase this item." # Would be disabled otherwise
+                )
+                return False
+            if interaction.user.id == self.bot.user.id: # type: ignore
+                await interaction.response.send_message("You cannot purchase items for the bot.", ephemeral=True)
+                return False
+            # Remove coins
+            self.economy.set(interaction.user.name, self.economy.get(interaction.user.name) - self.item.price)
+            # run the on_buy function
+            success = await self.item.on_buy(self.bot, interaction)
+            if not success:
+                # The on_buy function should inform the user.
+                self.economy.set(interaction.user.name, self.economy.get(interaction.user.name) + self.item.price)
+                return False
+            return True
+        @discord.ui.button(label="▶️", style=discord.ButtonStyle.secondary)
         async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
             pass
     

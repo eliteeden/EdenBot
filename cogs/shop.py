@@ -8,100 +8,81 @@ from typing import Callable, Coroutine, Generator, Iterator, Optional, overload
 from cogs.economy import EconomyCog # TypeDef only
 from constants import ROLES, CHANNELS
 
+type ShopItem = "ShopCog.Shop.ShopItem"  # TypeDef for type hinting
+
 # Hey, the counter for how long I've wasted trying to remove @staticmethod is back
-hours_wasted = 6
-# Decorators
-def requires_roles(*roles: int):
-    """Decorator to require specific roles for a command.
-    A user must have at least one of the specified roles to use the command.
-    When used with `excludes_roles`, the user must meet both conditions.
-    Args:
-        *roles (int): The role IDs required to use the command.
-    """
-    def decorator(func: "ShopCog.ShopItem"):
-        func.required_roles = roles
-        return func
-    return decorator
-def excludes_roles(*roles: int):
-    """Decorator to exclude specific roles for a command.
-    A user must not have any of the specified roles to use the command.
-    When used with `requires_roles`, the user must meet both conditions.
-    Args:
-        *roles (int): The role IDs that cannot use the command.
-    """
-    def decorator(func: "ShopCog.ShopItem"):
-        func.excluded_roles = roles
-        return func
-    return decorator
-def shopitem(name: str, price: int, *required_roles: int):
-    """Creates a shop item.
-    Args:
-        name (str): The name of the item.
-        price (int): The price of the item in Eden Coins.
-        *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
-    """
-    def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> "ShopCog.ShopItem":
-        item = ShopCog.ShopItem(
-            *required_roles,
-            name=name,
-            price=price,
-            on_buy=func,
-        )
-        return item
-    return decorator
+hours_wasted = 7
 
 class ShopCog(commands.Cog):
     """The shop is here because economy got too large lmao"""
 
-    class ShopItem:
-        """Represents an item in the shop."""
-        def __init__(
-                self, 
-                name: str,
-                price: int,
-                on_buy: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]],
-            ) -> None:
-            """Initializes a shop item. This should be created using the `shopitem` decorator.
-            Args:
-                bot (commands.Bot): The bot instance.
-                name (str): The name of the item.
-                price (int): The price of the item in Eden Coins.
-                on_buy (commands.Command | Coroutine): The command or coroutine to execute when the item is purchased. This function should take three arguments: the shop, the bot, and the context.
-                required_roles (optional: int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
-            """
-            self.name = name
-            self.price = price
-            self.on_buy = on_buy
-            self.required_roles: tuple[int, ...] = tuple()
-            self.excluded_roles: tuple[int, ...] = tuple()
-
-        def purchasable(self, bot: commands.Bot, member: discord.Member) -> bool:
-            """Checks if the item is purchasable by the member."""
-            member_roles = [r.id for r in member.roles]
-            if not any(role in member_roles for role in self.required_roles):
-                return False
-            if any(role in member_roles for role in self.excluded_roles):
-                return False
-            member_balance: int = bot.cogs["EconomyCog"].get(member.name) # type: ignore
-            return member_balance >= self.price
-        def __hash__(self) -> int:
-            return hash((self.name, self.price, tuple(self.required_roles), self.on_buy))
-        def __str__(self) -> str:
-            return f"{self.name} - {self.price} Eden Coins"
-        def __repr__(self) -> str:
-            return f"ShopItem(name={self.name}, price={self.price}, required_roles={self.required_roles})"
-
     class Shop:
+        class ShopItem:
+            @classmethod
+            def __decorator__(cls, name: str, price: int, *required_roles: int):
+                """Creates a shop item.
+                Args:
+                    name (str): The name of the item.
+                    price (int): The price of the item in Eden Coins.
+                    *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
+                """
+                def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> ShopItem:
+                    item = cls(
+                        *required_roles,
+                        name=name,
+                        price=price,
+                        on_buy=func,
+                    )
+                    return item
+                return decorator
+
+            """Represents an item in the shop."""
+            def __init__(
+                    self, 
+                    name: str,
+                    price: int,
+                    on_buy: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]],
+                ) -> None:
+                """Initializes a shop item. This should be created using the `shopitem` decorator.
+                Args:
+                    bot (commands.Bot): The bot instance.
+                    name (str): The name of the item.
+                    price (int): The price of the item in Eden Coins.
+                    on_buy (commands.Command | Coroutine): The command or coroutine to execute when the item is purchased. This function should take three arguments: the shop, the bot, and the context.
+                    required_roles (optional: int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
+                """
+                self.name = name
+                self.price = price
+                self.on_buy = on_buy
+                self.required_roles: tuple[int, ...] = tuple()
+                self.excluded_roles: tuple[int, ...] = tuple()
+
+            def purchasable(self, bot: commands.Bot, member: discord.Member) -> bool:
+                """Checks if the item is purchasable by the member."""
+                member_roles = [r.id for r in member.roles]
+                if not any(role in member_roles for role in self.required_roles):
+                    return False
+                if any(role in member_roles for role in self.excluded_roles):
+                    return False
+                member_balance: int = bot.cogs["EconomyCog"].get(member.name) # type: ignore
+                return member_balance >= self.price
+            def __hash__(self) -> int:
+                return hash((self.name, self.price, tuple(self.required_roles), self.on_buy))
+            def __str__(self) -> str:
+                return f"{self.name} - {self.price} Eden Coins"
+            def __repr__(self) -> str:
+                return f"ShopItem(name={self.name}, price={self.price}, required_roles={self.required_roles})"
+
         """Enum for shop items."""
         @overload
-        def __getitem__(self, name: str, /) -> "ShopCog.ShopItem":
+        def __getitem__(self, name: str, /) -> ShopItem:
             """Get a shop item by its name."""
             ...
         @overload
-        def __getitem__(self, index: int, /) -> "ShopCog.ShopItem":
+        def __getitem__(self, index: int, /) -> ShopItem:
             """Get a shop item by its index."""
             ...
-        def __getitem__(self, val: str | int, /) -> "ShopCog.ShopItem":
+        def __getitem__(self, val: str | int, /) -> ShopItem:
             if isinstance(val, str):
                 return self.__getattribute__(val).value
             elif isinstance(val, int):
@@ -117,10 +98,37 @@ class ShopCog(commands.Cog):
             items = [getattr(self, item) for item in dir(self) if type(getattr(self, item)).__name__ is "ShopItem"]
             return len(items)
         # Iteration
-        def __iter__(self) -> Iterator["ShopCog.ShopItem"]:
+        def __iter__(self) -> Iterator[ShopItem]:
             """Iterates over the shop items."""
-            items: list["ShopCog.ShopItem"] = [getattr(self, item) for item in dir(self) if type(getattr(self, item)).__name__ is "ShopItem"]
+            items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), self.ShopItem)]
             return iter(items)
+        # Decorators
+        @staticmethod
+        def requires_roles(*roles: int):
+            """Decorator to require specific roles for a command.
+            A user must have at least one of the specified roles to use the command.
+            When used with `excludes_roles`, the user must meet both conditions.
+            Args:
+                *roles (int): The role IDs required to use the command.
+            """
+            def decorator(func: ShopItem):
+                func.required_roles = roles
+                return func
+            return decorator
+        @staticmethod
+        def excludes_roles(*roles: int):
+            """Decorator to exclude specific roles for a command.
+            A user must not have any of the specified roles to use the command.
+            When used with `requires_roles`, the user must meet both conditions.
+            Args:
+                *roles (int): The role IDs that cannot use the command.
+            """
+            def decorator(func: ShopItem):
+                func.excluded_roles = roles
+                return func
+            return decorator
+        shopitem = ShopItem.__decorator__  # Alias for the item decorator
+
 
         ############################
         # ADD YOUR SHOP ITEMS HERE #
@@ -152,7 +160,7 @@ class ShopCog(commands.Cog):
         self.bot = bot
     
     class ShopButtons(discord.ui.View):
-        def __init__(self, bot: commands.Bot, item: "ShopCog.ShopItem"):
+        def __init__(self, bot: commands.Bot, item: ShopItem):
             super().__init__(timeout=None)
             self.item = item
             self.bot = bot

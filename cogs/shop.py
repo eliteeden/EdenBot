@@ -16,8 +16,7 @@ class ShopCog(commands.Cog):
                 self, 
                 name: str,
                 price: int,
-                on_buy: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, None]],
-                *required_roles: Optional[int]
+                on_buy: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]],
             ) -> None:
             """Initializes a shop item. This should be created using the `shopitem` decorator.
             Args:
@@ -30,12 +29,15 @@ class ShopCog(commands.Cog):
             self.name = name
             self.price = price
             self.on_buy = on_buy
-            self.required_roles = required_roles if required_roles else []
+            self.required_roles: tuple[int, ...] = tuple()
+            self.excluded_roles: tuple[int, ...] = tuple()
 
         def purchasable(self, bot: commands.Bot, member: discord.Member) -> bool:
             """Checks if the item is purchasable by the member."""
             member_roles = [r.id for r in member.roles]
             if not any(role in member_roles for role in self.required_roles):
+                return False
+            if any(role in member_roles for role in self.excluded_roles):
                 return False
             member_balance: int = bot.cogs["EconomyCog"].get(member.name) # type: ignore
             return member_balance >= self.price
@@ -77,15 +79,29 @@ class ShopCog(commands.Cog):
             items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
             for item in items:
                 yield item
+        # Decorators
         @staticmethod
         def requires_roles(*roles: int):
             """Decorator to require specific roles for a command.
-            This is the same as adding the roles into the `shopitem` decorator.
+            A user must have at least one of the specified roles to use the command.
+            When used with `excludes_roles`, the user must meet both conditions.
             Args:
                 *roles (int): The role IDs required to use the command.
             """
             def decorator(func: ShopCog.ShopItem):
                 func.required_roles = roles
+                return func
+            return decorator
+        @staticmethod
+        def excludes_roles(*roles: int):
+            """Decorator to exclude specific roles for a command.
+            A user must not have any of the specified roles to use the command.
+            When used with `requires_roles`, the user must meet both conditions.
+            Args:
+                *roles (int): The role IDs that cannot use the command.
+            """
+            def decorator(func: ShopCog.ShopItem):
+                func.excluded_roles = roles
                 return func
             return decorator
         @staticmethod
@@ -96,7 +112,7 @@ class ShopCog(commands.Cog):
                 price (int): The price of the item in Eden Coins.
                 *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
             """
-            def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, None]]) -> ShopCog.ShopItem:
+            def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> ShopCog.ShopItem:
                 item = ShopCog.ShopItem(
                     *required_roles,
                     name=name,
@@ -115,9 +131,24 @@ class ShopCog(commands.Cog):
         @requires_roles(ROLES.TOTALLY_MOD)
         @shopitem(name="test", price=100)
         @staticmethod
-        async def test_item(bot: commands.Bot, ctx: discord.Interaction):
+        async def test_item(bot: commands.Bot, interaction: discord.Interaction):
             updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
-            await updates_channel.send(f"Test item purchased by {ctx.user.name}")
+            await updates_channel.send(f"Test item purchased by {interaction.user.name}")
+            return True
+
+        @excludes_roles(ROLES.TALK_PERMS)
+        @shopitem(name="talk", price=2_500_000)
+        @staticmethod
+        async def talk_command_perms(bot: commands.Bot, interaction: discord.Interaction):
+            """Gives the user permission to use the /talk command."""
+            if not isinstance(interaction.user, discord.Member):
+                await interaction.response.send_message("This command can only be run in the eden server.", ephemeral=True)
+                return False
+            if ROLES.TALK_PERMS not in [role.id for role in interaction.user.roles]:
+                await interaction.user.add_roles(discord.Object(id=ROLES.TALK_PERMS))
+                return True
+            await interaction.response.send_message("You are already able to use the /talk command.", ephemeral=True)
+            return False # User already has the role, so they can't buy it again.
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -152,7 +183,7 @@ class ShopCog(commands.Cog):
             # Remove coins
             self.economy.set(interaction.user.name, self.economy.get(interaction.user.name) - self.item.price)
             # run the on_buy function
-            success = await self.item.on_buy(self.bot, interaction)
+            success = not (await self.item.on_buy(self.bot, interaction) == False) # Returning None is the same as True
             if not success:
                 # The on_buy function should inform the user.
                 self.economy.set(interaction.user.name, self.economy.get(interaction.user.name) + self.item.price)

@@ -298,7 +298,7 @@ class EconomyCog(commands.Cog):
                 time_parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
 
             time_string = ", ".join(time_parts)
-    await ctx.send(f"You're on cooldown! Try again in {time_string}.")
+            await ctx.send(f"You're on cooldown! Try again in {time_string}.")
         else:
             await ctx.send("An unexpected error occurred.")
 

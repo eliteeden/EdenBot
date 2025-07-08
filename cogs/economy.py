@@ -237,38 +237,42 @@ class EconomyCog(commands.Cog):
     @commands.command(name="steal", aliases=["rob", "heist"])
     @commands.cooldown(1, 1200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
-        thief = ctx.author
+        try:
+            thief = ctx.author
 
-        if member.bot:
-            if member.id == self.bot.user.id:  # type: ignore
-                await ctx.send("Oh no you little rascal, you are NOT stealing from me!")
+            if member.bot:
+                if member.id == self.bot.user.id:  # type: ignore
+                    await ctx.send("Oh no you little rascal, you are NOT stealing from me!")
+                else:
+                    await ctx.send("I won't let you steal from a bot.")
+                return
+
+            if member == thief:
+                await ctx.send("That's already your money, genius.")
+                return
+
+            target_balance = int(self.get(member.id))
+            if target_balance < 10:
+                await ctx.send(f"{member.display_name} doesn't have enough money to steal from.")
+                return
+
+            reward = target_balance // 2
+            success = randint(1, 5)
+
+            if success == 3:
+                self.sub(member, reward)
+                self.add(thief, reward)
+                self.steal.reset_cooldown(ctx)
+                await ctx.send(
+                    f"You successfully stole {reward} coins from {member.display_name}!\n"
+                    f"-# Don't worry, I won't ping them like a snitch"
+                )
             else:
-                await ctx.send("I won't let you steal from a bot.")
-            return
-
-        if member == thief:
-            await ctx.send("That's already your money, genius.")
-            return
-
-        target_balance = int(self.get(member.id))
-        if target_balance < 10:
-            await ctx.send(f"{member.display_name} doesn't have enough money to steal from.")
-            return
-
-        reward = target_balance // 2
-        success = randint(1, 5)
-
-        if success == 3:
-            self.sub(member, reward)
-            self.add(thief, reward)
-            self.steal.reset_cooldown(ctx)
-            await ctx.send(
-                f"You successfully stole {reward} coins from {member.display_name}!\n"
-                f"-# Don't worry, I won't ping them like a snitch"
-            )
-        else:
-            await ctx.send("You were caught! Leave it to the professionals next time, 'kay?")
-            await ctx.send(f"{member.mention}, someone just tried to steal from you!")
+                await ctx.send("You were caught! Leave it to the professionals next time, 'kay?")
+                await ctx.send(f"{member.mention}, someone just tried to steal from you!")
+        
+        except Exception as BadArgument:
+            self.steal.reset_cooldown(ctx) 
 
 
     @commands.command(name='give')
@@ -329,7 +333,7 @@ class EconomyCog(commands.Cog):
 
         await ctx.send(f"{user.display_name}, you’ve claimed your daily reward of {earn} Eden coins!")
 
-        self.__save_bank()
+        
 
     @commands.command(name='gamble', aliases=['newgamble'])
     @commands.cooldown(1, 5, commands.BucketType.user)

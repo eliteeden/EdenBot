@@ -276,7 +276,8 @@ class EconomyCog(commands.Cog):
                 await ctx.send(f"{member.mention}, someone just tried to steal from you!")
         
         except Exception as BadArgument:
-            self.steal.reset_cooldown(ctx) 
+            self.steal.reset_cooldown(ctx)
+            await ctx.send("Moooo") 
 
 
     @commands.command(name='give')

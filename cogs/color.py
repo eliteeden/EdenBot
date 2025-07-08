@@ -1,5 +1,4 @@
 from discord.ext import commands
-import difflib
 import webcolors
 class ColorCog(commands.Cog):
     """A cog for managing colors."""

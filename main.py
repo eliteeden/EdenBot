@@ -3,7 +3,7 @@
 
 
 # Imports
-import importlib
+from asyncio import subprocess
 from dotenv import load_dotenv
 import json
 from typing import Optional
@@ -19,7 +19,7 @@ import aiohttp
 import asyncio
 import unicodedata
 from googlesearch import search
-import webcolors
+
 from constants import CHANNELS, ROLES, USERS
 
 # Initialize the report dictionary
@@ -68,7 +68,7 @@ async def block_commands_in_channel(ctx: commands.Context):
                 pass
             return False  # Block execution
     return True  # Allow execution
-    
+
 @bot.event
 async def on_ready():
     try:
@@ -95,27 +95,9 @@ async def on_ready():
         await bot.tree.sync()
     except Exception as e:
         print(f"Failed to sync commands: {e}")
-    # TODO: switch to bot updates channel?
-    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
+    channel = CHANNELS.CAPITAL
     await channel.send("I'm backkkkk")
     print('Systems online')
-
-# Paginator class
-
-
-
-@commands.has_any_role(ROLES.TOTALLY_MOD)
-@bot.command()
-async def cogs(ctx: commands.Context):
-    await ctx.send("Loaded cogs: `" + "`, `".join(bot.cogs.keys()) + "`")
-    # List available cogs in the cogs directory
-    cogs = os.listdir("cogs")
-    send_cogs = []
-    for cog in cogs:
-        if cog.endswith(".py"):
-            cog_name = cog[:-3]
-            send_cogs.append(cog_name)
-    await ctx.send("Available cogs: `" + "`, `".join(send_cogs) + "`")
 
 # Global tracking for repeated messages
 global_repeat_counts = {}
@@ -178,7 +160,7 @@ async def whitelist(ctx, user: discord.User):
 
 # Command error handling
 @bot.event
-async def on_command_error(ctx, error):
+async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     if hasattr(ctx.command, "on_error"):
         return
     if isinstance(error, commands.MissingAnyRole):
@@ -193,6 +175,8 @@ async def on_command_error(ctx, error):
         await ctx.send("Invalid argument provided.")
     elif isinstance(error, commands.CommandInvokeError):
         await ctx.send("An error occurred while executing the command. Leave me alone for a bit.")
+        bot_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+        await bot_channel.send(f"Error in command `{ctx.command}`: {error.original}")
     else:
         raise error
 
@@ -408,7 +392,7 @@ async def responses(ctx):
 
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR)
-async def ar(ctx, category: str, trigger: str, *, reply: str):
+async def ar(ctx, category: str, trigger: str, *, reply: str = "remove"):
     """
     Usage:
       • !ar auto hello Hi there!
@@ -569,7 +553,7 @@ async def profanities(ctx):
     # Limit to top 100
     top_users = sorted_users[:100]
 
-    paginator = bot.cogs["PaginatorCog"].paginator() # Initialize paginator
+    paginator = bot.cogs["PaginatorCog"]()  # type: ignore # Initialize paginator
 
     # Create paginated embeds
     for i in range(0, len(top_users), 10):  # Show 10 users per page
@@ -805,12 +789,12 @@ async def lurk(ctx):
 async def warn(ctx, user: discord.Member = None, *, reason: str = None): # type: ignore
     author = ctx.author
     if author.top_role.position > user.top_role.position:
-        roles = [role.id for role in ctx.author.roles]
-    
         # Check if the user is valid
         if not user:
             await ctx.send("Please specify a valid member to warn.")
             return
+    
+        roles = [role.id for role in ctx.author.roles]
 
         # Ensure reason is not empty
         if not reason or not reason.strip():
@@ -941,7 +925,7 @@ async def endslow(ctx):
 async def halp(ctx):
     try:
         """Displays paginated bot command list"""
-        paginator = bot.cogs["PaginatorCog"].paginator()
+        paginator = bot.cogs["PaginatorCog"]() # type: ignore
 
         # Text commands
 
@@ -1017,7 +1001,7 @@ async def halp(ctx):
 
 
 @bot.command()
-async def howgay(ctx, user: Member = None):
+async def howgay(ctx, user: Member = None): # type: ignore
     try:
         if user is None:
             user = ctx.author
@@ -1476,319 +1460,6 @@ async def timer(ctx):
     await ctx.send('WIP')
 
 
-# Economy commands
-@bot.command()
-async def bal(ctx, user: Optional[Member] = None): # type: ignore
-    if user is None:
-        user: Member = ctx.author
-        pronoun = "Your"
-    else:
-        pronoun = f"{user.mention}'s"
-    found = False
-    for current_acc in bank['users']:
-        if user.name == current_acc['name']:
-            found = True
-            await ctx.send(f"{pronoun} balance is {current_acc['balance']} eden coins")
-            break
-    if not found:
-          bank['users'].append({
-              'name': user.name,
-              'balance': 0
-          })
-          await ctx.send(f"{pronoun} balance is 0 eden coins")
-    with open("users.json", "w+") as s:
-        json.dump(bank, s, indent=4)
-
-@bot.command(aliases=["bals"])
-async def topbal(ctx):
-    """Displays the top 10 users with the highest balance"""
-    try:
-        if 'users' not in bank:
-            await ctx.send("No users found in the economy system.")
-            return
-
-        # Sort users by balance (highest first)
-        sorted_users = sorted(bank['users'], key=lambda x: x['balance'], reverse=True)
-
-        # Limit to top 10
-        top_users = sorted_users[:100]
-
-        
-        paginator = bot.cogs["PaginatorCog"].paginator()  # Initialize paginator
-
-        # Create paginated embeds
-        for i in range(0, len(top_users), 10):  # Show 10 users per page
-            embed = discord.Embed(title="Economy Leaderboard", color=discord.Color.gold())
-            for idx, (user) in enumerate(top_users[i:i+10], start=i+1):
-                embed.add_field(name=f"{idx}. {user['name']}", value=f"{user['balance']} eden coins", inline=False)
-
-            paginator.add_page(embed)
-
-        await paginator.send(ctx)  # Send paginated leaderboard
-
-    except Exception as e:
-        await ctx.send(e)
-
-
-    """Displays the top 100 users with the most profanity usage using pagination"""
-    profanity_data = load_profanity_data()  # Load stored data
-
-    # Sort users by profanity count (highest first)
-    sorted_users = sorted(profanity_data.items(), key=lambda x: x[1], reverse=True)
-
-    # Limit to top 100
-    top_users = sorted_users[:100]
-
-
-@bot.command()
-@commands.cooldown(1,30, commands.BucketType.user)
-async def work(ctx):
-    found = False
-    responses = ['You did a great job and earned', 'You exploited a citizen and earned', 'You forfeited your evening to the mods and earned', 'You stole', 'You were such a cutie you got', 'You begged and got', 'You sent your nudes to the mods and were paid', 'You went to the mines and found', 'You posted on Patreon and got', 'You were so well-behaved you were given', 'You sold your kidney and got', 'You helped an old lady on the street and got', 'Your small business made you', 'Just take these']
-    for current_acc in bank['users']:
-        if ctx.author.name == current_acc['name']:
-            found = True
-            coins = int(current_acc['balance'])
-            earn = random.randint(1,3001)
-            newcoins = coins + earn
-            current_acc['balance'] = newcoins
-            if earn == 1984:
-                await ctx.send("Your speaking priviledges have been revoked")
-                newtime = newtime = datetime.timedelta(minutes=int("5"))
-                await ctx.author.edit(timed_out_until=discord.utils.utcnow() + newtime)
-            else:    
-                await ctx.send(f"{random.choice(responses)} {earn} eden coins")
-            break
-    if not found:
-        earn = random.randint(1,3000)
-        bank['users'].append({
-            'name': ctx.author.name,
-            'balance': earn
-            })
-        await ctx.send(f"{random.choice(responses)} {earn} eden coins")
-
-    with open("users.json", "w") as s:
-        json.dump(bank, s, indent=4)
-
-@work.error
-async def work_error(ctx, error):
-    if isinstance(error, commands.CommandInvokeError):
-        await ctx.send("Please make an account with `;bal` first.")
-
-
-@bot.command(aliases=["cf", "toss"])
-async def coinflip(ctx, *, txt:str):
-    found = False
-    sides = ['heads', 'tails']
-    toss = random.choice(sides)
-    
-    if txt.lower() in sides:
-        if txt.lower() == toss:
-            earn = 1000
-            for current_acc in bank['users']:
-                if ctx.author.name == current_acc['name']:
-                        found = True
-                        coins = int(current_acc['balance'])
-                        newcoins = coins + earn
-                        current_acc['balance'] = newcoins
-                        await ctx.send(f"{toss.capitalize()}! You won {earn} eden coins")
-                        break
-
-            if not found:
-                bank['users'].append({
-                        'name': ctx.author.name,
-                        'balance': earn
-                        })
-                await ctx.send(f"{toss.capitalize()}! You won {earn} eden coins")
-
-        else:
-                await ctx.send(f'{toss.capitalize()}! You lost')
-    else:
-        await ctx.send('Pick either ``heads`` or ``tails``')
-
-    with open("users.json", "w+") as s:
-        json.dump(bank, s, indent=4)
-
-
-@bot.command()
-@commands.has_any_role('MODERATOR', 'happy')
-async def subbal(ctx, member: Member):
-    userid = member.name
-    found = False
-    for current_acc in bank['users']:
-        if userid == current_acc['name']:
-            found = True
-            current_acc['balance'] = 0
-            
-            await ctx.send(f"{member.mention} 's balance is {current_acc['balance']} eden coins")
-            break
-    if not found:
-          bank['users'].append({
-              'name': userid,
-              'balance': 0
-          })
-          await ctx.send(f"{Member} 's balance is 0 eden coins")
-
-    with open("users.json", "w+") as s:
-        json.dump(bank, s, indent=4)
-
-
-@bot.command()
-@commands.has_any_role('Bonked by Zi')
-async def setbal(ctx, member: Member, coins: int):
-    userid = member.name
-    found = False
-    for current_acc in bank['users']:
-        if userid == current_acc['name']:
-            found = True
-            current_acc['balance'] = coins
-            
-            await ctx.send(f"{member.mention} 's balance is {current_acc['balance']} eden coins")
-            break
-    if not found:
-          bank['users'].append({
-              'name': userid,
-              'balance': coins
-          })
-          await ctx.send(f"{Member} 's balance is {coins} eden coins")
-
-    with open("users.json", "w+") as s:
-        json.dump(bank, s, indent=4)
-
-@setbal.error
-async def setbal_error(ctx, error):
-    if isinstance(error, commands.MissingAnyRole):
-        await ctx.send('Only the bot dev is allowed to use this.')
-
-@bot.command()
-async def win(ctx):
-    userid = ctx.author.name
-    found = False
-    for current_acc in bank['users']:
-        if userid == current_acc['name']:
-            found = True
-            coins = int(current_acc['balance'])
-            if coins < 100000:
-                await ctx.send('You do not have enough coins, you need 100,000')
-                break
-            else:
-                newcoins = coins - 100000
-                current_acc['balance'] = newcoins
-                channel: discord.TextChannel = bot.get_channel(CHANNELS.WINNERS) # type: ignore
-                await channel.send(f'{ctx.author.mention} won the prize')
-                break
-    if not found:
-        bank['users'].append({
-                'name': ctx.author.name,
-                'balance': 0
-                })
-        await ctx.send("You do not have an account")
-
-        with open("users.json", "w+") as s:
-            json.dump(bank, s, indent=4)
-
-
-
-
-@bot.command()
-@commands.cooldown(1,60, commands.BucketType.user)
-async def roulette(ctx, bullets:int):
-    if bullets < 1 or bullets > 5:
-        roulette.reset_cooldown(ctx) # type: ignore
-        await ctx.send('Please choose between 1 to 5 bullets')
-        return
-        
-    userid = ctx.author.name
-    found = False
-    chamber = [1] * bullets + [0] * (6 - bullets)
-    random.shuffle(chamber)
-    print(f'shuffled chambers: {chamber}') # Debug feature
-
-    fired_chamber = random.choice(chamber)
-
-    if fired_chamber == 0:
-        earn = 10000 * bullets
-        for current_acc in bank['users']:
-            found = True
-            if userid == current_acc['name']:
-                roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
-                coins = int(current_acc['balance'])
-                newcoins = coins + earn
-                current_acc['balance'] = newcoins
-                await ctx.send(f'You won {earn} eden coins')
-                break
-        if not found:
-            roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
-            bank['users'].append({
-                'name': ctx.author.name,
-                'balance': earn
-            })
-            await ctx.send(f'You won {earn} eden coins')
-
-        with open("users.json", "w+") as s:
-            json.dump(bank, s, indent=4)
-
-        
-    else:
-        await ctx.send(f'You died! Try again in 1 minute')
-
-@roulette.error
-async def roulette_error(ctx, error):
-    if isinstance(error, commands.BadArgument):
-        await ctx.send('Only numbers please!')
-    elif isinstance(error, commands.CommandOnCooldown):
-        await ctx.send("You are still dead\nWait a little longer")
-
-@bot.command()
-async def gamble(ctx):
-    userid = ctx.author.name
-    found = False
-    nega_earn = 15000
-    bot_choice = random.randint(1, 50)
-    if bot_choice == 5:
-        for current_acc in bank['users']:
-            found = True
-            if userid == current_acc['name']:
-                coins = int(current_acc['balance'])
-                if coins >= nega_earn:
-                    earn = 1500000
-                    newcoins = coins + earn
-                    current_acc['balance'] = newcoins
-                    await ctx.send(f'You won {earn} eden coins')
-                    break
-                else:
-                    await ctx.send(f'You do not have enough coins, you need {nega_earn} to participate')
-        if not found:
-            bank['users'].append({
-                'name': ctx.author.name,
-                'balance': 0
-                })
-            await ctx.send('You do not have an account')
-        with open('users.json', 'w+') as s:
-            json.dump(bank, s)
-    else:
-        for current_acc in bank['users']:
-            if userid == current_acc['name']:
-                found = True
-                coins = int(current_acc['balance'])
-                if coins >= nega_earn:
-                    newcoins = coins - nega_earn
-                    current_acc['balance'] = newcoins
-                    await ctx.send(f'You lost {nega_earn} eden coins')
-                    break
-                else:
-                    await ctx.send(f'You do not have enough coins, you need {nega_earn} to participate')
-        if not found:
-            bank['users'].append({
-                'name': ctx.author.name,
-                'balance': 0
-            })
-            await ctx.send(f'You do not have an account')
-
-        with open("users.json", "w+") as s:
-            json.dump(bank, s, indent=4)
-
-
 # Event commands
 
 
@@ -1868,6 +1539,25 @@ async def districtclaim(ctx, category_id: int):
         # Stop listening after timeout if no reply occurs
         await ctx.send("No replies detected for remaining messages within the timeout period.")
 
+# Cog commands
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+@bot.command()
+async def cogs(ctx: commands.Context):
+    await ctx.send("Loaded cogs: `" + "`, `".join(bot.cogs.keys()) + "`")
+    # List available cogs in the cogs directory
+    cogs = os.listdir("cogs")
+    send_cogs = []
+    for cog in cogs:
+        if cog.endswith(".py"):
+            cog_name = cog[:-3]
+            send_cogs.append(cog_name)
+    await ctx.send("Available cogs: `" + "`, `".join(send_cogs) + "`")
+@cogs.error
+async def cogs_error(ctx: commands.Context, error: commands.CommandError):
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("Trust me, you can't untangle the spaghetti inside.")
+    else:
+        await ctx.send(f"An unexpected error occurred: {error}")
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 async def reload(ctx: commands.Context, cog: str):
@@ -1888,7 +1578,53 @@ async def reload_error(ctx: commands.Context, error: commands.CommandError):
         await ctx.send("What do you want me to do, reload *everything*?")
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
+@bot.command()
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+async def load(ctx: commands.Context, cog: str):
+    """Loads a specific cog."""
+    try:
+        await bot.load_extension(f"cogs.{cog}")
+        await ctx.send(f"{cog} cog loaded successfully!")
+    except Exception as e:
+        await ctx.send(f"Failed to load {cog} cog: {e}")
+@load.error
+async def load_error(ctx: commands.Context, error: commands.CommandError):
+    """Handles errors for the load command."""
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("what do you even mean to do with that command, filthy peasant?")
+    elif isinstance(error, commands.ExtensionNotFound):
+        await ctx.send("The specified cog does not exist.")
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("What even is there to load?")
+    else:
+        await ctx.send(f"An unexpected error occurred: {error}")
+@bot.command()
+@commands.has_any_role(ROLES.TOTALLY_MOD)
+async def pull(ctx: commands.Context):
+    """Fetches the latest changes from git."""
+    try:
+        # Run the git pull command
+        result = await subprocess.create_subprocess_shell("git pull", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+        stdout, stderr = await result.communicate()
+        if stdout:
+            print(stdout.decode())
+        if stderr:
+            print(stderr.decode())
+        if result.returncode == 0:
+            await ctx.send("Successfully pulled the latest changes from git.")
+            await ctx.author.send("Git pull output:\n" + stdout.decode())
+        else:
+            await ctx.send(f"Failed to pull changes: {stderr.decode()}")
+    except Exception as e:
+        await ctx.send(f"An error occurred while pulling changes: {e}")
+@pull.error
+async def pull_error(ctx: commands.Context, error: commands.CommandError):
+    """Handles errors for the pull command."""
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("Where are you trying to pull from, the depths of hell? Only the elite can do that.")
+    else:
+        await ctx.send(f"An unexpected error occurred: {error}")
 
 # This was created by Happy!
 load_dotenv()

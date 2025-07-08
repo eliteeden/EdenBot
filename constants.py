@@ -16,6 +16,7 @@ class CHANNELS:
     DISTRICT_NORTH = 963782851726307368
 
     STRIKES = 999768498492428398
+    BOT_LOGS = 1390772599700590623
 
 class ROLES:
     """Constant Role IDs"""
@@ -38,6 +39,7 @@ class ROLES:
     TOTALLY_MOD = 1375472457816866817
 
     WORDLES_WIDOWER = 1330722172578037922
+    TALK_PERMS = 1234 # waiting on Happy to make a role
 
 class USERS:
     """Constant User IDs"""

@@ -363,7 +363,7 @@ class EconomyCog(commands.Cog):
 
         await ctx.send(f"{user.display_name}, you’ve claimed your daily reward of {earn} Eden coins!")
     @daily.error
-    async def daily_error(ctx, error):
+    async def daily_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Come back again tomorrow\n-# impatient ass")
 

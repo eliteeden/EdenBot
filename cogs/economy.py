@@ -73,7 +73,7 @@ class EconomyCog(commands.Cog):
             return 0
 
     @commands.command(name='work', aliases=['w'])
-    @commands.cooldown(1,30, commands.BucketType.user)
+    @commands.cooldown(1,45, commands.BucketType.user)
     async def work(self, ctx: commands.Context):
         found = False
         responses = [
@@ -96,7 +96,7 @@ class EconomyCog(commands.Cog):
             'You "found"',
         ]
         # TODO: fix
-        self.add(ctx.author, coins:=(random.randint(1, 3000)))
+        self.add(ctx.author, coins:=(random.randint(1, 5000)))
         await ctx.send(f"{random.choice(responses)} {coins} eden coins")
 
         self.__save_bank()
@@ -111,7 +111,7 @@ class EconomyCog(commands.Cog):
         await ctx.send(f"{user.mention + '\'s' if user else 'Your'} balance is {self.get(user or ctx.author)} eden coins.")
         
 
-    @commands.command(name="topbal")
+    @commands.command(name="topbal", aliases=["bals"])
     async def topbal(self, ctx: commands.Context):
         """Displays the top 10 users with the highest balance"""
         try:
@@ -158,7 +158,7 @@ class EconomyCog(commands.Cog):
             await ctx.send('Pick either ``heads`` or ``tails``')
 
     @commands.command(name='subbal')
-    @commands.has_any_role('MODERATOR', 'happy')
+    @commands.has_any_role(ROLES.MODERATOR)
     @commands.cooldown(1,500, commands.BucketType.user)
     async def subbal(self, ctx: commands.Context, member: MemberLike, amount: int):
         self.sub(member, amount)
@@ -178,7 +178,7 @@ class EconomyCog(commands.Cog):
     @commands.command(name='win')
     async def win(self, ctx: commands.Context):
         userid = ctx.author.name
-        price = 100_000
+        price = 1_000_000
         if self.get(ctx.author) < price:
             await ctx.send(f"You do not have enough coins to win. You need at least {price:,} eden coins.")
             return
@@ -188,7 +188,7 @@ class EconomyCog(commands.Cog):
             await channel.send(f"{ctx.author.mention} won the prize")
 
     @commands.command(name='roulette')
-    @commands.cooldown(1,60, commands.BucketType.user)
+    @commands.cooldown(1,180, commands.BucketType.user)
     async def roulette(self, ctx: commands.Context, bullets: int):
         if bullets < 1 or bullets > 5:
             self.roulette.reset_cooldown(ctx) # type: ignore
@@ -206,7 +206,7 @@ class EconomyCog(commands.Cog):
             self.add(ctx.author, earn)
             await ctx.send(f'You earned {earn:,} eden coins!')
         else:
-            await ctx.send(f'You died! Try again in 5 minutes')
+            await ctx.send(f'You died! Try again in 3 minutes')
 
     @roulette.error
     async def roulette_error(self, ctx: commands.Context, error):
@@ -224,7 +224,7 @@ class EconomyCog(commands.Cog):
             await ctx.send(f'You do not have enough coins, you need {cost:,} to participate')
             return
         if bot_choice == 6:
-            earn = 1_500_000
+            earn = 2_500_000
             self.add(ctx.author, earn)
             await ctx.send(f'You won {earn:,} eden coins!')
             bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
@@ -232,6 +232,37 @@ class EconomyCog(commands.Cog):
         else:
             self.sub(ctx.author, cost)
             await ctx.send(f'You lost {cost:,} eden coins.')
+
+    
+    @commands.command(name="steal", aliases=["rob", "heist"])
+    @commands.cooldown(1,1200, commands.BucketType.user)
+    async def steal(self, ctx: commands.Context, member: Member):
+        userid = ctx.author.id
+        memberid = ctx.member.id
+        balance = int(self.get(memberid))
+        reward = balance // 2
+        if member.bot:
+            if member.id == self.bot.user.id: # type: ignore
+                await ctx.send("Oh no you little shit, you are NOT stealing from me!")
+            else: 
+                await ctx.send("I won't let you steal from a bot.")
+            return
+        if member == ctx.author:
+            await ctx.send("That's already your money, dumbass.") # me when I can't use retard D:
+            return
+        
+        success = randint(1,5)
+        if success == 3:
+            self.sub(member, reward)
+            self.add(ctx.author,reward)
+            self.steal.reset_cooldown(ctx)
+            await ctx.send(f"You have successfully stolen from {member.display_name}\n-# don't worry I'm not gonna ping like a snitch hehe~")
+        else:
+            #TODO: Add more responses 
+            await ctx.send("You were caught dumbass\nLeave it to the professionals next time. 'kay?")
+            await ctx.send(f"Oh {member.mention}\nSomeone was trying to steal from youuu")
+
+
 
     @commands.command(name='give')
     async def give(self, ctx: commands.Context, member: Member, coins: int):
@@ -258,6 +289,10 @@ class EconomyCog(commands.Cog):
                         f"{member.mention} won't be receiving any coins from {ctx.author.mention} today.",
                     ]))
             return
+        if coins >= 25_000:
+            await("You can't give more than 25k hun\nWhere's the fun in that?")
+            return
+
         self.sub(ctx.author, coins)
         self.add(member, coins)
         await ctx.send(random.choice([
@@ -272,6 +307,20 @@ class EconomyCog(commands.Cog):
             f"{ctx.author.mention} decided to buy *totally legal* substances from {member.mention} for {coins:,} eden coins.",
             f"{member.mention}, you should buy \"sugar\" from {ctx.author.mention} with the {coins:,} eden coins they just gave you.\n-# (blame Germanic)",
         ]))
+
+    @commands.command(name="daily")
+    @commands.cooldown(1,86400, commands.BucketType.user)
+    async def daily(self, ctx: commands.Context):
+        """Log in every day for your rewards"""
+        #TODO: Rework how daily records time
+        userid = ctx.author.name
+        earn = 10_000
+        #TODO: Add a json file that records a user's streak and gives an appropriate bonus
+        balance = self.get(userid)
+        self.add(ctx.author, coins:=(earn))
+        await ctx.send(f"You have completed your daily and earned {coins} eden coins")
+
+        self.__save_bank()
 
     @commands.command(name='gamble', aliases=['newgamble'])
     @commands.cooldown(1, 5, commands.BucketType.user)

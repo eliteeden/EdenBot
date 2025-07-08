@@ -244,14 +244,14 @@ class ShopCog(commands.Cog):
         buttons = self.ShopButtons(self.bot, items[page])
         if page <= 0:
             buttons.back_button.disabled = True
-        if page >= len(items):
+        if page >= len(items) - 1:
             buttons.next_button.disabled = True
         return embed, buttons
 
     @commands.command(name="shop")
-    async def shop(self, ctx, page: int = 0):
+    async def shop(self, ctx: commands.Context, page: int = 0):
         """Displays the shop items."""
-        embed, view = await self.generate_shop_page(ctx.author, page)
+        embed, view = await self.generate_shop_page(ctx.author, page) # type: ignore
         await ctx.send(embed=embed, view=view)
 
 async def setup(bot: commands.Bot):

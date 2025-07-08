@@ -39,7 +39,7 @@ class ROLES:
     TOTALLY_MOD = 1375472457816866817
 
     WORDLES_WIDOWER = 1330722172578037922
-    TALK_PERMS = 1234 # waiting on Happy to make a role
+    TALK_PERMS = 1392158665741439117 # waiting on Happy to make a role
 
 class USERS:
     """Constant User IDs"""

@@ -56,7 +56,7 @@ if not token:
 
 DISABLED_COMMAND_CHANNEL_ID = CHANNELS.CAPITAL
 BLOCK_MESSAGE = f"No commands in <#{CHANNELS.CAPITAL}>\nUse bot commands in <#{CHANNELS.BOT_COMMANDS}>, you brat"
-EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web", "roll", "d20", "d6", "d100"]
+EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web", "roll", "d20", "d6", "d100", "endslow", "slowmode", "ban", "mute", "snipe"]
 
 @bot.check
 async def block_commands_in_channel(ctx: commands.Context):
@@ -568,6 +568,7 @@ async def profanities(ctx):
 # commands
 @bot.command()
 async def ping(ctx):
+    #the first ever command
     await ctx.send('Pong')
 @bot.command()
 async def changelog(ctx):
@@ -703,7 +704,16 @@ async def purge(ctx, limit: int):
     await ctx.channel.purge(limit=limit)
 
 
-@bot.command()
+@bot.command(aliases=["userdel", "hpurge"])
+@commands.has_any_role(ROLES.MODERATOR, 'happy')
+async def userpurge(ctx, limit: int):
+    def is_user_message(message):
+        return not message.author.bot #Filters messages sent by bots
+    
+    await ctx.message.delete()
+    await ctx.channel.purge(limit=limit, check=is_user_message)
+
+@bot.command(aliases=["bpurge", "botdel"])
 @commands.has_any_role('MODERATOR', 'happy')
 async def botpurge(ctx, limit: int):
     def is_bot_message(message):
@@ -832,7 +842,7 @@ async def warn(ctx, user: discord.Member = None, *, reason: str = None): # type:
     else:
         await ctx.send("You are not high enough in role hierarchy to do that")
 
-@bot.command(pass_context=True)
+@bot.command(pass_context=True, aliases=["rwarn", "-warn"])
 @commands.has_any_role('MODERATOR', 'happy')
 async def removewarn(ctx, warn_id: int = None): # type: ignore
     if not warn_id:
@@ -1051,7 +1061,7 @@ async def compliment(ctx: commands.Context):
 
 @bot.command()
 async def ryan(ctx):
-    await ctx.send('<:ee_Aira:1302116437594210435>')
+    await ctx.send("Ryan this, Ryan that\nI just want to know what the fate of my 6 siblings is")
 
 
 
@@ -1176,7 +1186,9 @@ async def web(ctx,*,search_msg):
         "gayest ship": "Emi and Niki.",
         "average eden iq": "The average eden IQ is still below room temperature.",
         "glorious leader": f"<@{USERS.ZI}>",
-        "who stole the cheese": f"<@{USERS.SCAREX}>"
+        "who stole the cheese": f"<@{USERS.SCAREX}>",
+        "who is eden's most annoying person": f"<@{USERS.DECK}>",
+        "best bot": "it's obviously me"
     }
 
 
@@ -1384,7 +1396,6 @@ async def timer(ctx):
     await ctx.send('WIP')
 
 
-
 # Economy commands
 @bot.command()
 async def bal(ctx, user: Optional[Member] = None): # type: ignore
@@ -1485,7 +1496,7 @@ async def work_error(ctx, error):
         await ctx.send("Please make an account with `;bal` first.")
 
 
-@bot.command()
+@bot.command(aliases=["cf", "toss"])
 async def coinflip(ctx, *, txt:str):
     found = False
     sides = ['heads', 'tails']
@@ -1521,7 +1532,6 @@ async def coinflip(ctx, *, txt:str):
 
 @bot.command()
 @commands.has_any_role('MODERATOR', 'happy')
-@commands.cooldown(1,500, commands.BucketType.user)
 async def subbal(ctx, member: Member):
     userid = member.name
     found = False
@@ -1617,7 +1627,7 @@ async def roulette(ctx, bullets:int):
     fired_chamber = random.choice(chamber)
 
     if fired_chamber == 0:
-        earn = 1000 * bullets
+        earn = 10000 * bullets
         for current_acc in bank['users']:
             found = True
             if userid == current_acc['name']:
@@ -1646,21 +1656,22 @@ async def roulette(ctx, bullets:int):
 async def roulette_error(ctx, error):
     if isinstance(error, commands.BadArgument):
         await ctx.send('Only numbers please!')
+    elif isinstance(error, commands.CommandOnCooldown):
+        await ctx.send("You are still dead\nWait a little longer")
 
 @bot.command()
-@commands.cooldown(1,5, commands.BucketType.user)
 async def gamble(ctx):
     userid = ctx.author.name
     found = False
-    nega_earn = 6500
-    bot_choice = random.randint(1, 35)
+    nega_earn = 15000
+    bot_choice = random.randint(1, 50)
     if bot_choice == 5:
         for current_acc in bank['users']:
             found = True
             if userid == current_acc['name']:
                 coins = int(current_acc['balance'])
-                if coins >= 6500:
-                    earn = 1000000
+                if coins >= nega_earn:
+                    earn = 1500000
                     newcoins = coins + earn
                     current_acc['balance'] = newcoins
                     await ctx.send(f'You won {earn} eden coins')

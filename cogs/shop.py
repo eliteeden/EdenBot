@@ -167,7 +167,7 @@ class ShopCog(commands.Cog):
             self.shop: "ShopCog" = bot.get_cog("ShopCog") # type: ignore
             self.economy: EconomyCog = self.bot.get_cog("EconomyCog") # type: ignore
             if "ShopItem" not in item.__class__.__name__:
-                raise TypeError("item must be an instance of ShopCog.ShopItem")
+                raise TypeError(f"item must be an instance of ShopItem (got: {item.__class__.__name__})")
         def _parse_page(self, page: str) -> int:
             """Parses the page number from the footer text."""
             # Input string:
@@ -228,7 +228,7 @@ class ShopCog(commands.Cog):
             color=discord.Color.green()
         )
         shop = self.Shop()
-        items: list["ShopCog.ShopItem"] = [item for item in shop if item.purchasable(self.bot, user)]
+        items: list["ShopItem"] = [item for item in shop if item.purchasable(self.bot, user)]
         embed.set_footer(text=f"Page {page + 1}/{len(items)} - Use the buttons below to navigate.")
         if not items:
             embed.description = "There are no items available for purchase at the moment."
@@ -244,7 +244,7 @@ class ShopCog(commands.Cog):
         buttons = self.ShopButtons(self.bot, items[page])
         if page <= 0:
             buttons.back_button.disabled = True
-        if page >= len(items) - 1:
+        if page >= len(items):
             buttons.next_button.disabled = True
         return embed, buttons
 

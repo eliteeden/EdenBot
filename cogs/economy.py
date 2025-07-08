@@ -260,7 +260,7 @@ class EconomyCog(commands.Cog):
             return
 
         reward = int(target_balance) // 2
-        success = random.randint(1, 3)
+        success = random.randint(3, 3)
 
         if success == 3:
             self.sub(member, reward)

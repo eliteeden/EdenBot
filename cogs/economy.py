@@ -254,13 +254,13 @@ class EconomyCog(commands.Cog):
             await ctx.send("That's already your money, genius.")
             return
 
-        target_balance = int(self.get(member.id))
+        target_balance = self.get(member.id)
         if target_balance < 10:
             await ctx.send(f"{member.display_name} doesn't have enough money to steal from.")
             return
 
-        reward = target_balance // 2
-        success = randint(1, 5)
+        reward = int(target_balance) // 2
+        success = random.randint(1, 5)
 
         if success == 3:
             self.sub(member, reward)

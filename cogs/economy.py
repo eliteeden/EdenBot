@@ -320,10 +320,12 @@ class EconomyCog(commands.Cog):
         """Gives a specified amount of coins to another user."""
         if coins <= 0:
             await ctx.send("This isn't `;invest`, you can't just abuse the bot like that.")
+            self.give.reset_cooldown(ctx) # type: ignore
             return
 
-        if coins >= 15000:
-            await ctx.send("You can't give more than 25k hun\nWhere's the fun in that?")
+        if coins > 150000:
+            await ctx.send("You can't give more than 150k bud\nWhere's the fun in that?")
+            self.give.reset_cooldown(ctx) # type: ignore
             return
 
         if member.bot:
@@ -331,9 +333,11 @@ class EconomyCog(commands.Cog):
                 await ctx.send("Why are you giving me these coins? I don't need them!")
             else: 
                 await ctx.send("Bots don't have rights.")
+            self.give.reset_cooldown(ctx) # type: ignore
             return
         if member == ctx.author:
             await ctx.send("That's already your money, dumbass.") # me when I can't use retard D:
+            self.give.reset_cooldown(ctx) # type: ignore
             return
             
         if self.get(ctx.author) < coins:
@@ -343,6 +347,7 @@ class EconomyCog(commands.Cog):
                         f"{coins:,} coins? {ctx.author.mention}, you need to work harder!",
                         f"{member.mention} won't be receiving any coins from {ctx.author.mention} today.",
                     ]))
+            self.give.reset_cooldown(ctx) # type: ignore
             return
             
 

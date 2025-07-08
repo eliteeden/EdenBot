@@ -239,7 +239,7 @@ class EconomyCog(commands.Cog):
 
     
     @commands.command(name="steal", aliases=["rob", "heist"])
-    @commands.cooldown(1, 120, commands.BucketType.user)
+    @commands.cooldown(1, 1200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
         thief = ctx.author
 
@@ -260,7 +260,7 @@ class EconomyCog(commands.Cog):
             return
 
         reward = int(target_balance) // 2
-        success = random.randint(3, 3)
+        success = random.randint(1, 3)
 
         if success == 3:
             self.sub(member, reward)
@@ -294,7 +294,7 @@ class EconomyCog(commands.Cog):
         if coins <= 0:
             await ctx.send("This isn't `;invest`, you can't just abuse the bot like that.")
             return
-            
+
         if coins >= 25000:
             await("You can't give more than 25k hun\nWhere's the fun in that?")
             return

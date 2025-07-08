@@ -243,10 +243,10 @@ class EconomyCog(commands.Cog):
         thief = ctx.author
 
         # Replace with the actual name or ID of the protected role
-        protected_role_name = "Bonked by Zi"
+        protected_role_name = 1021831032347033680
 
         # Check if the target has the protected role
-        if any(role.name == protected_role_name for role in member.roles):
+        if any(role.id == protected_role_name for role in member.roles):
             await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
             self.steal.reset_cooldown(ctx)  # type: ignore
             return

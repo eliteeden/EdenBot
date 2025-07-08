@@ -211,6 +211,7 @@ class EconomyCog(commands.Cog):
             earn = 10000 * bullets
             self.add(ctx.author, earn)
             await ctx.send(f'You earned {earn:,} eden coins!')
+            self.roulette.reset_cooldown(ctx) # type: ignore
         else:
             await ctx.send(f'You died! Try again in 3 minutes')
 

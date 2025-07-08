@@ -141,7 +141,7 @@ class EconomyCog(commands.Cog):
         except Exception as e:
             await ctx.send(e) # type: ignore
 
-    @commands.command(name='coinflip', aliases=['cf'])
+    @commands.command(name='coinflip', aliases=['cf', 'toss'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def coinflip(self, ctx: commands.Context, *, txt: str):
         earn = 1000
@@ -202,7 +202,7 @@ class EconomyCog(commands.Cog):
         fired_chamber = random.choice(chamber)
 
         if fired_chamber == 0:
-            earn = 1000 * bullets
+            earn = 10000 * bullets
             self.add(ctx.author, earn)
             await ctx.send(f'You earned {earn:,} eden coins!')
         else:
@@ -213,17 +213,18 @@ class EconomyCog(commands.Cog):
         if isinstance(error, commands.BadArgument):
             await ctx.send(f'{" ".join(ctx.args)} isn\'t a number, dumbass.')
             self.roulette.reset_cooldown(ctx) # type: ignore
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(f"You are still dead\nWait a little longer")
 
     @commands.command(name='slots', aliases=['slot', 'oldgamble'])
-    @commands.cooldown(1,5, commands.BucketType.user)
     async def slots(self, ctx: commands.Context):
-        cost = 6500
-        bot_choice = random.randint(1, 35)
+        cost = 15_000
+        bot_choice = random.randint(1, 50)
         if self.get(ctx.author) < cost:
             await ctx.send(f'You do not have enough coins, you need {cost:,} to participate')
             return
-        if bot_choice == 5:
-            earn = 1_000_000
+        if bot_choice == 6:
+            earn = 1_500_000
             self.add(ctx.author, earn)
             await ctx.send(f'You won {earn:,} eden coins!')
             bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore

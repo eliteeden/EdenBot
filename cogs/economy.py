@@ -311,7 +311,7 @@ class EconomyCog(commands.Cog):
             return
 
         if coins >= 25000:
-            await("You can't give more than 25k hun\nWhere's the fun in that?")
+            await ctx.send("You can't give more than 25k hun\nWhere's the fun in that?")
             return
 
         if member.bot:

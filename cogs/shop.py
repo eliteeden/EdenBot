@@ -204,10 +204,20 @@ class ShopCog(commands.Cog):
             return True
         @discord.ui.button(label="▶️", style=discord.ButtonStyle.secondary)
         async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-            embed, view = await ShopCog.generate_shop_page(interaction.user, page=page:=self._parse_page(interaction.message.embeds[0].footer.text) + 1)  # type: ignore
             if not interaction.message or not interaction.message.embeds:
-                return await interaction.response.send_message("Unable to find the shop dialogue, try making a new one.", ephemeral=True)
-            await interaction.message.edit(embed=embed, view=view)
+                return await interaction.response.send_message(
+                    "Unable to find the shop dialogue. Try opening a new one.", ephemeral=True
+                )
+
+            # Parse the current page number from the footer
+            current_page = self._parse_page(interaction.message.embeds[0].footer.text)
+            next_page = current_page + 1
+
+            # Generate the next shop page
+            embed, view = await ShopCog.generate_shop_page(interaction.user, page=next_page)
+
+            # Edit the original message with the new embed and view
+            await interaction.response.edit_message(embed=embed, view=view)
     async def generate_shop_page(self, user: discord.Member, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
         """Generates an embed for the shop page."""
         embed = discord.Embed(

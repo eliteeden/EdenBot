@@ -294,6 +294,10 @@ class EconomyCog(commands.Cog):
         if coins <= 0:
             await ctx.send("This isn't `;invest`, you can't just abuse the bot like that.")
             return
+            
+        if coins >= 25000:
+            await("You can't give more than 25k hun\nWhere's the fun in that?")
+            return
 
         if member.bot:
             if member.id == self.bot.user.id: # type: ignore
@@ -313,9 +317,7 @@ class EconomyCog(commands.Cog):
                         f"{member.mention} won't be receiving any coins from {ctx.author.mention} today.",
                     ]))
             return
-        if coins >= 25_000:
-            await("You can't give more than 25k hun\nWhere's the fun in that?")
-            return
+            
 
         self.sub(ctx.author, coins)
         self.add(member, coins)

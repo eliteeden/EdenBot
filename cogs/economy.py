@@ -187,10 +187,6 @@ class EconomyCog(commands.Cog):
             channel: discord.TextChannel = self.bot.get_channel(CHANNELS.WINNERS)  # type: ignore
             await channel.send(f"{ctx.author.mention} won the prize")
 
-
-
-
-
     @commands.command(name='roulette')
     @commands.cooldown(1,60, commands.BucketType.user)
     async def roulette(self, ctx: commands.Context, bullets: int):
@@ -199,7 +195,6 @@ class EconomyCog(commands.Cog):
             await ctx.send('Please choose between 1 to 5 bullets')
             return
 
-        userid = ctx.author.name
         chamber = [1] * bullets + [0] * (6 - bullets)
         random.shuffle(chamber)
         print(f'shuffled chambers: {chamber}') # Debug feature
@@ -208,109 +203,73 @@ class EconomyCog(commands.Cog):
 
         if fired_chamber == 0:
             earn = 1000 * bullets
-            for current_acc in self.bank['users']:
-                if userid == current_acc['name']:
-                    self.roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
-                    coins = int(current_acc['balance'])
-                    newcoins = coins + earn
-                    self.set(userid, newcoins)
-                    await ctx.send(f'You won {earn} eden coins')
-                    break
-            else:
-                self.roulette.reset_cooldown(ctx) # type: ignore #Cooldown is reset
-                self.set(userid, earn)
-                await ctx.send(f'You won {earn} eden coins')
+            self.add(ctx.author, earn)
+            await ctx.send(f'You earned {earn:,} eden coins!')
         else:
             await ctx.send(f'You died! Try again in 5 minutes')
 
     @roulette.error
     async def roulette_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.BadArgument):
-            await ctx.send('Only numbers please!')
+            await ctx.send(f'{" ".join(ctx.args)} isn\'t a number, dumbass.')
             self.roulette.reset_cooldown(ctx) # type: ignore
 
     @commands.command(name='slots', aliases=['slot', 'oldgamble'])
     @commands.cooldown(1,5, commands.BucketType.user)
     async def slots(self, ctx: commands.Context):
-        userid = ctx.author.name
-        nega_earn = 6500
+        cost = 6500
         bot_choice = random.randint(1, 35)
+        if self.get(ctx.author) < cost:
+            await ctx.send(f'You do not have enough coins, you need {cost:,} to participate')
+            return
         if bot_choice == 5:
-            for current_acc in self.bank['users']:
-                if userid == current_acc['name']:
-                    coins = int(current_acc['balance'])
-                    if coins >= nega_earn:
-                        earn = 1_000_000
-                        newcoins = coins + earn
-                        self.set(userid, newcoins)
-                        await ctx.send(f'You won {earn:,} eden coins')
-                        bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
-                        await bot_updates_channel.send(f"User {ctx.author.mention} won {earn:,} coins in slots!")
-                        break
-                    else:
-                        await ctx.send(f'You do not have enough coins, you need {nega_earn:,} to participate')
-            else:
-                self.set(userid, 0)
-                await ctx.send('You do not have an account')
-            
-            self.__save_bank()
+            earn = 1_000_000
+            self.add(ctx.author, earn)
+            await ctx.send(f'You won {earn:,} eden coins!')
+            bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+            await bot_updates_channel.send(f"User {ctx.author.mention} won {earn:,} coins in slots!")
         else:
-            for current_acc in self.bank['users']:
-                if userid == current_acc['name']:
-                    coins = int(current_acc['balance'])
-                    if coins >= nega_earn:
-                        newcoins = coins - nega_earn
-                        self.set(userid, newcoins)
-                        await ctx.send(f'You lost {nega_earn:,} eden coins')
-                        break
-                    else:
-                        await ctx.send(f'You do not have enough coins, you need {nega_earn:,} to participate')
-            else:
-                self.set(userid, 0)
-                await ctx.send(f'You do not have an account')
+            self.sub(ctx.author, cost)
+            await ctx.send(f'You lost {cost:,} eden coins.')
 
     @commands.command(name='give')
     async def give(self, ctx: commands.Context, member: Member, coins: int):
         """Gives a specified amount of coins to another user."""
         if coins <= 0:
-            await ctx.send("You must give a positive amount of coins.")
+            await ctx.send("This isn't `;invest`, you can't just abuse the bot like that.")
             return
 
         if member.bot:
             if member.id == self.bot.user.id: # type: ignore
                 await ctx.send("Why are you giving me these coins? I don't need them!")
             else: 
-                await ctx.send("You cannot give coins to bots.")
+                await ctx.send("Bots don't have rights.")
             return
         if member == ctx.author:
-            await ctx.send("No, I won't let you commit tax fraud.") # TODO: change?
+            await ctx.send("That's already your money, dumbass.") # me when I can't use retard D:
             return
-
-        for current_acc in self.bank['users']:
-            if ctx.author.name == current_acc['name']:
-                if current_acc['balance'] < coins:
-                    await ctx.send(random.choice([
+            
+        if self.get(ctx.author) < coins:
+            await ctx.send(random.choice([
                         f"{ctx.author.mention} is so broke they can't even afford to give {coins:,} coins.",
                         f"{ctx.author.mention} tried to help the poor but didn't realize they were the poor",
                         f"{coins:,} coins? {ctx.author.mention}, you need to work harder!",
                         f"{member.mention} won't be receiving any coins from {ctx.author.mention} today.",
                     ]))
-                    return
-                self.set(ctx.author.name, current_acc['balance'] - coins)
-                break
-        else:
-            await ctx.send("You do not have an account. Use `;bal` to create one.")
             return
-        for current_acc in self.bank['users']:
-            if member.name == current_acc['name']:
-                self.set(member.name, current_acc['balance'] + coins)
-                break
-        else:
-            self.set(member.name, coins)
+        self.sub(ctx.author, coins)
+        self.add(member, coins)
         await ctx.send(random.choice([
-            f"{member.mention} gave {coins} eden coins.",
-            f"{member.mention} generously donated {coins} eden coins.",
-            f"{member.mention} is feeling generous and gave away {coins} eden coins.",
+            f"{ctx.author.mention} gave {coins:,} eden coins to {member.mention}.",
+            f"{ctx.author.mention} generously donated {coins:,} eden coins to {member.mention}.",
+            f"{ctx.author.mention} is feeling generous and gave away {coins:,} eden coins to {member.mention}.",
+            f"{member.mention} just received {coins:,} eden coins from {ctx.author.mention}.",
+            f"{member.mention} was so poor that {ctx.author.mention} had to step in with {coins:,} eden coins.",
+            f"{ctx.author.mention} spared {member.mention} some change. {coins:,} eden coins, to be exact.",
+            f"{ctx.author.mention} did some charity work for {member.mention}, but only had the heart to give {coins:,} eden coins.",
+            f"{ctx.author.mention} paid {member.mention} {coins:,} eden coins for their services.",
+            f"{ctx.author.mention} decided to buy *totally legal* substances from {member.mention} for {coins:,} eden coins.",
+            f"{member.mention}, you should buy \"sugar\" from {ctx.author.mention} with the {coins:,} eden coins they just gave you.\n-# (blame Germanic)",
         ]))
 
     @commands.command(name='gamble', aliases=['newgamble'])
@@ -356,7 +315,8 @@ class EconomyCog(commands.Cog):
             await ctx.send(random.choice([
                 "Aw dang it.",
                 "maybe next time?",
-                "99% of gamblers quit before they hit big",
+                f"99% of gamblers quit before they hit big", # f-string because % formatting screws up syntax highlighting
+                f"You lost, but don't worry, the jackpot is now at {self.jackpot['jackpot']:,} coins.",
                 "'Let's go gambling' you said, 'I would win big' you said",
                 "You might as well quit and save what's left of your balance",
                 "You're addicted to this, aren't you?",

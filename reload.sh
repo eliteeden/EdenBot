@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd "$(realpath $(dirname $0))"
+cd "$(dirname $(realpath $0))"
 
 echo "Pulling changes"
 git pull

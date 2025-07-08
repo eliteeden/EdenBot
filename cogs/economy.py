@@ -361,7 +361,7 @@ class EconomyCog(commands.Cog):
         current_balance = self.get(user_id)
         self.add(user, earn)
 
-        await ctx.send(f"{user.display_name}, you’ve claimed your daily reward of {earn} Eden coins!")
+        await ctx.send(f"{user.display_name}, you’ve claimed your daily reward of {earn:,} Eden coins!")
     @daily.error
     async def daily_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):

@@ -417,11 +417,11 @@ class EconomyCog(commands.Cog):
         # https://www.desmos.com/calculator/o3meaagvzc
         chance = math.floor(math.log(self.jackpot['jackpot'], 10) * 50)
         # TODO: chance logic
-        if random.randint(1, chance) <= 235: # replace with actual chance logic
+        if random.randint(1, chance) == 1:
             # User wins
-            win_amount = max(10_000_000, self.jackpot['jackpot'] * 2)  # Maximum win amount is 10 million
+            win_amount = min(10_000_000, self.jackpot['jackpot'] * 2)  # Maximum win amount is 10 million
             self.set(userid, balance + win_amount)
-            self.jackpot['jackpot'] = min(100_000, self.jackpot['jackpot'] - win_amount)  # Reset jackpot after win
+            self.jackpot['jackpot'] = max(100_000, self.jackpot['jackpot'] - win_amount)  # Reset jackpot after win
             await self.save_jackpot_task()
             await ctx.send(random.choice([
                 f"{ctx.author.mention} won {win_amount:,} coins! The jackpot is now {self.jackpot['jackpot']:,} coins.",

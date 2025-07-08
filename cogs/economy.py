@@ -10,7 +10,7 @@ from constants import CHANNELS
 
 class EconomyCog(commands.Cog):
     """All economy related commands and tasks."""
-    ECONOMY_FILE = "users.json"
+    ECONOMY_FILE = "bank.json"
     JACKPOT_FILE = "jackpot.json"
     type strint = str # Contains an ID, not a string
     type MemberLike = discord.User | discord.Member | str | int | strint

@@ -214,7 +214,7 @@ class ShopCog(commands.Cog):
             next_page = current_page + 1
 
             # Generate the next shop page
-            embed, view = await ShopCog.generate_shop_page(interaction.user, page=next_page)
+            embed, view = await self.generate_shop_page(interaction.user, page=next_page)
 
             # Edit the original message with the new embed and view
             await interaction.response.edit_message(embed=embed, view=view)

@@ -142,7 +142,7 @@ class ShopCog(commands.Cog):
             await updates_channel.send(f"Test item purchased by {interaction.user.name}")
             return True
 
-        # @excludes_roles(ROLES.TALK_PERMS)
+        @excludes_roles(ROLES.TALK_PERMS)
         @shopitem(name="talk", price=2_500_000)
         @staticmethod
         async def talk_command_perms(bot: commands.Bot, interaction: discord.Interaction):
@@ -203,6 +203,8 @@ class ShopCog(commands.Cog):
                 # The on_buy function should inform the user.
                 self.economy.set(interaction.user.name, self.economy.get(interaction.user.name) + self.item.price)
                 return False
+            UPDATES_CHANNEL: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
+            await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {self.item.name} for {self.item.price:,} Eden Coins.")
             return True
         @discord.ui.button(label="▶️", style=discord.ButtonStyle.secondary)
         async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -238,7 +240,7 @@ class ShopCog(commands.Cog):
         
         embed.add_field(
             name=item.name,
-            value=f"Cost: {item.price} coins\n",
+            value=f"Cost: {item.price:,} coins\n",
         )
 
         buttons = self.ShopButtons(self.bot, items[page])

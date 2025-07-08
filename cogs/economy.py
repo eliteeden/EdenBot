@@ -168,7 +168,7 @@ class EconomyCog(commands.Cog):
         await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
 
     @commands.command(name='setbal')
-    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    @commands.has_any_role("Bonked by Zi")
     async def setbal(self, ctx: commands.Context, member: MemberLike, coins: int):
         self.set(member, coins)  # Set balance to specified coins
         await ctx.send(f"{member.mention if isinstance(member, Member) else member} 's balance is {coins} eden coins")
@@ -238,18 +238,18 @@ class EconomyCog(commands.Cog):
             await ctx.send(f'You lost {cost:,} eden coins.')
 
     @commands.command(name="steal", aliases=["rob", "heist"])
-    @commands.cooldown(1, 43200, commands.BucketType.user)
+    @commands.cooldown(1, 7200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
         thief = ctx.author
 
-        # # Replace with the actual name or ID of the protected role
-        # protected_role_name = "Eden Bot Dev"
+        # Replace with the actual name or ID of the protected role
+        protected_role_name = "Bonked by Zi"
 
-        # # Check if the target has the protected role
-        # if any(role.name == protected_role_name for role in member.roles):
-        #     await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
-        #     self.steal.reset_cooldown(ctx)  # type: ignore
-        #     return
+        # Check if the target has the protected role
+        if any(role.name == protected_role_name for role in member.roles):
+            await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
+            self.steal.reset_cooldown(ctx)  # type: ignore
+            return
 
         if member.bot:
             if member.id == self.bot.user.id:  # type: ignore
@@ -284,7 +284,7 @@ class EconomyCog(commands.Cog):
         else:
             await ctx.send("You were caught! Leave it to the professionals next time, 'kay?")
             await ctx.send(f"{member.mention}, someone just tried to steal from you!")
-
+            
     @steal.error
     async def steal_error(self, ctx, error):
         command = self.bot.get_command("steal")

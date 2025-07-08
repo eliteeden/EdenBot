@@ -142,7 +142,7 @@ class ShopCog(commands.Cog):
             await updates_channel.send(f"Test item purchased by {interaction.user.name}")
             return True
 
-        @excludes_roles(ROLES.TALK_PERMS)
+        # @excludes_roles(ROLES.TALK_PERMS)
         @shopitem(name="talk", price=2_500_000)
         @staticmethod
         async def talk_command_perms(bot: commands.Bot, interaction: discord.Interaction):
@@ -249,9 +249,9 @@ class ShopCog(commands.Cog):
         return embed, buttons
 
     @commands.command(name="shop")
-    async def shop(self, ctx: commands.Context, page: int = 0):
+    async def shop(self, ctx: commands.Context, page: int = 1):
         """Displays the shop items."""
-        embed, view = await self.generate_shop_page(ctx.author, page) # type: ignore
+        embed, view = await self.generate_shop_page(ctx.author, page - 1) # type: ignore
         await ctx.send(embed=embed, view=view)
 
 async def setup(bot: commands.Bot):

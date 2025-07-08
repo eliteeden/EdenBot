@@ -60,9 +60,9 @@ class ShopCog(commands.Cog):
             def purchasable(self, bot: commands.Bot, member: discord.Member) -> bool:
                 """Checks if the item is purchasable by the member."""
                 member_roles = [r.id for r in member.roles]
-                if not any(role in member_roles for role in self.required_roles):
+                if len(self.required_roles) > 0 and not any(role in member_roles for role in self.required_roles):
                     return False
-                if any(role in member_roles for role in self.excluded_roles):
+                if len(self.excluded_roles) > 0 and any(role in member_roles for role in self.excluded_roles):
                     return False
                 member_balance: int = bot.cogs["EconomyCog"].get(member.name) # type: ignore
                 return member_balance >= self.price

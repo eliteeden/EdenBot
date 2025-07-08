@@ -111,10 +111,9 @@ class EconomyCog(commands.Cog):
     
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     @commands.command(name='fixbank', aliases=['fixbal', 'wtfhappy'])
-    async def fixbank(self, ctx: commands.Context):
+    async def fixbank(self, ctx: commands.Context, key: str = "users"):
         """Fixes the bank by reloading it from the file."""
-        del self.bank["users"]
-        del self.bank["0"]
+        del self.bank[key]
         self.__save_bank()
         await ctx.send("Bank has been fixed.")
 

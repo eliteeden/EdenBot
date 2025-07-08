@@ -10,6 +10,45 @@ from constants import ROLES, CHANNELS
 
 # Hey, the counter for how long I've wasted trying to remove @staticmethod is back
 hours_wasted = 6
+# Decorators
+def requires_roles(*roles: int):
+    """Decorator to require specific roles for a command.
+    A user must have at least one of the specified roles to use the command.
+    When used with `excludes_roles`, the user must meet both conditions.
+    Args:
+        *roles (int): The role IDs required to use the command.
+    """
+    def decorator(func: "ShopCog.ShopItem"):
+        func.required_roles = roles
+        return func
+    return decorator
+def excludes_roles(*roles: int):
+    """Decorator to exclude specific roles for a command.
+    A user must not have any of the specified roles to use the command.
+    When used with `requires_roles`, the user must meet both conditions.
+    Args:
+        *roles (int): The role IDs that cannot use the command.
+    """
+    def decorator(func: "ShopCog.ShopItem"):
+        func.excluded_roles = roles
+        return func
+    return decorator
+def shopitem(name: str, price: int, *required_roles: int):
+    """Creates a shop item.
+    Args:
+        name (str): The name of the item.
+        price (int): The price of the item in Eden Coins.
+        *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
+    """
+    def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> "ShopCog.ShopItem":
+        item = ShopCog.ShopItem(
+            *required_roles,
+            name=name,
+            price=price,
+            on_buy=func,
+        )
+        return item
+    return decorator
 
 class ShopCog(commands.Cog):
     """The shop is here because economy got too large lmao"""
@@ -82,53 +121,6 @@ class ShopCog(commands.Cog):
             """Iterates over the shop items."""
             items: list["ShopCog.ShopItem"] = [getattr(self, item) for item in dir(self) if type(getattr(self, item)).__name__ is "ShopItem"]
             return iter(items)
-        # Decorators
-        @staticmethod
-        def requires_roles(*roles: int):
-            """Decorator to require specific roles for a command.
-            A user must have at least one of the specified roles to use the command.
-            When used with `excludes_roles`, the user must meet both conditions.
-            Args:
-                *roles (int): The role IDs required to use the command.
-            """
-            def decorator(func: "ShopCog.ShopItem"):
-                func.required_roles = roles
-                return func
-            return decorator
-        @staticmethod
-        def excludes_roles(*roles: int):
-            """Decorator to exclude specific roles for a command.
-            A user must not have any of the specified roles to use the command.
-            When used with `requires_roles`, the user must meet both conditions.
-            Args:
-                *roles (int): The role IDs that cannot use the command.
-            """
-            def decorator(func: "ShopCog.ShopItem"):
-                func.excluded_roles = roles
-                return func
-            return decorator
-        @staticmethod
-        # DO NOT UNDER ANY REASON ATTEMPT TO REMOVE @staticmethod FROM THIS FUNCTION
-        # PYTHON DOESN'T EVALUATE `self` WHEN USING THE DECORATOR
-        # NO, THE SHOP CLASS CANNOT EASILY GET THE BOT INSTANCE
-        def shopitem(name: str, price: int, *required_roles: int):
-            """Creates a shop item.
-            Args:
-                name (str): The name of the item.
-                price (int): The price of the item in Eden Coins.
-                *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
-            """
-            def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> "ShopCog.ShopItem":
-                item = ShopCog.ShopItem(
-                    *required_roles,
-                    name=name,
-                    price=price,
-                    on_buy=func,
-                )
-                return item
-            return decorator
-
-
 
         ############################
         # ADD YOUR SHOP ITEMS HERE #

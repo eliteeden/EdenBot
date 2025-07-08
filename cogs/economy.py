@@ -316,7 +316,7 @@ class EconomyCog(commands.Cog):
 
 
     @commands.command(name='give')
-    @commands.cooldown(1,43200, commands.BucketType.User)
+    @commands.cooldown(1,43200, commands.BucketType.user)
     async def give(self, ctx: commands.Context, member: Member, coins: int):
         """Gives a specified amount of coins to another user."""
         if coins <= 0:
@@ -363,7 +363,7 @@ class EconomyCog(commands.Cog):
         ]))
 
     @commands.command(name="daily")
-    @commands.cooldown(1, 86400, commands.BucketType.User)  # 24-hour cooldown
+    @commands.cooldown(1, 86400, commands.BucketType.user)  # 24-hour cooldown
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards"""
         user = ctx.author

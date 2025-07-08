@@ -16,7 +16,7 @@ class EconomyCog(commands.Cog):
     type MemberLike = discord.User | discord.Member | str | int | strint
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.bank: dict[strint, int] = self.__load_bank() # type: ignore # New bank maps ID directly to balance
+        self.bank: dict[str, int] = self.__load_bank() # type: ignore # New bank maps ID directly to balance
         # self.bank: dict[Literal["users"], list[BankEntry]] = self.__load_bank() # type: ignore # Load the bank every reload
         # TODO: not destroy my micro sd card with this
         self.jackpot_file = open(self.JACKPOT_FILE, "w") # Open file descriptor 3 for writing
@@ -26,6 +26,8 @@ class EconomyCog(commands.Cog):
             except (FileNotFoundError, json.JSONDecodeError, ValueError):
                 self.jackpot = {'jackpot': 0}
     def __get_id(self, member: MemberLike) -> strint:
+        if member is None or member == "users":
+            return "0"
         if isinstance(member, (discord.User, discord.Member)):
             return str(member.id)
         elif isinstance(member, int):
@@ -40,7 +42,7 @@ class EconomyCog(commands.Cog):
                 for m in self.bot.get_all_members():
                     if member == m.name.lower() or member == m.display_name.lower():
                         return str(m.id)
-        raise ValueError("Invalid member type")
+        raise ValueError(f"Invalid member type (got: {member} of type {type(member)})")
 
     def __load_bank(self):
         try:
@@ -68,8 +70,7 @@ class EconomyCog(commands.Cog):
         if user_id in self.bank:
             return self.bank[user_id]
         else:
-            self.bank[user_id] = 0
-            self.__save_bank()
+            self.set(user_id, 0)  # If user doesn't exist, set balance to 0
             return 0
 
     @commands.command(name='work', aliases=['w'])
@@ -99,8 +100,6 @@ class EconomyCog(commands.Cog):
         self.add(ctx.author, coins:=(random.randint(1, 5000)))
         await ctx.send(f"{random.choice(responses)} {coins} eden coins")
 
-        self.__save_bank()
-
     @work.error
     async def work_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.CommandInvokeError):
@@ -108,22 +107,25 @@ class EconomyCog(commands.Cog):
     # Economy commands
     @commands.command(name='bal')
     async def bal(self, ctx: commands.Context, user: Optional[Member] = None): # type: ignore
-        await ctx.send(f"{user.mention + '\'s' if user else 'Your'} balance is {self.get(user or ctx.author)} eden coins.")
-            
-    @commands.command(name="topbal", aliases=["bals"])
+        await ctx.send(f"{user.mention + '\'s' if user else 'Your'} balance is {self.get(user or ctx.author):,} eden coins.")
+    
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    @commands.command(name='fixbank', aliases=['fixbal', 'wtfhappy'])
+    async def fixbank(self, ctx: commands.Context):
+        """Fixes the bank by reloading it from the file."""
+        del self.bank["users"]
+        del self.bank["0"]
+        self.__save_bank()
+        await ctx.send("Bank has been fixed.")
+
+    @commands.command(name="topbal", aliases=["bals", "baltop"])
     async def topbal(self, ctx: commands.Context):
         """Displays the top users with the highest balance"""
         try:
-            if 'users' not in self.bank or not self.bank['users']:
-                await ctx.send("No users found in the economy system. Is the .json file empty?")
-                return
-
             # Extract and sort user balances
-            user_balances = self.bank['users']  # Expected format: {user_id: balance}
-            sorted_users = sorted(user_balances.items(), key=lambda x: x[1], reverse=True)
-
+            sorted_users = sorted(self.bank.keys(), key=lambda x: self.get(x), reverse=True)
             # Limit to top 100 users
-            top_users = sorted_users[:100]
+            top_users = list(sorted_users)[:100]
 
             # Get paginator cog
             paginator_cog = self.bot.get_cog("PaginatorCog")
@@ -131,13 +133,13 @@ class EconomyCog(commands.Cog):
                 await ctx.send("PaginatorCog is not loaded.")
                 return
 
-            paginator = paginator_cog.get_paginator()  # Assumes your PaginatorCog has this method
+            paginator = paginator_cog()  # type: ignore # Assumes your PaginatorCog has this method
 
             # Create paginated embeds
             for i in range(0, len(top_users), 10):  # 10 users per page
                 embed = discord.Embed(title="Economy Leaderboard", color=discord.Color.gold())
-                for idx, (user_id, balance) in enumerate(top_users[i:i + 10], start=i + 1):
-                    embed.add_field(name=f"{idx}. <@{user_id}>", value=f"{balance:,} Eden coins", inline=False)
+                for idx, user_id in enumerate(top_users[i:i + 10]):
+                    embed.add_field(name=f"{idx+1}. {user.name or 'Unknown User' if (user:=self.bot.get_user(int(user_id))) else 'Unknown User'}", value=f"{self.get(user_id):,} Eden coins", inline=False)
                 paginator.add_page(embed)
 
             await paginator.send(ctx)
@@ -248,15 +250,18 @@ class EconomyCog(commands.Cog):
                 await ctx.send("Oh no you little rascal, you are NOT stealing from me!")
             else:
                 await ctx.send("I won't let you steal from a bot.")
+            self.steal.reset_cooldown(ctx) # type: ignore
             return
 
         if member == thief:
             await ctx.send("That's already your money, genius.")
+            self.steal.reset_cooldown(ctx) # type: ignore
             return
 
         target_balance = self.get(member.id)
         if target_balance < 10:
             await ctx.send(f"{member.display_name} doesn't have enough money to steal from.")
+            self.steal.reset_cooldown(ctx) # type: ignore
             return
 
         reward = int(target_balance) // 2
@@ -265,7 +270,7 @@ class EconomyCog(commands.Cog):
         if success == 2:
             self.sub(member, reward)
             self.add(thief, reward)
-            self.steal.reset_cooldown(ctx)
+            self.steal.reset_cooldown(ctx) # type: ignore
             await ctx.send(
                 f"You successfully stole {reward} coins from {member.display_name}!\n"
                 f"-# Don't worry, I won't ping them like a snitch"

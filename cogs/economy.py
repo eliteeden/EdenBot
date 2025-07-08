@@ -6,7 +6,7 @@ from discord import Member
 import json
 import random
 from typing import Optional, overload
-from constants import CHANNELS
+from constants import CHANNELS, ROLES
 
 class EconomyCog(commands.Cog):
     """All economy related commands and tasks."""

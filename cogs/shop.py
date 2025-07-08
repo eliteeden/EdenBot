@@ -1,4 +1,5 @@
-from __future__ import annotations
+# from __future__ import annotations
+# I don't think future works in cogs
 
 import discord
 from discord.ext import commands
@@ -54,14 +55,14 @@ class ShopCog(commands.Cog):
     class Shop:
         """Enum for shop items."""
         @overload
-        def __getitem__(self, name: str, /) -> ShopCog.ShopItem:
+        def __getitem__(self, name: str, /) -> "ShopCog.ShopItem":
             """Get a shop item by its name."""
             ...
         @overload
-        def __getitem__(self, index: int, /) -> ShopCog.ShopItem:
+        def __getitem__(self, index: int, /) -> "ShopCog.ShopItem":
             """Get a shop item by its index."""
             ...
-        def __getitem__(self, val: str | int, /) -> ShopCog.ShopItem:
+        def __getitem__(self, val: str | int, /) -> "ShopCog.ShopItem":
             if isinstance(val, str):
                 return self.__getattribute__(val).value
             elif isinstance(val, int):
@@ -77,9 +78,9 @@ class ShopCog(commands.Cog):
             items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
             return len(items)
         # Iteration
-        def __iter__(self) -> Iterator[ShopCog.ShopItem]:
+        def __iter__(self) -> Iterator["ShopCog.ShopItem"]:
             """Iterates over the shop items."""
-            items: list[ShopCog.ShopItem] = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
+            items: list["ShopCog.ShopItem"] = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
             return iter(items)
         # Decorators
         @staticmethod
@@ -90,7 +91,7 @@ class ShopCog(commands.Cog):
             Args:
                 *roles (int): The role IDs required to use the command.
             """
-            def decorator(func: ShopCog.ShopItem):
+            def decorator(func: "ShopCog.ShopItem"):
                 func.required_roles = roles
                 return func
             return decorator
@@ -102,7 +103,7 @@ class ShopCog(commands.Cog):
             Args:
                 *roles (int): The role IDs that cannot use the command.
             """
-            def decorator(func: ShopCog.ShopItem):
+            def decorator(func: "ShopCog.ShopItem"):
                 func.excluded_roles = roles
                 return func
             return decorator
@@ -117,7 +118,7 @@ class ShopCog(commands.Cog):
                 price (int): The price of the item in Eden Coins.
                 *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
             """
-            def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> ShopCog.ShopItem:
+            def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> "ShopCog.ShopItem":
                 item = ShopCog.ShopItem(
                     *required_roles,
                     name=name,
@@ -159,7 +160,7 @@ class ShopCog(commands.Cog):
         self.bot = bot
     
     class ShopButtons(discord.ui.View):
-        def __init__(self, bot: commands.Bot, item: ShopCog.ShopItem):
+        def __init__(self, bot: commands.Bot, item: "ShopCog.ShopItem"):
             super().__init__(timeout=None)
             self.item = item
             self.bot = bot
@@ -210,11 +211,11 @@ class ShopCog(commands.Cog):
                 )
 
             # Parse the current page number from the footer
-            current_page = self._parse_page(interaction.message.embeds[0].footer.text)
+            current_page = self._parse_page(interaction.message.embeds[0].footer.text or "Page 1/1 - Use the buttons below to navigate.")
             next_page = current_page + 1
 
             # Generate the next shop page
-            embed, view = await self.generate_shop_page(interaction.user, page=next_page)
+            embed, view = await self.bot.get_cog("ShopCog").generate_shop_page(interaction.user, page=next_page) # type: ignore
 
             # Edit the original message with the new embed and view
             await interaction.response.edit_message(embed=embed, view=view)
@@ -226,7 +227,7 @@ class ShopCog(commands.Cog):
             color=discord.Color.green()
         )
         shop = self.Shop()
-        items: list[ShopCog.ShopItem] = [item for item in shop if item.purchasable(self.bot, user)]
+        items: list["ShopCog.ShopItem"] = [item for item in shop if item.purchasable(self.bot, user)]
         embed.set_footer(text=f"Page {page + 1}/{len(items)} - Use the buttons below to navigate.")
         if not items:
             embed.description = "There are no items available for purchase at the moment."

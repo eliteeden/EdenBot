@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import discord
 from discord.ext import commands
-from typing import Callable, Coroutine, Generator, Optional, overload
+from typing import Callable, Coroutine, Generator, Iterator, Optional, overload
 
 from cogs.economy import EconomyCog # TypeDef only
 from constants import ROLES, CHANNELS
+
+# Hey, the counter for how long I've wasted trying to remove @staticmethod is back
+hours_wasted = 6
 
 class ShopCog(commands.Cog):
     """The shop is here because economy got too large lmao"""
@@ -74,11 +77,10 @@ class ShopCog(commands.Cog):
             items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
             return len(items)
         # Iteration
-        def __iter__(self) -> Generator[ShopCog.ShopItem, None, None]:
+        def __iter__(self) -> Iterator[ShopCog.ShopItem]:
             """Iterates over the shop items."""
-            items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
-            for item in items:
-                yield item
+            items: list[ShopCog.ShopItem] = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
+            return iter(items)
         # Decorators
         @staticmethod
         def requires_roles(*roles: int):
@@ -105,6 +107,9 @@ class ShopCog(commands.Cog):
                 return func
             return decorator
         @staticmethod
+        # DO NOT UNDER ANY REASON ATTEMPT TO REMOVE @staticmethod FROM THIS FUNCTION
+        # PYTHON DOESN'T EVALUATE `self` WHEN USING THE DECORATOR
+        # NO, THE SHOP CLASS CANNOT EASILY GET THE BOT INSTANCE
         def shopitem(name: str, price: int, *required_roles: int):
             """Creates a shop item.
             Args:
@@ -161,10 +166,18 @@ class ShopCog(commands.Cog):
             self.economy: EconomyCog = self.bot.get_cog("EconomyCog") # type: ignore
             if not isinstance(item, ShopCog.ShopItem):
                 raise TypeError("item must be an instance of ShopCog.ShopItem")
+        def _parse_page(self, page: str) -> int:
+            """Parses the page number from the footer text."""
+            # Input string:
+            # "Page 1/5 - Use the buttons below to navigate."
+            return int(page.split("/")[0].split(" ")[-1])  # Get the first number before the slash
 
         @discord.ui.button(label="◀️", style=discord.ButtonStyle.secondary)
         async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-            pass
+            embed, view = await ShopCog.generate_shop_page(interaction.user, page=self._parse_page(interaction.message.embeds[0].footer.text) - 1)  # type: ignore
+            if not interaction.message or not interaction.message.embeds:
+                return await interaction.response.send_message("Unable to find the shop dialogue, try making a new one.", ephemeral=True)
+            await interaction.message.edit(embed=embed, view=view)
         @discord.ui.button(label=f"Buy", style=discord.ButtonStyle.green)
         async def buy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
             button.disabled = True
@@ -191,25 +204,45 @@ class ShopCog(commands.Cog):
             return True
         @discord.ui.button(label="▶️", style=discord.ButtonStyle.secondary)
         async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-            pass
-    
-    @commands.command(name="shop")
-    async def shop(self, ctx):
-        """Displays the shop items."""
+            embed, view = await ShopCog.generate_shop_page(interaction.user, page=page:=self._parse_page(interaction.message.embeds[0].footer.text) + 1)  # type: ignore
+            if not interaction.message or not interaction.message.embeds:
+                return await interaction.response.send_message("Unable to find the shop dialogue, try making a new one.", ephemeral=True)
+            await interaction.message.edit(embed=embed, view=view)
+    async def generate_shop_page(self, user: discord.Member, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
+        """Generates an embed for the shop page."""
         embed = discord.Embed(
             title="Eden Shop",
             description="Welcome to the Eden Shop! Here are the items you can purchase:",
             color=discord.Color.green()
         )
-        selected: ShopCog.ShopItem = None # type: ignore
-        for item in self.Shop:
-            print(item.name, item.value)
-            selected = item.value
+        shop = self.Shop()
+        items: list[ShopCog.ShopItem] = [item for item in shop if item.purchasable(self.bot, user)]
+        embed.set_footer(text=f"Page {page + 1}/{len(items)} - Use the buttons below to navigate.")
+        if not items:
+            embed.description = "There are no items available for purchase at the moment."
+            return embed, discord.ui.View()  # No items, return empty view
+        
+        item = items[page]
+        
+        embed.add_field(
+            name=item.name,
+            value=f"Cost: {item.price} coins\n",
+        )
 
-        await ctx.send(embed=embed, view=self.ShopButtons(bot=self.bot, item=selected))
+        buttons = self.ShopButtons(self.bot, items[page])
+        if page <= 0:
+            buttons.back_button.disabled = True
+        if page >= len(items) - 1:
+            buttons.next_button.disabled = True
+        return embed, buttons
+
+    @commands.command(name="shop")
+    async def shop(self, ctx, page: int = 0):
+        """Displays the shop items."""
+        embed, view = await self.generate_shop_page(ctx.author, page)
+        await ctx.send(embed=embed, view=view)
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""
-    return # Still WIP
     await bot.add_cog(ShopCog(bot))
     print("ShopCog has been (re-)loaded.")

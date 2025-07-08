@@ -169,7 +169,7 @@ class EconomyCog(commands.Cog):
         await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
 
     @commands.command(name='setbal')
-    @commands.has_any_role('Bonked by Zi')
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def setbal(self, ctx: commands.Context, member: MemberLike, coins: int):
         self.set(member, coins)  # Set balance to specified coins
         await ctx.send(f"{member.mention if isinstance(member, Member) else member} 's balance is {coins} eden coins")
@@ -243,14 +243,14 @@ class EconomyCog(commands.Cog):
     async def steal(self, ctx: commands.Context, member: Member):
         thief = ctx.author
 
-        # Replace with the actual name or ID of the protected role
-        protected_role_name = "Eden Bot Dev"
+        # # Replace with the actual name or ID of the protected role
+        # protected_role_name = "Eden Bot Dev"
 
-        # Check if the target has the protected role
-        if any(role.name == protected_role_name for role in member.roles):
-            await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
-            self.steal.reset_cooldown(ctx)  # type: ignore
-            return
+        # # Check if the target has the protected role
+        # if any(role.name == protected_role_name for role in member.roles):
+        #     await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
+        #     self.steal.reset_cooldown(ctx)  # type: ignore
+        #     return
 
         if member.bot:
             if member.id == self.bot.user.id:  # type: ignore

@@ -235,33 +235,40 @@ class EconomyCog(commands.Cog):
 
     
     @commands.command(name="steal", aliases=["rob", "heist"])
-    @commands.cooldown(1,1200, commands.BucketType.user)
+    @commands.cooldown(1, 1200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
-        userid = ctx.author.id
-        memberid = ctx.member.id
-        balance = int(self.get(memberid))
-        reward = balance // 2
+        thief = ctx.author
+
         if member.bot:
-            if member.id == self.bot.user.id: # type: ignore
-                await ctx.send("Oh no you little shit, you are NOT stealing from me!")
-            else: 
+            if member.id == self.bot.user.id:  # type: ignore
+                await ctx.send("Oh no you little rascal, you are NOT stealing from me!")
+            else:
                 await ctx.send("I won't let you steal from a bot.")
             return
-        if member == ctx.author:
-            await ctx.send("That's already your money, dumbass.") # me when I can't use retard D:
+
+        if member == thief:
+            await ctx.send("That's already your money, genius.")
             return
-        
-        success = randint(1,5)
+
+        target_balance = int(self.get(member.id))
+        if target_balance < 10:
+            await ctx.send(f"{member.display_name} doesn't have enough money to steal from.")
+            return
+
+        reward = target_balance // 2
+        success = randint(1, 5)
+
         if success == 3:
             self.sub(member, reward)
-            self.add(ctx.author,reward)
+            self.add(thief, reward)
             self.steal.reset_cooldown(ctx)
-            await ctx.send(f"You have successfully stolen from {member.display_name}\n-# don't worry I'm not gonna ping like a snitch hehe~")
+            await ctx.send(
+                f"You successfully stole {reward} coins from {member.display_name}!\n"
+                f"-# Don't worry, I won't ping them like a snitch"
+            )
         else:
-            #TODO: Add more responses 
-            await ctx.send("You were caught dumbass\nLeave it to the professionals next time. 'kay?")
-            await ctx.send(f"Oh {member.mention}\nSomeone was trying to steal from youuu")
-
+            await ctx.send("You were caught! Leave it to the professionals next time, 'kay?")
+            await ctx.send(f"{member.mention}, someone just tried to steal from you!")
 
 
     @commands.command(name='give')
@@ -309,16 +316,18 @@ class EconomyCog(commands.Cog):
         ]))
 
     @commands.command(name="daily")
-    @commands.cooldown(1,86400, commands.BucketType.user)
+    @commands.cooldown(1, 86400, commands.BucketType.user)  # 24-hour cooldown
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards"""
-        #TODO: Rework how daily records time
-        userid = ctx.author.name
+        user = ctx.author
+        user_id = user.id
         earn = 10_000
-        #TODO: Add a json file that records a user's streak and gives an appropriate bonus
-        balance = self.get(userid)
-        self.add(ctx.author, coins:=(earn))
-        await ctx.send(f"You have completed your daily and earned {coins} eden coins")
+
+        # TODO: Add a JSON file that records a user's streak and gives an appropriate bonus
+        current_balance = self.get(user_id)
+        self.add(user, earn)
+
+        await ctx.send(f"{user.display_name}, you’ve claimed your daily reward of {earn} Eden coins!")
 
         self.__save_bank()
 

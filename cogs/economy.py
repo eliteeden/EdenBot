@@ -206,7 +206,7 @@ class EconomyCog(commands.Cog):
         fired_chamber = random.choice(chamber)
 
         if fired_chamber == 0:
-            earn = 10000 * bullets
+            earn = 5000 * bullets
             self.add(ctx.author, earn)
             await ctx.send(f'You earned {earn:,} eden coins!')
             self.roulette.reset_cooldown(ctx) # type: ignore

@@ -239,7 +239,7 @@ class EconomyCog(commands.Cog):
 
     
     @commands.command(name="steal", aliases=["rob", "heist"])
-    @commands.cooldown(1, 1200, commands.BucketType.user)
+    @commands.cooldown(1, 120, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
         thief = ctx.author
 
@@ -275,6 +275,9 @@ class EconomyCog(commands.Cog):
             await ctx.send(f"{member.mention}, someone just tried to steal from you!")
     @steal.error
     async def steal_error(self, ctx, error):
+        command = self.bot.get_command("steal")
+        if command:
+            command.reset_cooldown(ctx)
         if isinstance(error, commands.BadArgument):
             await ctx.send("Couldn't find that user. Please mention a valid member.")
         elif isinstance(error, commands.MissingRequiredArgument):

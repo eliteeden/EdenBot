@@ -4,7 +4,7 @@ from discord import app_commands
 import json
 import os
 import random
-from ..constants import ROLES
+from constants import ROLES
 
 
 

@@ -724,7 +724,7 @@ async def purge(ctx, limit: int):
 @commands.has_any_role(ROLES.MODERATOR, 'happy')
 async def userpurge(ctx, limit: int):
     def is_user_message(message):
-        return !message.author.bot #Filters messages sent by bots
+        return not message.author.bot #Filters messages sent by bots
     
     await ctx.message.delete()
     await ctx.channel.purge(limit=limit, check=is_user_message)

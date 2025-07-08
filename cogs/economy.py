@@ -380,7 +380,20 @@ class EconomyCog(commands.Cog):
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Come back again tomorrow\n-# impatient ass")
 
-        
+    @commands.command(name='pot', aliases=['jackpot'])
+    async def pot(self, ctx: commands.Context):
+        """Displays the current jackpot amount."""
+        await ctx.send(f"The current jackpot is {self.jackpot['jackpot']:,} coins.")
+    @commands.command(name='setpot', aliases=['setjackpot'])
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    async def setpot(self, ctx: commands.Context, amount: int):
+        """Sets the jackpot to a specified amount."""
+        if amount < 0:
+            await ctx.send("The jackpot cannot be negative.")
+            return
+        self.jackpot['jackpot'] = amount
+        await self.save_jackpot_task()
+        await ctx.send(f"The jackpot has been set to {amount:,} coins.")
 
     @commands.command(name='gamble', aliases=['newgamble'])
     @commands.cooldown(1, 5, commands.BucketType.user)

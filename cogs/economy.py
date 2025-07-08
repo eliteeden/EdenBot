@@ -262,7 +262,7 @@ class EconomyCog(commands.Cog):
         reward = int(target_balance) // 2
         success = random.randint(1, 3)
 
-        if success == 3:
+        if success == 2:
             self.sub(member, reward)
             self.add(thief, reward)
             self.steal.reset_cooldown(ctx)
@@ -273,6 +273,7 @@ class EconomyCog(commands.Cog):
         else:
             await ctx.send("You were caught! Leave it to the professionals next time, 'kay?")
             await ctx.send(f"{member.mention}, someone just tried to steal from you!")
+
     @steal.error
     async def steal_error(self, ctx, error):
         command = self.bot.get_command("steal")
@@ -283,7 +284,21 @@ class EconomyCog(commands.Cog):
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("You need to mention someone to steal from.")
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f"You're on cooldown! Try again in {int(error.retry_after)} seconds.")
+            total_seconds = int(error.retry_after)
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+
+            time_parts = []
+            if hours > 0:
+                time_parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+            if minutes > 0:
+                time_parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+            if seconds > 0 or not time_parts:
+                time_parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+
+            time_string = ", ".join(time_parts)
+    await ctx.send(f"You're on cooldown! Try again in {time_string}.")
         else:
             await ctx.send("An unexpected error occurred.")
 
@@ -347,6 +362,10 @@ class EconomyCog(commands.Cog):
         self.add(user, earn)
 
         await ctx.send(f"{user.display_name}, you’ve claimed your daily reward of {earn} Eden coins!")
+    @daily.error
+    async def daily_error(ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send("Come back again tomorrow\n-# impatient ass")
 
         
 

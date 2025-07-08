@@ -170,7 +170,21 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("Some parameters are missing, Einstein.")
     elif isinstance(error, commands.CommandOnCooldown):
-        await ctx.send(f"Slow down! Try again in {round(error.retry_after, 2)} seconds.")
+            total_seconds = int(error.retry_after)
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+
+            time_parts = []
+            if hours > 0:
+                time_parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+            if minutes > 0:
+                time_parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+            if seconds > 0 or not time_parts:
+                time_parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+
+            time_string = ", ".join(time_parts)
+            await ctx.send(f"Slow down! Try again in {time_string}.")
     elif isinstance(error, commands.BadArgument):
         await ctx.send("Invalid argument provided.")
     elif isinstance(error, commands.CommandInvokeError):

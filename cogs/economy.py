@@ -148,7 +148,6 @@ class EconomyCog(commands.Cog):
             await ctx.send(f"An error occurred: `{e}`")
 
     @commands.command(name='coinflip', aliases=['cf', 'toss'])
-    @commands.cooldown(1, 5, commands.BucketType.user)
     async def coinflip(self, ctx: commands.Context, *, txt: str):
         earn = 1000
         sides = ['heads', 'tails']
@@ -157,15 +156,14 @@ class EconomyCog(commands.Cog):
         if txt.lower() in sides:
             if txt.lower() == toss:
                 self.add(ctx.author, earn)
-                await ctx.send(f"You won {earn} eden coins!")
+                await ctx.send(f"{str(toss).capitalize()}! You won {earn} eden coins!")
             else:
-                await ctx.send('You lost')
+                await ctx.send(f'{str(toss).capitalize()}! You lost')
         else:
             await ctx.send('Pick either ``heads`` or ``tails``')
 
     @commands.command(name='subbal')
     @commands.has_any_role(ROLES.MODERATOR)
-    @commands.cooldown(1,500, commands.BucketType.user)
     async def subbal(self, ctx: commands.Context, member: MemberLike, amount: int):
         self.sub(member, amount)
         await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
@@ -240,38 +238,46 @@ class EconomyCog(commands.Cog):
             self.sub(ctx.author, cost)
             await ctx.send(f'You lost {cost:,} eden coins.')
 
-    
     @commands.command(name="steal", aliases=["rob", "heist"])
-    @commands.cooldown(1, 1200, commands.BucketType.user)
+    @commands.cooldown(1, 43200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
         thief = ctx.author
+
+        # Replace with the actual name or ID of the protected role
+        protected_role_name = "Eden Bot Dev"
+
+        # Check if the target has the protected role
+        if any(role.name == protected_role_name for role in member.roles):
+            await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
+            self.steal.reset_cooldown(ctx)  # type: ignore
+            return
 
         if member.bot:
             if member.id == self.bot.user.id:  # type: ignore
                 await ctx.send("Oh no you little rascal, you are NOT stealing from me!")
             else:
                 await ctx.send("I won't let you steal from a bot.")
-            self.steal.reset_cooldown(ctx) # type: ignore
+            self.steal.reset_cooldown(ctx)  # type: ignore
             return
 
         if member == thief:
             await ctx.send("That's already your money, genius.")
-            self.steal.reset_cooldown(ctx) # type: ignore
+            self.steal.reset_cooldown(ctx)  # type: ignore
             return
 
         target_balance = self.get(member.id)
         if target_balance < 10:
             await ctx.send(f"{member.display_name} doesn't have enough money to steal from.")
-            self.steal.reset_cooldown(ctx) # type: ignore
+            self.steal.reset_cooldown(ctx)  # type: ignore
             return
 
-        reward = int(target_balance) // 2
+        reward = int(target_balance) // 3
         success = random.randint(1, 3)
 
         if success == 2:
             self.sub(member, reward)
             self.add(thief, reward)
-            self.steal.reset_cooldown(ctx) # type: ignore
+            self.steal.reset_cooldown(ctx)  # type: ignore
             await ctx.send(
                 f"You successfully stole {reward} coins from {member.display_name}!\n"
                 f"-# Don't worry, I won't ping them like a snitch"
@@ -310,13 +316,14 @@ class EconomyCog(commands.Cog):
 
 
     @commands.command(name='give')
+    @commands.cooldown(1,43200, commands.BucketType.User)
     async def give(self, ctx: commands.Context, member: Member, coins: int):
         """Gives a specified amount of coins to another user."""
         if coins <= 0:
             await ctx.send("This isn't `;invest`, you can't just abuse the bot like that.")
             return
 
-        if coins >= 25000:
+        if coins >= 15000:
             await ctx.send("You can't give more than 25k hun\nWhere's the fun in that?")
             return
 

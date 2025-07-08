@@ -109,37 +109,41 @@ class EconomyCog(commands.Cog):
     @commands.command(name='bal')
     async def bal(self, ctx: commands.Context, user: Optional[Member] = None): # type: ignore
         await ctx.send(f"{user.mention + '\'s' if user else 'Your'} balance is {self.get(user or ctx.author)} eden coins.")
-        
-
+            
     @commands.command(name="topbal", aliases=["bals"])
     async def topbal(self, ctx: commands.Context):
-        """Displays the top 10 users with the highest balance"""
+        """Displays the top users with the highest balance"""
         try:
-            if 'users' not in self.bank:
+            if 'users' not in self.bank or not self.bank['users']:
                 await ctx.send("No users found in the economy system. Is the .json file empty?")
                 return
 
-            # Sort users by balance (highest first)
-            sorted_users = sorted(self.bank.items(), key=lambda x: x[1], reverse=True)
+            # Extract and sort user balances
+            user_balances = self.bank['users']  # Expected format: {user_id: balance}
+            sorted_users = sorted(user_balances.items(), key=lambda x: x[1], reverse=True)
 
-            # Limit to top 10
+            # Limit to top 100 users
             top_users = sorted_users[:100]
 
+            # Get paginator cog
+            paginator_cog = self.bot.get_cog("PaginatorCog")
+            if not paginator_cog:
+                await ctx.send("PaginatorCog is not loaded.")
+                return
 
-            paginator = self.bot.cogs["PaginatorCog"]()  # type: ignore
+            paginator = paginator_cog.get_paginator()  # Assumes your PaginatorCog has this method
 
             # Create paginated embeds
-            for i in range(0, len(top_users), 10):  # Show 10 users per page
+            for i in range(0, len(top_users), 10):  # 10 users per page
                 embed = discord.Embed(title="Economy Leaderboard", color=discord.Color.gold())
-                for idx, (user_id, balance) in enumerate(top_users[i:i+10], start=i+1):
-                    embed.add_field(name=f"{idx}. <@{user_id}>", value=f"{balance} eden coins", inline=False)
-
+                for idx, (user_id, balance) in enumerate(top_users[i:i + 10], start=i + 1):
+                    embed.add_field(name=f"{idx}. <@{user_id}>", value=f"{balance:,} Eden coins", inline=False)
                 paginator.add_page(embed)
 
-            await paginator.send(ctx)  # Send paginated leaderboard
+            await paginator.send(ctx)
 
         except Exception as e:
-            await ctx.send(e) # type: ignore
+            await ctx.send(f"An error occurred: `{e}`")
 
     @commands.command(name='coinflip', aliases=['cf', 'toss'])
     @commands.cooldown(1, 5, commands.BucketType.user)

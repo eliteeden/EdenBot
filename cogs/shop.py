@@ -75,12 +75,12 @@ class ShopCog(commands.Cog):
         # Length
         def __len__(self) -> int:
             """Returns the number of shop items."""
-            items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
+            items = [getattr(self, item) for item in dir(self) if type(getattr(self, item)).__name__ is "ShopItem"]
             return len(items)
         # Iteration
         def __iter__(self) -> Iterator["ShopCog.ShopItem"]:
             """Iterates over the shop items."""
-            items: list["ShopCog.ShopItem"] = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), ShopCog.ShopItem)]
+            items: list["ShopCog.ShopItem"] = [getattr(self, item) for item in dir(self) if type(getattr(self, item)).__name__ is "ShopItem"]
             return iter(items)
         # Decorators
         @staticmethod
@@ -164,8 +164,9 @@ class ShopCog(commands.Cog):
             super().__init__(timeout=None)
             self.item = item
             self.bot = bot
+            self.shop: "ShopCog" = bot.get_cog("ShopCog") # type: ignore
             self.economy: EconomyCog = self.bot.get_cog("EconomyCog") # type: ignore
-            if not isinstance(item, ShopCog.ShopItem):
+            if "ShopItem" not in item.__class__.__name__:
                 raise TypeError("item must be an instance of ShopCog.ShopItem")
         def _parse_page(self, page: str) -> int:
             """Parses the page number from the footer text."""
@@ -175,7 +176,7 @@ class ShopCog(commands.Cog):
 
         @discord.ui.button(label="◀️", style=discord.ButtonStyle.secondary)
         async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-            embed, view = await ShopCog.generate_shop_page(interaction.user, page=self._parse_page(interaction.message.embeds[0].footer.text) - 1)  # type: ignore
+            embed, view = await self.shop.generate_shop_page(interaction.user, page=self._parse_page(interaction.message.embeds[0].footer.text) - 1)  # type: ignore
             if not interaction.message or not interaction.message.embeds:
                 return await interaction.response.send_message("Unable to find the shop dialogue, try making a new one.", ephemeral=True)
             await interaction.message.edit(embed=embed, view=view)
@@ -215,7 +216,7 @@ class ShopCog(commands.Cog):
             next_page = current_page + 1
 
             # Generate the next shop page
-            embed, view = await self.bot.get_cog("ShopCog").generate_shop_page(interaction.user, page=next_page) # type: ignore
+            embed, view = await self.shop.generate_shop_page(interaction.user, page=next_page)  # type: ignore
 
             # Edit the original message with the new embed and view
             await interaction.response.edit_message(embed=embed, view=view)

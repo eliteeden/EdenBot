@@ -1567,6 +1567,7 @@ async def reload(ctx: commands.Context, cog: str):
         await ctx.send(f"{cog} cog reloaded successfully!")
     except Exception as e:
         await ctx.send(f"Failed to reload {cog} cog: {e}")
+        print(e)
 @reload.error
 async def reload_error(ctx: commands.Context, error: commands.CommandError):
     """Handles errors for the reload command."""
@@ -1587,6 +1588,7 @@ async def load(ctx: commands.Context, cog: str):
         await ctx.send(f"{cog} cog loaded successfully!")
     except Exception as e:
         await ctx.send(f"Failed to load {cog} cog: {e}")
+        print(e)
 @load.error
 async def load_error(ctx: commands.Context, error: commands.CommandError):
     """Handles errors for the load command."""

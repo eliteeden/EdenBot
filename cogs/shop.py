@@ -200,7 +200,7 @@ class ShopCog(commands.Cog):
                 assert isinstance(interaction.user, discord.Member), "Interaction user must be a Member."
                 assert isinstance(interaction.message, discord.Message), "Interaction message must be a Message."
                 await interaction.message.edit(content=interaction.message.content, view=self.view)
-                await interaction.response.defer()  # defer the response to avoid timeout
+                # await interaction.response.defer()  # defer the response to avoid timeout
                 if not self.shop.economy():
                     await interaction.response.send_message("Economy cog not found. Please try again later.", ephemeral=True)
                     return False

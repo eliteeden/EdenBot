@@ -8,6 +8,10 @@ import random
 from typing import Optional, overload
 from constants import CHANNELS, ROLES, USERS
 
+# Type Hints
+from cogs.inventory import InventoryCog
+from cogs.shop import ShopCog
+
 class EconomyCog(commands.Cog):
     """All economy related commands and tasks."""
     ECONOMY_FILE = "bank.json"
@@ -25,6 +29,20 @@ class EconomyCog(commands.Cog):
                 self.jackpot = json.load(f)
             except (FileNotFoundError, json.JSONDecodeError, ValueError):
                 self.jackpot = {'jackpot': 0}
+    # Other Cogs
+    def inventory(self) -> "InventoryCog":
+        """Returns the InventoryCog instance."""
+        cog = self.bot.get_cog("InventoryCog")
+        if cog is None:
+            raise RuntimeError("InventoryCog is not loaded.")
+        return cog # type: ignore
+    def shop(self) -> "ShopCog":
+        """Returns the ShopCog instance."""
+        cog = self.bot.get_cog("ShopCog")
+        if cog is None:
+            raise RuntimeError("ShopCog is not loaded.")
+        return cog # type: ignore
+
     def __get_id(self, member: MemberLike) -> strint:
         if member is None or member == "users":
             return "0"
@@ -272,7 +290,13 @@ class EconomyCog(commands.Cog):
             return
 
         reward = random.randint(target_balance // 20, target_balance // 5)  # Steal between 5% and 20% of the target's balance
-        success = random.randint(1, 3)
+        break_lock = False
+        if self.inventory().has_item(member, "Lock", 1):
+            chance = 20
+            break_lock = True
+        else:
+            chance = 3
+        success = random.randint(1, chance)
 
         if success == 2:
             self.sub(member, reward)
@@ -282,6 +306,9 @@ class EconomyCog(commands.Cog):
                 f"You successfully stole {reward} coins from {member.display_name}!\n"
                 f"-# Don't worry, I won't ping them like a snitch"
             )
+            if break_lock:
+                self.inventory().remove_item(member, "Lock", 1)
+                await ctx.send("You broke their lock, you little goblin!")
         else:
             await ctx.send("You were caught! Leave it to the professionals next time, 'kay?")
             await ctx.send(f"{member.mention}, someone just tried to steal from you!")

@@ -194,6 +194,12 @@ class ShopCog(commands.Cog):
                         f"You no longer are able to purchase this item." # Would be disabled otherwise
                     )
                     return False
+                if self.shop.economy().get(interaction.user) < self.item.price:
+                    await interaction.response.send_message(
+                        f"You do not have enough Eden Coins to purchase {self.item.name}.",
+                        ephemeral=True
+                    )
+                    return False
                 if interaction.user.id == self.shop.bot.user.id: # type: ignore
                     await interaction.response.send_message("You cannot purchase items for the bot.", ephemeral=True)
                     return False

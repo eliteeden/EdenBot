@@ -165,7 +165,7 @@ class ShopCog(commands.Cog):
         self.bot = bot
         self.economy: Callable[[], EconomyCog] =  lambda : bot.get_cog("EconomyCog") # type: ignore
 
-    def build_button(self, item: ShopItem, row: int = 0) -> discord.ui.Button:
+    def build_button(self, item: ShopItem, row: Optional[int] = None) -> discord.ui.Button:
         """Builds a button for the shop item."""
         @discord.ui.button(label=f"Buy {item.name}", style=discord.ButtonStyle.primary, row=row)
         async def button(cls, interaction: discord.Interaction, button: discord.ui.Button, item=item):
@@ -204,6 +204,7 @@ class ShopCog(commands.Cog):
         )
         shop = self.Shop()
         view = discord.ui.View(timeout=None)
+        print(f"Generating shop page... ({len(shop)} items)")
         for item in shop:
             if not item.purchasable(self.bot, user):
                 continue
@@ -212,7 +213,10 @@ class ShopCog(commands.Cog):
                 value=item.description,
                 inline=False
             )
-            view.add_item(self.build_button(item))
+            print(f"{type(item)}: {item.name} - {item.price:,} Eden Coins")
+            btn = self.build_button(item)
+            print(f"Button ({type(btn)}): {btn.label}")
+            view.add_item(btn)
 
         return embed, view
         

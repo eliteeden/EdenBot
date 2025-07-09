@@ -164,52 +164,54 @@ class ShopCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.economy: Callable[[], EconomyCog] =  lambda : bot.get_cog("EconomyCog") # type: ignore
-
     class ShopButtons(discord.ui.View):
+        class ShopButton(discord.ui.Button):
+            """A button for a shop item."""
+            def __init__(self, item: ShopItem, shop: "ShopCog", user: discord.Member):
+                super().__init__(label=item.name, style=discord.ButtonStyle.primary)
+                self.item = item
+                self.shop = shop
+                self.user = user
+
+            async def button(self, interaction: discord.Interaction):
+                self.disabled = True
+                await interaction.response.defer()  # defer the response to avoid timeout
+                if not self.shop.economy():
+                    await interaction.response.send_message("Economy cog not found. Please try again later.", ephemeral=True)
+                    return False
+                if not self.item.purchasable(self.shop.bot, interaction.user): # type: ignore
+                    await interaction.response.send_message(
+                        f"You no longer are able to purchase this item." # Would be disabled otherwise
+                    )
+                    return False
+                if interaction.user.id == self.shop.bot.user.id: # type: ignore
+                    await interaction.response.send_message("You cannot purchase items for the bot.", ephemeral=True)
+                    return False
+                # Remove coins
+                self.shop.economy().set(interaction.user.name, self.shop.economy().get(interaction.user.name) - self.item.price)
+                # run the on_buy function
+                success = not (await self.item.on_buy(self.shop.bot, interaction) == False) # Returning None is the same as True
+                if not success:
+                    # The on_buy function should inform the user.
+                    self.shop.economy().set(interaction.user.name, self.shop.economy().get(interaction.user.name) + self.item.price)
+                    return False
+                UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
+                await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {self.item.name} for {self.item.price:,} Eden Coins.")
+                return True
         """The view containing the shop buttons."""
-        def __init__(self, shopCog: "ShopCog", user: discord.Member, Shop: "ShopCog.Shop"):
-            self.economy = shopCog.economy
+        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop"):
+            self.economy = shopcog.economy
             self.user = user
-            self.bot = shopCog.bot
-            self.shop = Shop
+            self.bot = shopcog.bot
+            self.shop = shop
             super().__init__(timeout=None)  # Disable timeout for the view
             for i, item in enumerate(self.shop):
                 if not item.purchasable(self.bot, user):
                     continue
                 # Create a button for each item
-                button = self.build_button(item, row=i // 5)
-                self.add_item(button)
-        
+                self.add_item(self.ShopButton(item, shopcog, user))
 
-        def build_button(self, item: ShopItem, row: Optional[int] = None) -> discord.ui.Button:
-            """Builds a button for the shop item."""
-            async def button(interaction: discord.Interaction, button: discord.ui.Button, item=item):
-                button.disabled = True
-                await interaction.response.defer()  # defer the response to avoid timeout
-                if not self.economy():
-                    await interaction.response.send_message("Economy cog not found. Please try again later.", ephemeral=True)
-                    return False
-                if not item.purchasable(self.bot, interaction.user): # type: ignore
-                    await interaction.response.send_message(
-                        f"You no longer are able to purchase this item." # Would be disabled otherwise
-                    )
-                    return False
-                if interaction.user.id == self.bot.user.id: # type: ignore
-                    await interaction.response.send_message("You cannot purchase items for the bot.", ephemeral=True)
-                    return False
-                # Remove coins
-                self.economy().set(interaction.user.name, self.economy().get(interaction.user.name) - item.price)
-                # run the on_buy function
-                success = not (await item.on_buy(self.bot, interaction) == False) # Returning None is the same as True
-                if not success:
-                    # The on_buy function should inform the user.
-                    self.economy().set(interaction.user.name, self.economy().get(interaction.user.name) + item.price)
-                    return False
-                UPDATES_CHANNEL: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
-                await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {item.name} for {item.price:,} Eden Coins.")
-                return True
-            return discord.ui.button(label=f"Buy {item.name}", style=discord.ButtonStyle.primary, row=row)(button)
-    
+
     async def generate_shop_page(self, user: discord.Member, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
         """Generates an embed for the shop page."""
         embed = discord.Embed(

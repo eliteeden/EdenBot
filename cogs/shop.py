@@ -215,7 +215,7 @@ class ShopCog(commands.Cog):
             )
             print(f"{type(item)}: {item.name} - {item.price:,} Eden Coins")
             btn = self.build_button(item)
-            print(f"Button ({type(btn)}): {btn.label}")
+            print(f"Button ({type(btn)})") # this is returning a function?????
             view.add_item(btn)
 
         return embed, view

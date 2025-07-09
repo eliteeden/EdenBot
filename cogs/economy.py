@@ -36,12 +36,13 @@ class EconomyCog(commands.Cog):
             member = member.lower()
             if member.startswith("<@") and member.endswith(">"):
                 return member[2:-1]
-            elif member[0] in [str(i) for i in range(10)]:
-                return member
             else:
-                for m in self.bot.get_all_members():
-                    if member == m.name.lower() or member == m.display_name.lower():
-                        return str(m.id)
+                try: 
+                    return str(int(member))  # If it's a string that can be converted to an int
+                except ValueError:
+                    for m in self.bot.get_all_members():
+                        if member == m.name.lower() or member == m.display_name.lower():
+                            return str(m.id)
         raise ValueError(f"Invalid member type (got: {member} of type {type(member)})")
 
     def __load_bank(self):
@@ -56,8 +57,7 @@ class EconomyCog(commands.Cog):
             json.dump(self.bank, s, indent=4)
     def add(self, user: MemberLike, coins: int):
         """Adds coins to a user's balance."""
-        user_id = self.__get_id(user)
-        self.set(user_id, self.get(user_id) + coins)
+        self.set(user, self.get(user) + coins)
     def sub(self, user: MemberLike, coins: int):
         return self.add(user, -coins)
     def set(self, user: MemberLike, coins: int):
@@ -113,9 +113,10 @@ class EconomyCog(commands.Cog):
     @commands.command(name='fixbank', aliases=['fixbal', 'wtfhappy'])
     async def fixbank(self, ctx: commands.Context, key: str = "users"):
         """Fixes the bank by reloading it from the file."""
+        amount = self.bank[key]
         del self.bank[key]
         self.__save_bank()
-        await ctx.send("Bank has been fixed.")
+        await ctx.send(f"Bank has been fixed. ({amount})")
 
     @commands.command(name="topbal", aliases=["bals", "baltop"])
     async def topbal(self, ctx: commands.Context):
@@ -162,7 +163,7 @@ class EconomyCog(commands.Cog):
             await ctx.send('Pick either ``heads`` or ``tails``')
 
     @commands.command(name='subbal')
-    @commands.has_any_role(ROLES.MODERATOR)
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def subbal(self, ctx: commands.Context, member: MemberLike, amount: int):
         self.sub(member, amount)
         await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")

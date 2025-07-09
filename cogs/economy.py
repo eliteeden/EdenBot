@@ -421,7 +421,7 @@ class EconomyCog(commands.Cog):
         # https://www.desmos.com/calculator/o3meaagvzc
         chance = math.floor(math.log(self.jackpot['jackpot'], 10) * 50) - 235
         # TODO: chance logic
-        if random.randint(1, chance) == 1:
+        if random.randint(1, chance) == 3:
             # User wins
             win_amount = min(10_000_000, self.jackpot['jackpot'] * 2)  # Maximum win amount is 10 million
             self.set(userid, balance + win_amount)

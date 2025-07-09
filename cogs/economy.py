@@ -246,7 +246,7 @@ class EconomyCog(commands.Cog):
         protected_role_name = 1021831032347033680
 
         # Check if the target has the protected role
-        if any(role.id == protected_role_name for role in member.roles):
+        if member.id == protected_role_name:
             await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
             self.steal.reset_cooldown(ctx)  # type: ignore
             return

@@ -206,20 +206,21 @@ class ShopCog(commands.Cog):
                 UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
                 await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {self.item.name} for {self.item.price:,} Eden Coins.")
                 return True
-        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop"):
+        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", show_all: bool = False):
             self.economy = shopcog.economy
             self.user = user
             self.bot = shopcog.bot
             self.shop = shop
+            self.show_all = show_all
             super().__init__(timeout=None)  # Disable timeout for the view
             for i, item in enumerate(self.shop):
-                if not item.purchasable(self.bot, user):
+                if not item.purchasable(self.bot, user) and not self.show_all:
                     continue
                 # Create a button for each item
                 self.add_item(self.ShopButton(item, shopcog, user))
 
 
-    async def generate_shop_page(self, user: discord.Member, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
+    async def generate_shop_page(self, user: discord.Member, show_all: bool = False) -> tuple[discord.Embed, discord.ui.View]:
         """Generates an embed for the shop page."""
         embed = discord.Embed(
             title="Eden Shop",
@@ -230,11 +231,11 @@ class ShopCog(commands.Cog):
         print(f"Generating shop page... ({len(shop)} items)")
         for item in shop:
             print("Iterating over shop item:", item.name)
-            if not item.purchasable(self.bot, user):
+            if not item.purchasable(self.bot, user) and not show_all:
                 continue
             embed.add_field(
                 name=f"{item.name} - {item.price:,} Eden Coins",
-                value=item.description,
+                value=f"({'' if item.purchasable(self.bot, user) or show_all else 'not '})" + item.description,
                 inline=False
             )
         view = self.ShopButtons(self, user, shop)
@@ -243,9 +244,15 @@ class ShopCog(commands.Cog):
         
 
     @commands.command(name="shop")
-    async def shop(self, ctx: commands.Context, page: int = 1):
+    async def shop(self, ctx: commands.Context):
         """Displays the shop items."""
-        embed, view = await self.generate_shop_page(ctx.author, page - 1) # type: ignore
+        embed, view = await self.generate_shop_page(ctx.author) # type: ignore
+        await ctx.send(embed=embed, view=view)
+    @commands.command(name="shopall")
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    async def shop_all(self, ctx: commands.Context):
+        """Displays all shop items, even those that are not purchasable."""
+        embed, view = await self.generate_shop_page(ctx.author, show_all=True) # type: ignore
         await ctx.send(embed=embed, view=view)
 
 async def setup(bot: commands.Bot):

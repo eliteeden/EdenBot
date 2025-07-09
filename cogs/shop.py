@@ -68,7 +68,7 @@ class ShopCog(commands.Cog):
                     return False
                 if len(self.excluded_roles) > 0 and any(role in member_roles for role in self.excluded_roles):
                     return False
-                member_balance: int = bot.cogs["EconomyCog"].get(member.name) # type: ignore
+                member_balance: int = bot.cogs["EconomyCog"].get(member) # type: ignore
                 return member_balance >= self.price
             def __hash__(self) -> int:
                 return hash((self.name, self.price, tuple(self.required_roles), self.on_buy))
@@ -189,12 +189,12 @@ class ShopCog(commands.Cog):
                     await interaction.response.send_message("You cannot purchase items for the bot.", ephemeral=True)
                     return False
                 # Remove coins
-                self.shop.economy().set(interaction.user.name, self.shop.economy().get(interaction.user.name) - self.item.price)
+                self.shop.economy().set(interaction.user, self.shop.economy().get(interaction.user) - self.item.price)
                 # run the on_buy function
                 success = not (await self.item.on_buy(self.shop.bot, interaction) == False) # Returning None is the same as True
                 if not success:
                     # The on_buy function should inform the user.
-                    self.shop.economy().set(interaction.user.name, self.shop.economy().get(interaction.user.name) + self.item.price)
+                    self.shop.economy().set(interaction.user, self.shop.economy().get(interaction.user) + self.item.price)
                     return False
                 UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
                 await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {self.item.name} for {self.item.price:,} Eden Coins.")

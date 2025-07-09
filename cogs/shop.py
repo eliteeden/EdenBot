@@ -56,7 +56,7 @@ class ShopCog(commands.Cog):
                 self.price = price
                 self.on_buy = on_buy
                 self.description = description
-                self.required_roles: list[int]
+                self.required_roles: list[int] = []
                 self.excluded_roles: list[int] = []
 
             def purchasable(self, bot: commands.Bot, member: discord.Member) -> bool:

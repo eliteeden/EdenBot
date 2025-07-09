@@ -194,34 +194,42 @@ class ShopCog(commands.Cog):
                 self.shop = shop
                 self.user = user
                 self.disabled = shop.economy().get(user) < item.price
+            async def disable(self, interaction: discord.Interaction):
+                """Disables the button."""
+                self.disabled = True
+                await interaction.message.edit(content=interaction.message.content, view=self.view) # type: ignore
+
+                
 
             async def callback(self, interaction: discord.Interaction):
-                self.disabled = True
                 assert isinstance(interaction.user, discord.Member), "Interaction user must be a Member."
-                assert isinstance(interaction.message, discord.Message), "Interaction message must be a Message."
-                await interaction.message.edit(content=interaction.message.content, view=self.view)
                 # await interaction.response.defer()  # defer the response to avoid timeout
                 if not self.shop.economy():
+                    await self.disable(interaction)
                     await interaction.response.send_message("Economy cog not found. Please try again later.", ephemeral=True)
                     return False
                 if not self.item.purchasable(self.shop.bot, interaction.user):
+                    await self.disable(interaction)
                     await interaction.response.send_message(
                         f"You no longer are able to purchase this item." # Would be disabled otherwise
                     )
                     return False
                 if self.shop.economy().get(interaction.user) < self.item.price:
+                    await self.disable(interaction)
                     await interaction.response.send_message(
                         f"You do not have enough Eden Coins to purchase {self.item.name}.",
                         ephemeral=True
                     )
                     return False
                 if interaction.user.id == self.shop.bot.user.id: # type: ignore
+                    await self.disable(interaction)
                     await interaction.response.send_message("You cannot purchase items for the bot.", ephemeral=True)
                     return False
                 # Remove coins
                 # run the on_buy function
                 success = await self.item.on_buy(self.shop.bot, interaction)
                 if success is False:
+                    await self.disable(interaction)
                     return False
                 self.shop.economy().sub(interaction.user, self.item.price)
                 UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
@@ -229,6 +237,8 @@ class ShopCog(commands.Cog):
                 await interaction.response.send_message(
                     f"You have successfully purchased {self.item.name} for {self.item.price:,} Eden Coins.",
                     ephemeral=True)
+                if self.shop.economy().get(interaction.user) < self.item.price:
+                    await self.disable(interaction)
                 return True
         def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", show_all: bool = False):
             self.economy = shopcog.economy

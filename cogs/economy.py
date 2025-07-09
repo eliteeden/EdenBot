@@ -316,13 +316,13 @@ class EconomyCog(commands.Cog):
     @steal.error
     async def steal_error(self, ctx, error):
         command = self.bot.get_command("steal")
-        if command:
-            command.reset_cooldown(ctx)
+        reset = True
         if isinstance(error, commands.BadArgument):
             await ctx.send("Couldn't find that user. Please mention a valid member.")
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("You need to mention someone to steal from.")
         elif isinstance(error, commands.CommandOnCooldown):
+            reset = False
             total_seconds = int(error.retry_after)
             hours = total_seconds // 3600
             minutes = (total_seconds % 3600) // 60
@@ -340,6 +340,9 @@ class EconomyCog(commands.Cog):
             await ctx.send(f"You're on cooldown! Try again in {time_string}.")
         else:
             await ctx.send("An unexpected error occurred.")
+        if reset:
+            if command:
+                command.reset_cooldown(ctx)
 
 
     @commands.command(name='give')

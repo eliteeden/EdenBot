@@ -166,18 +166,9 @@ class ShopCog(commands.Cog):
         async def custom_role(bot: commands.Bot, interaction: discord.Interaction):
             """Good luck, germanic."""
             await interaction.response.send_message(
-                "literally how."
+                "ping a mod for this, still WIP for now"
             )
-            #TODO: not hardcode
-            role = await interaction.guild.create_role(
-                reason="Custom role purchased from shop",
-                name="Mali Empire Achieved",
-                color=discord.Color(0xad9100),
-                display_icon=open("german_empire_png.png", "rb").read()
-            )
-            await interaction.user.add_roles(role)
-            await role.edit(position=interaction.guild.get_role(1341789919705694239).position - 1) # type: ignore
-            return True # not purchasable yet
+            return False
         @shopitem(name="Lock", price=500_000)
         @staticmethod
         async def lock_item(bot: commands.Bot, interaction: discord.Interaction):

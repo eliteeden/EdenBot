@@ -6,6 +6,7 @@ from discord.ext import commands
 from typing import Callable, Coroutine, Generator, Iterator, Optional, overload
 
 from cogs.economy import EconomyCog # TypeDef only
+from cogs.inventory import InventoryCog # TypeDef only
 from constants import ROLES, CHANNELS
 
 type ShopItem = "ShopCog.Shop.ShopItem"  # TypeDef for type hinting
@@ -168,6 +169,17 @@ class ShopCog(commands.Cog):
                 "literally how."
             )
             return False # not purchasable yet
+        @shopitem(name="Lock", price=500_000)
+        @staticmethod
+        async def lock_item(bot: commands.Bot, interaction: discord.Interaction):
+            """Makes stealing much harder (still WIP)."""
+            inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
+            inventory.add_item(interaction.user, "Lock", 1) # type: ignore
+            await interaction.response.send_message(
+                "Still a WIP, will be implemented soon(tm)."
+            )
+            return True # Item added to inventory
+
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot

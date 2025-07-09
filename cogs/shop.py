@@ -19,17 +19,15 @@ class ShopCog(commands.Cog):
     class Shop:
         class ShopItem:
             @classmethod
-            def __decorator__(cls, name: str, price: int, description: str = "", *required_roles: int):
+            def __decorator__(cls, name: str, price: int, description: str = ""):
                 """Creates a shop item.
                 Args:
                     name (str): The name of the item.
                     price (int): The price of the item in Eden Coins.
                     description (str, optional): A description of the item.
-                    *required_roles (optional, int): The role IDs required to purchase the item. Having any listed role is enough to buy the item.
                 """
                 def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> ShopItem:
                     item = cls(
-                        *required_roles,
                         name=name,
                         description=description or func.__doc__ or "No description available.",
                         price=price,
@@ -58,16 +56,17 @@ class ShopCog(commands.Cog):
                 self.price = price
                 self.on_buy = on_buy
                 self.description = description
-                self.required_roles: tuple[int, ...] = tuple()
-                self.excluded_roles: tuple[int, ...] = tuple()
+                self.required_roles: list[int]
+                self.excluded_roles: list[int] = []
 
             def purchasable(self, bot: commands.Bot, member: discord.Member) -> bool:
                 """Checks if the item is purchasable by the member."""
-                member_roles = [r.id for r in member.roles]
-                if len(self.required_roles) > 0 and not any(role in member_roles for role in self.required_roles):
-                    return False
-                if len(self.excluded_roles) > 0 and any(role in member_roles for role in self.excluded_roles):
-                    return False
+                for role in self.excluded_roles:
+                    if member.get_role(role) is not None:
+                        return False
+                for role in self.required_roles:
+                    if member.get_role(role) is None:
+                        return False
                 member_balance: int = bot.cogs["EconomyCog"].get(member) # type: ignore
                 return member_balance >= self.price
             def __hash__(self) -> int:
@@ -116,7 +115,7 @@ class ShopCog(commands.Cog):
                 *roles (int): The role IDs required to use the command.
             """
             def decorator(func: ShopItem):
-                func.required_roles = roles
+                func.required_roles += list(roles)
                 return func
             return decorator
         @staticmethod
@@ -128,7 +127,7 @@ class ShopCog(commands.Cog):
                 *roles (int): The role IDs that cannot use the command.
             """
             def decorator(func: ShopItem):
-                func.excluded_roles = roles
+                func.excluded_roles += list(roles)
                 return func
             return decorator
         shopitem = ShopItem.__decorator__  # Alias for the item decorator

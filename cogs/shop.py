@@ -11,7 +11,7 @@ from constants import ROLES, CHANNELS
 type ShopItem = "ShopCog.Shop.ShopItem"  # TypeDef for type hinting
 
 # Hey, the counter for how long I've wasted trying to remove @staticmethod is back
-hours_wasted = 7
+hours_wasted = 8
 
 class ShopCog(commands.Cog):
     """The shop is here because economy got too large lmao"""

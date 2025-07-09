@@ -461,7 +461,9 @@ class EconomyCog(commands.Cog):
         """A task that runs every minute to check if the jackpot should be increased."""
         if self.jackpot['jackpot'] < 10_000_000:
             self.jackpot['jackpot'] += 3600
-            # print(f"Jackpot increased to {self.jackpot['jackpot']} coins")
+        if self.jackpot['jackpot'] < 100_000:
+            self.jackpot['jackpot'] += 100_000
+        # print(f"Jackpot increased to {self.jackpot['jackpot']} coins")
     @tasks.loop(hours=1)
     async def save_jackpot_task(self):
         """A task that runs every hour to save the jackpot data."""
@@ -470,6 +472,11 @@ class EconomyCog(commands.Cog):
         self.jackpot_file.seek(0)
         self.jackpot_file.flush()
         print("Jackpot data saved.")
+
+    async def cog_load(self):
+        """Fires when the cog is loaded."""
+        self.jackpot_task.start()
+        self.save_jackpot_task.start()
 
     async def cog_unload(self):
         """Fires when the cog is unloaded."""

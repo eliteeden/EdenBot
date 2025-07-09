@@ -67,8 +67,9 @@ class ShopCog(commands.Cog):
                 for role in self.required_roles:
                     if member.get_role(role) is None:
                         return False
-                member_balance: int = bot.cogs["EconomyCog"].get(member) # type: ignore
-                return member_balance >= self.price
+                return True
+                # member_balance: int = bot.cogs["EconomyCog"].get(member) # type: ignore
+                # return member_balance >= self.price
             def __hash__(self) -> int:
                 return hash((self.name, self.price, tuple(self.required_roles), self.on_buy))
             def __str__(self) -> str:
@@ -180,6 +181,7 @@ class ShopCog(commands.Cog):
                 self.item = item
                 self.shop = shop
                 self.user = user
+                self.disabled = shop.economy().get(user) < item.price
 
             async def callback(self, interaction: discord.Interaction):
                 self.disabled = True

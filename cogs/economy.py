@@ -315,7 +315,7 @@ class EconomyCog(commands.Cog):
 
 
     @commands.command(name='give')
-    @commands.cooldown(1,43200, commands.BucketType.user)
+    @commands.cooldown(1,5, commands.BucketType.user)
     async def give(self, ctx: commands.Context, member: Member, coins: int):
         """Gives a specified amount of coins to another user."""
         if coins <= 0:
@@ -323,8 +323,8 @@ class EconomyCog(commands.Cog):
             self.give.reset_cooldown(ctx) # type: ignore
             return
 
-        if coins > 150000:
-            await ctx.send("You can't give more than 150k bud\nWhere's the fun in that?")
+        if coins > 1000000:
+            await ctx.send("You can't give more than a million bud\nWhere's the fun in that?")
             self.give.reset_cooldown(ctx) # type: ignore
             return
 

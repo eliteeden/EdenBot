@@ -6,7 +6,7 @@ from discord import Member
 import json
 import random
 from typing import Optional, overload
-from constants import CHANNELS, ROLES
+from constants import CHANNELS, ROLES, USERS
 
 class EconomyCog(commands.Cog):
     """All economy related commands and tasks."""
@@ -243,10 +243,10 @@ class EconomyCog(commands.Cog):
         thief = ctx.author
 
         # Replace with the actual name or ID of the protected role
-        protected_role_name = 1021831032347033680
+        protected_users = [USERS.HAPPY]
 
         # Check if the target has the protected role
-        if member.id == protected_role_name:
+        if member.id in protected_users:
             await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
             self.steal.reset_cooldown(ctx)  # type: ignore
             return
@@ -270,7 +270,7 @@ class EconomyCog(commands.Cog):
             self.steal.reset_cooldown(ctx)  # type: ignore
             return
 
-        reward = int(target_balance) // 3
+        reward = random.randint(target_balance // 20, target_balance // 5)  # Steal between 5% and 20% of the target's balance
         success = random.randint(1, 3)
 
         if success == 2:

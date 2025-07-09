@@ -387,7 +387,7 @@ class EconomyCog(commands.Cog):
     @commands.command(name='pot', aliases=['jackpot'])
     async def pot(self, ctx: commands.Context):
         """Displays the current jackpot amount."""
-        await ctx.send(f"The current jackpot is {self.jackpot['jackpot']:,} coins.")
+        await ctx.send(f"The current jackpot is {self.jackpot['jackpot']:,} coins.\nThe current chance of winning is 1 in {math.floor(math.log(self.jackpot['jackpot'], 10) * 50) - 235}.")
     @commands.command(name='setpot', aliases=['setjackpot'])
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def setpot(self, ctx: commands.Context, amount: int):
@@ -419,7 +419,7 @@ class EconomyCog(commands.Cog):
             ]))
             return
         # https://www.desmos.com/calculator/o3meaagvzc
-        chance = math.floor(math.log(self.jackpot['jackpot'], 10) * 50)
+        chance = math.floor(math.log(self.jackpot['jackpot'], 10) * 50) - 235
         # TODO: chance logic
         if random.randint(1, chance) == 1:
             # User wins

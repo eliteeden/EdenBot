@@ -463,13 +463,13 @@ class EconomyCog(commands.Cog):
             self.jackpot['jackpot'] += 3600
         if self.jackpot['jackpot'] < 100_000:
             self.jackpot['jackpot'] += 100_000
+        await self.save_jackpot_task()
         # print(f"Jackpot increased to {self.jackpot['jackpot']} coins")
     @tasks.loop(hours=1)
     async def save_jackpot_task(self):
         """A task that runs every hour to save the jackpot data."""
-        self.jackpot_file.buffer.write(json.dumps(self.jackpot).encode('utf-8'))
-        self.jackpot_file.buffer.flush()
-        self.jackpot_file.seek(0)
+        self.jackpot_file.write(json.dumps(self.jackpot))
+        self.jackpot_file.seek(0, 0) # start of file
         self.jackpot_file.flush()
         print("Jackpot data saved.")
 
@@ -482,11 +482,7 @@ class EconomyCog(commands.Cog):
         """Fires when the cog is unloaded."""
         self.__save_bank()
         # Save jackpot data
-        self.jackpot_file.buffer.write(json.dumps(self.jackpot).encode('utf-8'))
-        self.jackpot_file.buffer.flush()
-        self.jackpot_file.seek(0)
-        self.jackpot_file.flush()
-        self.jackpot_file.close()
+        await self.save_jackpot_task()
         return await super().cog_unload()
 
 async def setup(bot: commands.Bot):

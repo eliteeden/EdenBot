@@ -228,7 +228,7 @@ class EconomyCog(commands.Cog):
             await ctx.send(f'You do not have enough coins, you need {cost:,} to participate')
             return
         if bot_choice == 6:
-            earn = 2_500_000
+            earn = 800_000 # break-even is 750,000
             self.add(ctx.author, earn)
             await ctx.send(f'You won {earn:,} eden coins!')
             bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
@@ -460,7 +460,7 @@ class EconomyCog(commands.Cog):
     async def jackpot_task(self):
         """A task that runs every minute to check if the jackpot should be increased."""
         if self.jackpot['jackpot'] < 10_000_000:
-            self.jackpot['jackpot'] += 3600
+            self.jackpot['jackpot'] += 36_000
         if self.jackpot['jackpot'] < 100_000:
             self.jackpot['jackpot'] += 100_000
         await self.save_jackpot_task()

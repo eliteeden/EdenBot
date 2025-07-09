@@ -52,12 +52,13 @@ class InventoryCog(commands.Cog):
                         if member == m.name.lower() or member == m.display_name.lower():
                             return str(m.id)
         raise ValueError(f"Invalid member type (got: {member} of type {type(member)})")
-    def get_inventory(self, user) -> ItemAmount:
+    def get_inventory(self, user: MemberLike) -> ItemAmount:
         """Get the inventory for a user."""
-        if user.id not in self.inventories:
-            self.inventories[user.id] = {}
-        return self.inventories[user.id]
-    def add_item(self, user: discord.Member, item: Item, amount: int = 1) -> int:
+        user_id = self.get_id(user)
+        if user_id not in self.inventories:
+            self.inventories[user_id] = {}
+        return self.inventories[user_id]
+    def add_item(self, user: MemberLike, item: Item, amount: int = 1) -> int:
         """Add an item to a user's inventory."""
         inventory = self.get_inventory(user)
         if item not in inventory:
@@ -119,8 +120,7 @@ class InventoryCog(commands.Cog):
         """Show a user's inventory."""
         if member is None:
             member: discord.Member = ctx.author # type: ignore
-        user_id = self.get_id(member)
-        inventory = self.get_inventory(user_id)
+        inventory = self.get_inventory(member)
         if not inventory:
             await ctx.send(f"{member.mention} has an empty inventory.")
             return

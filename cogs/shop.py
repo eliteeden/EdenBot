@@ -142,7 +142,7 @@ class ShopCog(commands.Cog):
         @shopitem(name="test", price=100)
         @staticmethod
         async def test_item(bot: commands.Bot, interaction: discord.Interaction):
-            f"""Prints a test message to <#{CHANNELS.BOT_LOGS}>."""
+            """Prints a test message to the bot logs channel."""
             updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await updates_channel.send(f"Test item purchased by {interaction.user.name}")
             return True
@@ -165,6 +165,7 @@ class ShopCog(commands.Cog):
         self.bot = bot
         self.economy: Callable[[], EconomyCog] =  lambda : bot.get_cog("EconomyCog") # type: ignore
     class ShopButtons(discord.ui.View):
+        """The view containing the shop buttons."""
         class ShopButton(discord.ui.Button):
             """A button for a shop item."""
             def __init__(self, item: ShopItem, shop: "ShopCog", user: discord.Member):
@@ -173,7 +174,7 @@ class ShopCog(commands.Cog):
                 self.shop = shop
                 self.user = user
 
-            async def button(self, interaction: discord.Interaction):
+            async def callback(self, interaction: discord.Interaction):
                 self.disabled = True
                 await interaction.response.defer()  # defer the response to avoid timeout
                 if not self.shop.economy():
@@ -198,7 +199,6 @@ class ShopCog(commands.Cog):
                 UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
                 await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {self.item.name} for {self.item.price:,} Eden Coins.")
                 return True
-        """The view containing the shop buttons."""
         def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop"):
             self.economy = shopcog.economy
             self.user = user

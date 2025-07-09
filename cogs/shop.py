@@ -172,11 +172,11 @@ class ShopCog(commands.Cog):
         @shopitem(name="Lock", price=500_000)
         @staticmethod
         async def lock_item(bot: commands.Bot, interaction: discord.Interaction):
-            """Makes stealing much harder (still WIP)."""
+            """Makes stealing from you much harder. (Breaks after someone steals from you successfully)"""
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
             inventory.add_item(interaction.user, "Lock", 1) # type: ignore
             await interaction.response.send_message(
-                "Still a WIP, will be implemented soon(tm)."
+                "You bought a lock!"
             )
             return True # Item added to inventory
 

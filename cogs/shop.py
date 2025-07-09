@@ -167,7 +167,6 @@ class ShopCog(commands.Cog):
 
     def build_button(self, item: ShopItem, row: Optional[int] = None) -> discord.ui.Button:
         """Builds a button for the shop item."""
-        @discord.ui.button(label=f"Buy {item.name}", style=discord.ButtonStyle.primary, row=row)
         async def button(cls, interaction: discord.Interaction, button: discord.ui.Button, item=item):
             button.disabled = True
             await interaction.response.defer()  # defer the response to avoid timeout
@@ -193,7 +192,7 @@ class ShopCog(commands.Cog):
             UPDATES_CHANNEL: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {item.name} for {item.price:,} Eden Coins.")
             return True
-        return button
+        return discord.ui.button(label=f"Buy {item.name}", style=discord.ButtonStyle.primary, row=row)(button)
     
     async def generate_shop_page(self, user: discord.Member, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
         """Generates an embed for the shop page."""
@@ -206,6 +205,7 @@ class ShopCog(commands.Cog):
         view = discord.ui.View(timeout=None)
         print(f"Generating shop page... ({len(shop)} items)")
         for item in shop:
+            print("Iterating over shop item:", item.name)
             if not item.purchasable(self.bot, user):
                 continue
             embed.add_field(

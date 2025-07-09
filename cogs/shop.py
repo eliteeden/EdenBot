@@ -99,7 +99,7 @@ class ShopCog(commands.Cog):
         # Length
         def __len__(self) -> int:
             """Returns the number of shop items."""
-            items = [getattr(self, item) for item in dir(self) if type(getattr(self, item)).__name__ is "ShopItem"]
+            items = [getattr(self, item) for item in dir(self) if isinstance(getattr(self, item), self.ShopItem)]
             return len(items)
         # Iteration
         def __iter__(self) -> Iterator[ShopItem]:

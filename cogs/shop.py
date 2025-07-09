@@ -161,14 +161,6 @@ class ShopCog(commands.Cog):
                 return True
             await interaction.response.send_message("You are already able to use the /talk command.", ephemeral=True)
             return False # User already has the role, so they can't buy it again.
-        @shopitem(name="Custom Role", price=100_000_000)
-        @staticmethod
-        async def custom_role(bot: commands.Bot, interaction: discord.Interaction):
-            """Good luck, germanic."""
-            await interaction.response.send_message(
-                "ping a mod for this, still WIP for now"
-            )
-            return False
         @shopitem(name="Lock", price=500_000)
         @staticmethod
         async def lock_item(bot: commands.Bot, interaction: discord.Interaction):

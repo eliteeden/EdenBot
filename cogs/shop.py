@@ -235,7 +235,7 @@ class ShopCog(commands.Cog):
                 continue
             embed.add_field(
                 name=f"{item.name} - {item.price:,} Eden Coins",
-                value=f"({'' if item.purchasable(self.bot, user) or show_all else 'not '})" + item.description,
+                value=f"{'' if item.purchasable(self.bot, user) or show_all else '(not purchasable)'}" + item.description,
                 inline=False
             )
         view = self.ShopButtons(self, user, shop)

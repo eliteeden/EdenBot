@@ -122,7 +122,7 @@ class InventoryCog(commands.Cog):
             member: discord.Member = ctx.author # type: ignore
         inventory = self.get_inventory(member)
         if not inventory:
-            await ctx.send(f"{member.mention} has an empty inventory.")
+            await ctx.send(f"{member.name} has an empty inventory.")
             return
         embed = discord.Embed(title=f"{member.name}'s Inventory", color=discord.Color.blue())
         for item, amount in inventory.items():

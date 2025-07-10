@@ -11,6 +11,7 @@ from constants import CHANNELS, ROLES, USERS
 # Type Hints
 from cogs.inventory import InventoryCog
 from cogs.shop import ShopCog
+from cogs.paginator import PaginatorCog
 
 class EconomyCog(commands.Cog):
     """All economy related commands and tasks."""
@@ -144,6 +145,11 @@ class EconomyCog(commands.Cog):
             sorted_users = sorted(self.bank.keys(), key=lambda x: self.get(x), reverse=True)
             # Limit to top 100 users
             top_users = list(sorted_users)[:100]
+            # Remove protected users
+            top_users.remove("0")
+            for user_id in self.protected_users:
+                if str(user_id) in top_users:
+                    top_users.remove(str(user_id))
 
             # Get paginator cog
             paginator_cog = self.bot.get_cog("PaginatorCog")
@@ -151,13 +157,13 @@ class EconomyCog(commands.Cog):
                 await ctx.send("PaginatorCog is not loaded.")
                 return
 
-            paginator = paginator_cog()  # type: ignore # Assumes your PaginatorCog has this method
+            paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore # Assumes your PaginatorCog has this method
 
             # Create paginated embeds
             for i in range(0, len(top_users), 10):  # 10 users per page
                 embed = discord.Embed(title="Economy Leaderboard", color=discord.Color.gold())
                 for idx, user_id in enumerate(top_users[i:i + 10]):
-                    embed.add_field(name=f"{idx+1}. {user.name or 'Unknown User' if (user:=self.bot.get_user(int(user_id))) else 'Unknown User'}", value=f"{self.get(user_id):,} Eden coins", inline=False)
+                    embed.add_field(name=f"{i*10+idx+1}. {user.name or 'Unknown User' if (user:=self.bot.get_user(int(user_id))) else 'Unknown User'}", value=f"{self.get(user_id):,} Eden coins", inline=False)
                 paginator.add_page(embed)
 
             await paginator.send(ctx)
@@ -256,16 +262,16 @@ class EconomyCog(commands.Cog):
             self.sub(ctx.author, cost)
             await ctx.send(f'You lost {cost:,} eden coins.')
 
+    protected_users = [USERS.HAPPY]
     @commands.command(name="steal", aliases=["rob", "heist"])
     @commands.cooldown(1, 7200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
         thief = ctx.author
 
         # Replace with the actual name or ID of the protected role
-        protected_users = [USERS.HAPPY]
 
         # Check if the target has the protected role
-        if member.id in protected_users:
+        if member.id in self.protected_users:
             await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
             self.steal.reset_cooldown(ctx)  # type: ignore
             return

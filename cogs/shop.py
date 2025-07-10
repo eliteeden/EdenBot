@@ -166,6 +166,12 @@ class ShopCog(commands.Cog):
         async def lock_item(bot: commands.Bot, interaction: discord.Interaction):
             """Makes stealing from you much harder. (Breaks after someone steals from you successfully)"""
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
+            if inventory.get_inventory(interaction.user).get("Lock", 0) >= 5:
+                await interaction.response.send_message(
+                    "I think five locks is enough for now.",
+                    ephemeral=True
+                )
+                return False
             inventory.add_item(interaction.user, "Lock", 1) # type: ignore
             await interaction.response.send_message(
                 "You bought a lock!"

@@ -64,6 +64,7 @@ class InventoryCog(commands.Cog):
         if item not in inventory:
             inventory[item] = 0
         inventory[item] += amount
+        self.__save_inventories()
         return inventory[item]
     def remove_item(self, user: discord.Member, item: Item, amount: int = 1) -> int:
         """Remove an item from a user's inventory."""
@@ -75,6 +76,7 @@ class InventoryCog(commands.Cog):
         inventory[item] -= amount
         if inventory[item] == 0:
             del inventory[item]
+        self.__save_inventories()
         return inventory.get(item, 0)
     def has_item(self, user: discord.Member, item: Item, amount: int = 1) -> bool:
         """Check if a user has a certain amount of an item."""
@@ -128,6 +130,11 @@ class InventoryCog(commands.Cog):
         for item, amount in inventory.items():
             embed.add_field(name=item, value=f"Amount: {amount:,}", inline=False)
         await ctx.send(embed=embed)
+    
+    async def cog_unload(self) -> None:
+        """Save inventories and perform cleanup when the cog is unloaded."""
+        self.__save_inventories()
+        return await super().cog_unload()
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

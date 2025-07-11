@@ -299,7 +299,7 @@ class ShopCog(commands.Cog):
                 if self.shop.economy().get(interaction.user) < self.item.price:
                     await self.disable(interaction)
                 return True
-        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", items: list[ShopItem], page: int = 0, hide_navigation: bool = False):
+        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", items: list[ShopItem], page: int = 0, pages: int = 1, hide_navigation: bool = False):
             self.economy = shopcog.economy
             self.user = user
             self.bot = shopcog.bot
@@ -316,7 +316,7 @@ class ShopCog(commands.Cog):
                 # Create a button for each item
                 self.add_item(self.ShopButton(item, shopcog, user))
             if not hide_navigation:
-                self.add_item(self.NextButton(shopcog, user, page=page, disabled=len(self.items) <= (page + 1) * 3))
+                self.add_item(self.NextButton(shopcog, user, page=page, disabled=page + 1 >= pages))
 
 
     async def generate_shop_page(self, user: discord.Member, show_all: bool = False, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
@@ -328,11 +328,8 @@ class ShopCog(commands.Cog):
         )
         shop = self.Shop()
         print(f"Generating shop page... ({len(shop)} items)")
-        buyable_items = [item for item in shop if item.purchasable(self.bot, user) or show_all]
-        try:
-            buyable_items = buyable_items[page * 3:(page + 1) * 3]
-        except IndexError:
-            buyable_items = buyable_items[page * 3:]  # Get the remaining items if page is out of range
+        buyable_items = [item for item in shop if item.purchasable(self.bot, user) or show_all][page * 3:(page + 1) * 3]
+        pages = len(buyable_items) // 3 + 1
         if not buyable_items:
             embed.description = "There are no items available for purchase at the moment."
             return embed, discord.ui.View()
@@ -342,8 +339,8 @@ class ShopCog(commands.Cog):
                 value=f"{'' if item.purchasable(self.bot, user) or show_all else '(not purchasable)'}" + item.description,
                 inline=False
             )
-        embed.set_footer(text=f"Page {page + 1} of {len(buyable_items) // 3 + 1} | Use the buttons below to navigate.")
-        view = self.ShopButtons(self, user, shop, buyable_items, page=page, hide_navigation=show_all)
+        embed.set_footer(text=f"Page {page + 1} of {pages} | Use the buttons below to navigate.")
+        view = self.ShopButtons(self, user, shop, buyable_items, page=page, pages=pages, hide_navigation=show_all)
 
         return embed, view
         

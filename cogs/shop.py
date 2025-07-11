@@ -306,7 +306,8 @@ class ShopCog(commands.Cog):
                 if not self.item.purchasable(self.shop.bot, interaction.user):
                     await self.disable(interaction)
                     await interaction.response.send_message(
-                        f"You no longer are able to purchase this item." # Would be disabled otherwise
+                        f"You no longer are able to purchase this item.", # Would be disabled otherwise
+                        ephemeral=True
                     )
                     return False
                 if self.shop.economy().get(interaction.user) < self.item.price:

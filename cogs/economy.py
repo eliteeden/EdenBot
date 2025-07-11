@@ -318,7 +318,10 @@ class EconomyCog(commands.Cog):
             message += f"\n{member.mention}, someone just tried to steal from you!"
         if break_lockpick: # breaks every time
             self.inventory().remove_item(thief, "Lockpick", 1) # type: ignore
-            message += "I guess you got what you needed out of that lockpick." if break_lock else "\nWell, there goes your lockpick."
+            if break_lock:
+                message += "\nI guess you got what you needed out of that lockpick."
+            else:
+                message += "\nWell, there goes your lockpick."
 
         await ctx.send(message)
 

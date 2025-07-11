@@ -1166,7 +1166,7 @@ async def define(ctx,*,  word: str):
 
 
 @bot.command()
-@commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, ROLES.WORDLES_WIDOWER, 1118650807785619586) # last role is unknown (remove?)
+@commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, ROLES.WORDLES_WIDOWER, "Fden Bot Perms", 1118650807785619586) # last role is unknown (remove?)
 async def urban(ctx, *, word: str):
     """Fetches the definition of a word from Urban Dictionary"""
     url = f"https://api.urbandictionary.com/v0/define?term={word}"

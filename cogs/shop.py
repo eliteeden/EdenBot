@@ -1,6 +1,7 @@
 # from __future__ import annotations
 # I don't think future works in cogs
 
+import math
 import discord
 from discord.ext import commands
 from typing import Callable, Coroutine, Generator, Iterator, Optional, overload
@@ -318,7 +319,7 @@ class ShopCog(commands.Cog):
         shop = self.Shop()
         print(f"Generating shop page... ({len(shop)} items)")
         buyable_items = [item for item in shop if item.purchasable(self.bot, user) or show_all]
-        pages = len(buyable_items) // 3 + 1
+        pages = math.ceil(len(buyable_items) / 3)
         items = buyable_items[page * 3:(page + 1) * 3]
         if not items:
             embed.description = "There are no items available for purchase at the moment."

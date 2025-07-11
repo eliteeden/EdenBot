@@ -249,12 +249,12 @@ class ShopCog(commands.Cog):
                 return True
         class ShopButton(discord.ui.Button):
             """A button for a shop item."""
-            def __init__(self, item: ShopItem, shop: "ShopCog", user: discord.Member):
+            def __init__(self, item: ShopItem, shop: "ShopCog", user: discord.Member, disabled: bool):
                 super().__init__(label=item.name, style=discord.ButtonStyle.primary)
                 self.item = item
                 self.shop = shop
                 self.user = user
-                self.disabled = shop.economy().get(user) < item.price
+                self.disabled = disabled or shop.economy().get(user) < item.price
             async def disable(self, interaction: discord.Interaction):
                 """Disables the button."""
                 self.disabled = True
@@ -305,7 +305,7 @@ class ShopCog(commands.Cog):
             super().__init__(timeout=None)
             self.add_item(self.BackButton(shopcog, user, page=page, disabled=page <= 0, show_all=show_all))
             for item in items:
-                self.add_item(self.ShopButton(item, shopcog, user))
+                self.add_item(self.ShopButton(item, shopcog, user, disabled=show_all))
             self.add_item(self.NextButton(shopcog, user, page=page, disabled=page + 1 >= pages, show_all=show_all))
 
 

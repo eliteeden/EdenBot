@@ -354,8 +354,8 @@ class ShopCog(commands.Cog):
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def shop_all(self, ctx: commands.Context):
         """Displays all shop items, even those that are not purchasable."""
-        embed, _ = await self.generate_shop_page(ctx.author, show_all=True) # type: ignore
-        await ctx.send(embed=embed)
+        embed, view = await self.generate_shop_page(ctx.author, show_all=True) # type: ignore
+        await ctx.send(embed=embed, view=view)
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

@@ -189,12 +189,17 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     elif isinstance(error, commands.CommandInvokeError):
         await ctx.send("An error occurred while executing the command. Leave me alone for a bit.")
         bot_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
-        await bot_channel.send('\n'.join([f"Error in command `{ctx.command}`: {error.original}",
+        message = '\n'.join([f"Error in command `{ctx.command}`: {error.original}",
                                           f"{traceback.format_exc()}",
                                           f"{'-'*20}",
                                           f"{traceback.format_exception(error)}",
                                           f"{'-'*20}",
-                                          f"{traceback.format_exception(error.original)}"]))
+                                          f"{traceback.format_exception(error.original)}"])
+        if len(message) < 2000:
+            await bot_channel.send(message)
+        else:
+            for i in range(0, len(message), 2000):
+                await bot_channel.send(message[i:i+2000])
         print(error)
     else:
         raise error

@@ -288,7 +288,7 @@ class EconomyCog(commands.Cog):
             self.steal.reset_cooldown(ctx)  # type: ignore
             return
 
-        reward = random.randint(target_balance // 20, target_balance // 5)  # Steal between 5% and 20% of the target's balance
+        reward = max(2_500_000, random.randint(target_balance // 20, target_balance // 5))  # Steal between 5% and 20% of the target's balance
         break_lock = False
         break_lockpick = False
         if self.inventory().has_item(member, "Lock", 1):

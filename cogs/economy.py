@@ -139,7 +139,7 @@ class EconomyCog(commands.Cog):
             # Limit to top 100 users
             top_users = list(sorted_users)[:100]
             # Remove protected users
-            for user_id in self.protected_users:
+            for user_id in self.protected_role_id:
                 if str(user_id) in top_users:
                     top_users.remove(str(user_id))
 

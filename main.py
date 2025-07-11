@@ -3,21 +3,21 @@
 
 
 # Imports
-from asyncio import subprocess
-from dotenv import load_dotenv
-import json
-from discord import Interaction
-import requests
-import datetime
-import discord
-from discord.ext import commands
-from discord import Intents, Embed, User, Member, app_commands
-import os
-import random
 import aiohttp
 import asyncio
-import unicodedata
+from asyncio import subprocess
+import datetime
+from dotenv import load_dotenv
+import discord
+from discord import app_commands, Embed, Intents, Interaction, Member, User 
+from discord.ext import commands
 from googlesearch import search
+import json
+import os
+import random
+import requests
+import traceback
+import unicodedata
 
 from constants import CHANNELS, ROLES, USERS
 
@@ -189,7 +189,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     elif isinstance(error, commands.CommandInvokeError):
         await ctx.send("An error occurred while executing the command. Leave me alone for a bit.")
         bot_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
-        await bot_channel.send(f"Error in command `{ctx.command}`: {error.original}\n{error.with_traceback(None)}")
+        await bot_channel.send(f"Error in command `{ctx.command}`: {error.original}\n{traceback.format_exc()}")
     else:
         raise error
 

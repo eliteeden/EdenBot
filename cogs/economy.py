@@ -188,12 +188,8 @@ class EconomyCog(commands.Cog):
     @commands.command(name='subbal')
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def subbal(self, ctx: commands.Context, member: MemberLike, amount: int):
-        if amount < 0:
-            await ctx.send("That's illegal")
-            return
-        else:
-            self.sub(member, amount)
-            await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
+        self.sub(member, amount)
+        await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
 
     @commands.command(name='setbal')
     @commands.has_any_role("Bonked by Zi")
@@ -242,9 +238,10 @@ class EconomyCog(commands.Cog):
 
     @roulette.error
     async def roulette_error(self, ctx: commands.Context, error):
+        if not isinstance(error, commands.CommandOnCooldown):
+            self.roulette.reset_cooldown(ctx)
         if isinstance(error, commands.BadArgument):
             await ctx.send(f'{" ".join(ctx.args)} isn\'t a number, dumbass.')
-            self.roulette.reset_cooldown(ctx) # type: ignore
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(f"You are still dead\nWait a little longer")
 

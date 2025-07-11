@@ -255,16 +255,25 @@ class EconomyCog(commands.Cog):
             self.sub(ctx.author, cost)
             await ctx.send(f'You lost {cost:,} eden coins.')
 
+<<<<<<< HEAD
+    
+=======
     protected_users = [USERS.HAPPY, USERS.RAINBOW, USERS.FROST, USERS.SLOINAC, USERS.MASCIAN, USERS.VIC]
+>>>>>>> c6f66638c16e73092215528e4d29c021bbb2d1eb
     @commands.command(name="steal", aliases=["rob", "heist"])
     @commands.cooldown(1, 7200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
         thief = ctx.author
+        protected_role_id = ROLES.MODERATOR  # Adjust as needed
 
+<<<<<<< HEAD
+        if any(role.id == protected_role_id for role in member.roles):
+=======
         # Replace with the actual name or ID of the protected role
 
         # Check if the target has the protected role
         if member.id in self.protected_users:
+>>>>>>> c6f66638c16e73092215528e4d29c021bbb2d1eb
             await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
             self.steal.reset_cooldown(ctx)  # type: ignore
             return
@@ -288,7 +297,11 @@ class EconomyCog(commands.Cog):
             self.steal.reset_cooldown(ctx)  # type: ignore
             return
 
+<<<<<<< HEAD
+        reward = random.randint(target_balance // 20, target_balance // 5)
+=======
         reward = min(2_500_000, random.randint(target_balance // 20, target_balance // 10))  # Steal between 5% and 20% of the target's balance
+>>>>>>> c6f66638c16e73092215528e4d29c021bbb2d1eb
         break_lock = False
         break_lockpick = False
         if self.inventory().has_item(member, "Lock", 1):
@@ -299,6 +312,7 @@ class EconomyCog(commands.Cog):
                 chance = 4
         else:
             chance = 3
+
         success = random.randint(1, chance)
         message = ""
 
@@ -314,6 +328,11 @@ class EconomyCog(commands.Cog):
                 self.inventory().remove_item(member, "Lock", 1)
                 message += "\nYou broke their lock, you little goblin!"
         else:
+<<<<<<< HEAD
+            await ctx.send("You were caught! Leave it to the professionals next time, 'kay?")
+            await ctx.send(f"{member.mention}, someone just tried to steal from you!")
+                
+=======
             message += "\nYou were caught! Leave it to the professionals next time, 'kay?"
             message += f"\n{member.mention}, someone just tried to steal from you!"
         if break_lockpick: # breaks every time
@@ -325,6 +344,7 @@ class EconomyCog(commands.Cog):
 
         await ctx.send(message)
 
+>>>>>>> c6f66638c16e73092215528e4d29c021bbb2d1eb
     @steal.error
     async def steal_error(self, ctx, error):
         command = self.bot.get_command("steal")

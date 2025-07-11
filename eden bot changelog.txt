@@ -114,3 +114,15 @@ Eden bot Changelog
 -New economy cog coming soon...
 
 4:49 pm 04/07/2025
+
+-New economy cog
+-New steal and give command
+-Reworked subbal command(against my will)
+-New shop cog
+-Added the items: test, butterfly, talk perms(I don't like it), etc
+-New inventory cog
+-Bug fixes and QoL commands
+# cootshk, please stop adding things i don't know of so writing the changelog is easier
+
+
+10:29 am 11/07/2025

@@ -6,7 +6,6 @@
 from asyncio import subprocess
 from dotenv import load_dotenv
 import json
-from typing import Optional
 from discord import Interaction
 import requests
 import datetime
@@ -190,7 +189,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     elif isinstance(error, commands.CommandInvokeError):
         await ctx.send("An error occurred while executing the command. Leave me alone for a bit.")
         bot_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
-        await bot_channel.send(f"Error in command `{ctx.command}`: {error.original}")
+        await bot_channel.send(f"Error in command `{ctx.command}`: {error.original}\n{error.with_traceback(None)}")
     else:
         raise error
 

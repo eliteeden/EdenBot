@@ -220,28 +220,30 @@ class ShopCog(commands.Cog):
         """The view containing the shop buttons."""
         class BackButton(discord.ui.Button):
             """A button to go back to the previous page."""
-            def __init__(self, shop: "ShopCog", user: discord.Member, page: int, disabled: bool = False):
+            def __init__(self, shop: "ShopCog", user: discord.Member, page: int, disabled: bool, show_all: bool):
                 super().__init__(label="◀️", style=discord.ButtonStyle.secondary)
                 self.shop = shop
                 self.user = user
                 self.page = page
                 self.disabled = disabled
+                self.show_all = show_all
             async def callback(self, interaction: discord.Interaction):
                 assert isinstance(interaction.user, discord.Member), "Interaction user must be a Member."
-                embed, view = await self.shop.generate_shop_page(self.user, page=self.page - 1)
+                embed, view = await self.shop.generate_shop_page(self.user, page=self.page - 1, show_all=self.show_all)
                 await interaction.response.edit_message(embed=embed, view=view)
                 return True
         class NextButton(discord.ui.Button):
             """A button to go to the next page."""
-            def __init__(self, shop: "ShopCog", user: discord.Member, disabled: bool = False, page: int = 0):
+            def __init__(self, shop: "ShopCog", user: discord.Member, disabled: bool, page: int, show_all: bool):
                 super().__init__(label="▶️", style=discord.ButtonStyle.secondary)
                 self.shop = shop
                 self.user = user
                 self.page = page
                 self.disabled = disabled
+                self.show_all = show_all
             async def callback(self, interaction: discord.Interaction):
                 assert isinstance(interaction.user, discord.Member), "Interaction user must be a Member."
-                embed, view = await self.shop.generate_shop_page(self.user, page=self.page + 1)
+                embed, view = await self.shop.generate_shop_page(self.user, page=self.page + 1, show_all=self.show_all)
                 await interaction.response.edit_message(embed=embed, view=view)
                 return True
         class ShopButton(discord.ui.Button):
@@ -298,12 +300,12 @@ class ShopCog(commands.Cog):
                 if self.shop.economy().get(interaction.user) < self.item.price:
                     await self.disable(interaction)
                 return True
-        def __init__(self, shopcog: "ShopCog", user: discord.Member, items: list[ShopItem], page: int = 0, pages: int = 1):
+        def __init__(self, shopcog: "ShopCog", user: discord.Member, items: list[ShopItem], page: int, pages: int, show_all: bool):
             super().__init__(timeout=None)
-            self.add_item(self.BackButton(shopcog, user, page=page, disabled=page <= 0))
+            self.add_item(self.BackButton(shopcog, user, page=page, disabled=page <= 0, show_all=show_all))
             for item in items:
                 self.add_item(self.ShopButton(item, shopcog, user))
-            self.add_item(self.NextButton(shopcog, user, page=page, disabled=page + 1 >= pages))
+            self.add_item(self.NextButton(shopcog, user, page=page, disabled=page + 1 >= pages, show_all=show_all))
 
 
     async def generate_shop_page(self, user: discord.Member, show_all: bool = False, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
@@ -311,7 +313,7 @@ class ShopCog(commands.Cog):
         embed = discord.Embed(
             title="Eden Shop",
             description="All items are used automatically when needed.",
-            color=discord.Color.green()
+            color=discord.Color.blurple() if show_all else discord.Color.green()
         )
         shop = self.Shop()
         print(f"Generating shop page... ({len(shop)} items)")
@@ -328,7 +330,7 @@ class ShopCog(commands.Cog):
                 inline=False
             )
         embed.set_footer(text=f"Page {page + 1} of {pages} | Use the buttons below to navigate.")
-        view = self.ShopButtons(self, user, items, page=page, pages=pages)
+        view = self.ShopButtons(self, user, items, page=page, pages=pages, show_all=show_all)
 
         return embed, view
         

@@ -149,7 +149,7 @@ class ShopCog(commands.Cog):
             return True
 
         @excludes_roles(ROLES.TALK_PERMS)
-        @shopitem(name="talk", price=2_500_000)
+        @shopitem(name="talk", price=2_500_000_000)
         @staticmethod
         async def talk_command_perms(bot: commands.Bot, interaction: discord.Interaction):
             """Gives the user permission to use the /talk command."""

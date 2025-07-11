@@ -299,8 +299,8 @@ class ShopCog(commands.Cog):
                     await self.disable(interaction)
                 return True
         def __init__(self, shopcog: "ShopCog", user: discord.Member, items: list[ShopItem], page: int = 0, pages: int = 1):
-            self.add_item(self.BackButton(shopcog, user, page=page, disabled=page <= 0))
             super().__init__(timeout=None)
+            self.add_item(self.BackButton(shopcog, user, page=page, disabled=page <= 0))
             for item in items:
                 self.add_item(self.ShopButton(item, shopcog, user))
             self.add_item(self.NextButton(shopcog, user, page=page, disabled=page + 1 >= pages))

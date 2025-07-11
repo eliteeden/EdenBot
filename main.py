@@ -191,9 +191,9 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         bot_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
         message = '\n'.join([f"Error in command `{ctx.command}`: {error.original}",
                                           f"{'-' * 20}",
-                                          "```py"
+                                          "```py",
                                           f"{traceback.format_exception(error.original)}",
-                                          "```"])
+                                          "```",])
         if len(message) < 2000:
             await bot_channel.send(message)
         else:

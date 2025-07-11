@@ -149,7 +149,7 @@ class ShopCog(commands.Cog):
             return True
 
         @excludes_roles(ROLES.TALK_PERMS)
-        @shopitem(name="talk", price=2_500_000_000)
+        @shopitem(name="talk", price=2_500_000)
         @staticmethod
         async def talk_command_perms(bot: commands.Bot, interaction: discord.Interaction):
             """Gives the user permission to use the /talk command."""
@@ -163,7 +163,7 @@ class ShopCog(commands.Cog):
             return False # User already has the role, so they can't buy it again.
         @shopitem(name="Lock", price=500_000)
         @staticmethod
-        async def lock_item(bot: commands.Bot, interaction: discord.Interaction):
+        async def lock(bot: commands.Bot, interaction: discord.Interaction):
             """Makes stealing from you much harder. (Breaks after someone steals from you successfully)"""
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
             if inventory.get_inventory(interaction.user).get("Lock", 0) >= 5:
@@ -179,7 +179,7 @@ class ShopCog(commands.Cog):
             return True # Item added to inventory
         @shopitem(name="Butterfly", price=50_000)
         @staticmethod
-        async def lock_item(bot: commands.Bot, interaction: discord.Interaction):
+        async def butterfly(bot: commands.Bot, interaction: discord.Interaction):
             """A cute butterfly. Eden's mascot"""
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
             if inventory.get_inventory(interaction.user).get("Butterfly", 0) >= 5:

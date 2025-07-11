@@ -10,7 +10,6 @@ from constants import CHANNELS, ROLES, USERS
 
 # Type Hints
 from cogs.inventory import InventoryCog
-from cogs.shop import ShopCog
 from cogs.paginator import PaginatorCog
 
 class EconomyCog(commands.Cog):
@@ -36,12 +35,6 @@ class EconomyCog(commands.Cog):
         cog = self.bot.get_cog("InventoryCog")
         if cog is None:
             raise RuntimeError("InventoryCog is not loaded.")
-        return cog # type: ignore
-    def shop(self) -> "ShopCog":
-        """Returns the ShopCog instance."""
-        cog = self.bot.get_cog("ShopCog")
-        if cog is None:
-            raise RuntimeError("ShopCog is not loaded.")
         return cog # type: ignore
 
     def __get_id(self, member: MemberLike) -> strint:

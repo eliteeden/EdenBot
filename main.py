@@ -95,7 +95,7 @@ async def on_ready():
         await bot.tree.sync()
     except Exception as e:
         print(f"Failed to sync commands: {e}")
-    channel = CHANNELS.CAPITAL
+    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
     await channel.send("I'm backkkkk")
     print('Systems online')
 

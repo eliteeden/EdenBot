@@ -177,6 +177,22 @@ class ShopCog(commands.Cog):
                 "You bought a lock!"
             )
             return True # Item added to inventory
+        @shopitem(name="Butterfly", price=50_000)
+        @staticmethod
+        async def lock_item(bot: commands.Bot, interaction: discord.Interaction):
+            """A cute butterfly. Eden's mascot"""
+            inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
+            if inventory.get_inventory(interaction.user).get("Butterfly", 0) >= 5:
+                await interaction.response.send_message(
+                    "That's too much love, hun.",
+                    ephemeral=True
+                )
+                return False
+            inventory.add_item(interaction.user, "Butterfly", 1) # type: ignore
+            await interaction.response.send_message(
+                "You bought a pristine butterfly!"
+            )
+            return True # Item added to inventory
 
 
     def __init__(self, bot: commands.Bot):

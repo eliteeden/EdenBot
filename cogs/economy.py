@@ -255,7 +255,7 @@ class EconomyCog(commands.Cog):
             self.sub(ctx.author, cost)
             await ctx.send(f'You lost {cost:,} eden coins.')
 
-    protected_users = ROLES.MODERATOR
+    protected_role_id = ROLES.MODERATOR
     @commands.command(name="steal", aliases=["rob", "heist"])
     @commands.cooldown(1, 7200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
@@ -264,7 +264,7 @@ class EconomyCog(commands.Cog):
         # Replace with the actual name or ID of the protected role
 
         # Check if the target has the protected role
-        if any(role.id == protected_users for role in member.roles):
+        if any(role.id == protected_role_id for role in member.roles):
     # same protection logic
             await ctx.send(f"{member.display_name} is protected and cannot be stolen from.")
             self.steal.reset_cooldown(ctx)  # type: ignore

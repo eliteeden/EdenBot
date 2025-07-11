@@ -147,6 +147,24 @@ class ShopCog(commands.Cog):
             updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await updates_channel.send(f"Test item purchased by {interaction.user.name}")
             return True
+        @requires_roles(ROLES.TOTALLY_MOD)
+        @shopitem(name="test2", price=200)
+        @staticmethod
+        async def test2_item(bot: commands.Bot, interaction: discord.Interaction):
+            """Prints a test message to the bot logs channel."""
+            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
+            await updates_channel.send(f"Test2 item purchased by {interaction.user.name}")
+            return True
+        @requires_roles(ROLES.TOTALLY_MOD)
+        @shopitem(name="test3", price=300)
+        @staticmethod
+        async def test3_item(bot: commands.Bot, interaction: discord.Interaction):
+            """Prints a test message to the bot logs channel."""
+            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
+            await updates_channel.send(f"Test3 item purchased by {interaction.user.name}")
+            return True
+        
+        # That should be one page
 
         @excludes_roles(ROLES.TALK_PERMS)
         @shopitem(name="talk", price=2_500_000)
@@ -200,6 +218,33 @@ class ShopCog(commands.Cog):
         self.economy: Callable[[], EconomyCog] =  lambda : bot.get_cog("EconomyCog") # type: ignore
     class ShopButtons(discord.ui.View):
         """The view containing the shop buttons."""
+        class BackButton(discord.ui.Button):
+            """A button to go back to the previous page."""
+            def __init__(self, shop: "ShopCog", user: discord.Member, page: int):
+                super().__init__(label="◀️", style=discord.ButtonStyle.secondary)
+                self.shop = shop
+                self.user = user
+                self.page = page
+                if page == 0:
+                    self.disabled = True
+            async def callback(self, interaction: discord.Interaction):
+                assert isinstance(interaction.user, discord.Member), "Interaction user must be a Member."
+                embed, view = await self.shop.generate_shop_page(self.user, page=self.page - 1)
+                await interaction.response.edit_message(embed=embed, view=view)
+                return True
+        class NextButton(discord.ui.Button):
+            """A button to go to the next page."""
+            def __init__(self, shop: "ShopCog", user: discord.Member, disabled: bool = False, page: int = 0):
+                super().__init__(label="▶️", style=discord.ButtonStyle.secondary)
+                self.shop = shop
+                self.user = user
+                self.page = page
+                self.disabled = disabled
+            async def callback(self, interaction: discord.Interaction):
+                assert isinstance(interaction.user, discord.Member), "Interaction user must be a Member."
+                embed, view = await self.shop.generate_shop_page(self.user, page=self.page + 1)
+                await interaction.response.edit_message(embed=embed, view=view)
+                return True
         class ShopButton(discord.ui.Button):
             """A button for a shop item."""
             def __init__(self, item: ShopItem, shop: "ShopCog", user: discord.Member):
@@ -254,39 +299,51 @@ class ShopCog(commands.Cog):
                 if self.shop.economy().get(interaction.user) < self.item.price:
                     await self.disable(interaction)
                 return True
-        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", show_all: bool = False):
+        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", items: list[ShopItem], page: int = 0, hide_navigation: bool = False):
             self.economy = shopcog.economy
             self.user = user
             self.bot = shopcog.bot
             self.shop = shop
-            self.show_all = show_all
+            self.items = items
+            self.hide_navigation = hide_navigation
+            self.page = page
+            if not hide_navigation:
+                self.add_item(self.BackButton(shopcog, user, page=page))
             super().__init__(timeout=None)  # Disable timeout for the view
-            for i, item in enumerate(self.shop):
-                if not item.purchasable(self.bot, user) and not self.show_all:
+            for i, item in enumerate(self.items):
+                if not item.purchasable(self.bot, user):
                     continue
                 # Create a button for each item
                 self.add_item(self.ShopButton(item, shopcog, user))
+            if not hide_navigation:
+                self.add_item(self.NextButton(shopcog, user, page=page, disabled=len(self.items) <= (page + 1) * 3))
 
 
-    async def generate_shop_page(self, user: discord.Member, show_all: bool = False) -> tuple[discord.Embed, discord.ui.View]:
+    async def generate_shop_page(self, user: discord.Member, show_all: bool = False, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
         """Generates an embed for the shop page."""
         embed = discord.Embed(
             title="Eden Shop",
-            description="Welcome to the Eden Shop! Here are the items you can purchase:",
+            description="All items are used automatically when needed.",
             color=discord.Color.green()
         )
         shop = self.Shop()
         print(f"Generating shop page... ({len(shop)} items)")
-        for item in shop:
-            print("Iterating over shop item:", item.name)
-            if not item.purchasable(self.bot, user) and not show_all:
-                continue
+        buyable_items = [item for item in shop if item.purchasable(self.bot, user) or show_all]
+        try:
+            buyable_items = buyable_items[page * 3:(page + 1) * 3]
+        except IndexError:
+            buyable_items = buyable_items[page * 3:]  # Get the remaining items if page is out of range
+        if not buyable_items:
+            embed.description = "There are no items available for purchase at the moment."
+            return embed, discord.ui.View()
+        for item in buyable_items:
             embed.add_field(
                 name=f"{item.name} - {item.price:,} Eden Coins",
                 value=f"{'' if item.purchasable(self.bot, user) or show_all else '(not purchasable)'}" + item.description,
                 inline=False
             )
-        view = self.ShopButtons(self, user, shop)
+        embed.set_footer(text=f"Page {page + 1} of {len(buyable_items) // 3 + 1} | Use the buttons below to navigate.")
+        view = self.ShopButtons(self, user, shop, buyable_items, page=page, hide_navigation=show_all)
 
         return embed, view
         
@@ -300,8 +357,8 @@ class ShopCog(commands.Cog):
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def shop_all(self, ctx: commands.Context):
         """Displays all shop items, even those that are not purchasable."""
-        embed, view = await self.generate_shop_page(ctx.author, show_all=True) # type: ignore
-        await ctx.send(embed=embed, view=view)
+        embed, _ = await self.generate_shop_page(ctx.author, show_all=True) # type: ignore
+        await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

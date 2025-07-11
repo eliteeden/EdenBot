@@ -315,19 +315,20 @@ class ShopCog(commands.Cog):
         )
         shop = self.Shop()
         print(f"Generating shop page... ({len(shop)} items)")
-        buyable_items = [item for item in shop if item.purchasable(self.bot, user) or show_all][page * 3:(page + 1) * 3]
+        buyable_items = [item for item in shop if item.purchasable(self.bot, user) or show_all]
         pages = len(buyable_items) // 3 + 1
-        if not buyable_items:
+        items = buyable_items[page * 3:(page + 1) * 3]
+        if not items:
             embed.description = "There are no items available for purchase at the moment."
             return embed, discord.ui.View()
-        for item in buyable_items:
+        for item in items:
             embed.add_field(
                 name=f"{item.name} - {item.price:,} Eden Coins",
                 value=f"{'' if item.purchasable(self.bot, user) or show_all else '(not purchasable)'}" + item.description,
                 inline=False
             )
         embed.set_footer(text=f"Page {page + 1} of {pages} | Use the buttons below to navigate.")
-        view = self.ShopButtons(self, user, buyable_items, page=page, pages=pages)
+        view = self.ShopButtons(self, user, items, page=page, pages=pages)
 
         return embed, view
         

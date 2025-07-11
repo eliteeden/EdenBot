@@ -58,6 +58,10 @@ class InventoryCog(commands.Cog):
         if user_id not in self.inventories:
             self.inventories[user_id] = {}
         return self.inventories[user_id]
+    def get_item(self, user: MemberLike, item: Item) -> int:
+        """Get the amount of a specific item in a user's inventory."""
+        inventory = self.get_inventory(user)
+        return inventory.get(item, 0)
     def add_item(self, user: MemberLike, item: Item, amount: int = 1) -> int:
         """Add an item to a user's inventory."""
         inventory = self.get_inventory(user)

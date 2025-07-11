@@ -290,28 +290,38 @@ class EconomyCog(commands.Cog):
 
         reward = random.randint(target_balance // 20, target_balance // 5)  # Steal between 5% and 20% of the target's balance
         break_lock = False
+        break_lockpick = False
         if self.inventory().has_item(member, "Lock", 1):
-            chance = 20
+            if self.inventory().has_item(thief, "Lockpick", 1): # type: ignore
+                break_lockpick = True
+                chance = 4
+            chance = 10
             break_lock = True
         else:
             chance = 3
         success = random.randint(1, chance)
+        message = ""
 
         if success == 2:
             self.sub(member, reward)
             self.add(thief, reward)
             self.steal.reset_cooldown(ctx)  # type: ignore
-            await ctx.send(
+            message += (
                 f"You successfully stole {reward} coins from {member.display_name}!\n"
                 f"-# Don't worry, I won't ping them like a snitch"
             )
             if break_lock:
                 self.inventory().remove_item(member, "Lock", 1)
-                await ctx.send("You broke their lock, you little goblin!")
+                message += "\nYou broke their lock, you little goblin!"
         else:
-            await ctx.send("You were caught! Leave it to the professionals next time, 'kay?")
-            await ctx.send(f"{member.mention}, someone just tried to steal from you!")
-            
+            message += "\nYou were caught! Leave it to the professionals next time, 'kay?"
+            message += f"\n{member.mention}, someone just tried to steal from you!"
+        if break_lockpick: # breaks every time
+            self.inventory().remove_item(thief, "Lockpick", 1) # type: ignore
+            message += "I guess you got what you needed out of that lockpick." if break_lock else "\nWell, there goes your lockpick."
+
+        await ctx.send(message)
+
     @steal.error
     async def steal_error(self, ctx, error):
         command = self.bot.get_command("steal")

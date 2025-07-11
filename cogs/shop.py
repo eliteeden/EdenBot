@@ -183,9 +183,9 @@ class ShopCog(commands.Cog):
         @shopitem(name="Lock", price=500_000)
         @staticmethod
         async def lock(bot: commands.Bot, interaction: discord.Interaction):
-            """Makes stealing from you much harder. (Breaks after someone steals from you successfully)"""
+            """Makes stealing from you much harder. (Breaks after someone steals from you successfully)\nMax: 5"""
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
-            if inventory.get_inventory(interaction.user).get("Lock", 0) >= 5:
+            if inventory.get_item(interaction.user, "Lock") >= 5:
                 await interaction.response.send_message(
                     "I think five locks is enough for now.",
                     ephemeral=True
@@ -193,15 +193,34 @@ class ShopCog(commands.Cog):
                 return False
             inventory.add_item(interaction.user, "Lock", 1) # type: ignore
             await interaction.response.send_message(
-                "You bought a lock!"
+                "You bought a lock!",
+                ephemeral=True
             )
             return True # Item added to inventory
+        @shopitem(name="Lockpick", price=1_000_000)
+        @staticmethod
+        async def lockpick(bot: commands.Bot, interaction: discord.Interaction):
+            """Significantly increases the chance of stealing from someone with a lock. (Breaks on use).\nMax: 2"""
+            inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
+            if inventory.get_item(interaction.user, "Lockpick") >= 2:
+                await interaction.response.send_message(
+                    "Woah there, you aren't De Santa", # GTA V reference
+                    ephemeral=True
+                )
+                return False
+            inventory.add_item(interaction.user, "Lockpick", 1) # type: ignore
+            await interaction.response.send_message(
+                "Use it wisely, okay?",
+                ephemeral=True
+            )
+            return True # Item added to inventory
+
         @shopitem(name="Butterfly", price=50_000)
         @staticmethod
         async def butterfly(bot: commands.Bot, interaction: discord.Interaction):
             """A cute butterfly. Eden's mascot"""
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
-            if inventory.get_inventory(interaction.user).get("Butterfly", 0) >= 5:
+            if inventory.get_item(interaction.user, "Butterfly") >= 5:
                 await interaction.response.send_message(
                     "That's too much love, hun.",
                     ephemeral=True
@@ -209,7 +228,8 @@ class ShopCog(commands.Cog):
                 return False
             inventory.add_item(interaction.user, "Butterfly", 1) # type: ignore
             await interaction.response.send_message(
-                "You bought a pristine butterfly!"
+                "You bought a pristine butterfly!",
+                ephemeral=True
             )
             return True # Item added to inventory
 

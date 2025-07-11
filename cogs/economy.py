@@ -188,8 +188,12 @@ class EconomyCog(commands.Cog):
     @commands.command(name='subbal')
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def subbal(self, ctx: commands.Context, member: MemberLike, amount: int):
-        self.sub(member, amount)
-        await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
+        if amount < 0:
+            await ctx.send("That's illegal")
+            return
+        else:
+            self.sub(member, amount)
+            await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
 
     @commands.command(name='setbal')
     @commands.has_any_role("Bonked by Zi")

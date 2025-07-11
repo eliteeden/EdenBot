@@ -292,11 +292,11 @@ class EconomyCog(commands.Cog):
         break_lock = False
         break_lockpick = False
         if self.inventory().has_item(member, "Lock", 1):
+            chance = 10
+            break_lock = True
             if self.inventory().has_item(thief, "Lockpick", 1): # type: ignore
                 break_lockpick = True
                 chance = 4
-            chance = 10
-            break_lock = True
         else:
             chance = 3
         success = random.randint(1, chance)
@@ -318,7 +318,7 @@ class EconomyCog(commands.Cog):
             message += f"\n{member.mention}, someone just tried to steal from you!"
         if break_lockpick: # breaks every time
             self.inventory().remove_item(thief, "Lockpick", 1) # type: ignore
-            if break_lock:
+            if break_lock and success == 2:
                 message += "\nI guess you got what you needed out of that lockpick."
             else:
                 message += "\nWell, there goes your lockpick."

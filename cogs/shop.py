@@ -220,13 +220,12 @@ class ShopCog(commands.Cog):
         """The view containing the shop buttons."""
         class BackButton(discord.ui.Button):
             """A button to go back to the previous page."""
-            def __init__(self, shop: "ShopCog", user: discord.Member, page: int):
+            def __init__(self, shop: "ShopCog", user: discord.Member, page: int, disabled: bool = False):
                 super().__init__(label="◀️", style=discord.ButtonStyle.secondary)
                 self.shop = shop
                 self.user = user
                 self.page = page
-                if page == 0:
-                    self.disabled = True
+                self.disabled = disabled
             async def callback(self, interaction: discord.Interaction):
                 assert isinstance(interaction.user, discord.Member), "Interaction user must be a Member."
                 embed, view = await self.shop.generate_shop_page(self.user, page=self.page - 1)
@@ -299,19 +298,10 @@ class ShopCog(commands.Cog):
                 if self.shop.economy().get(interaction.user) < self.item.price:
                     await self.disable(interaction)
                 return True
-        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", items: list[ShopItem], page: int = 0, pages: int = 1):
-            self.economy = shopcog.economy
-            self.user = user
-            self.bot = shopcog.bot
-            self.shop = shop
-            self.items = items
-            self.page = page
-            self.add_item(self.BackButton(shopcog, user, page=page))
-            super().__init__(timeout=None)  # Disable timeout for the view
-            for i, item in enumerate(self.items):
-                if not item.purchasable(self.bot, user):
-                    continue
-                # Create a button for each item
+        def __init__(self, shopcog: "ShopCog", user: discord.Member, items: list[ShopItem], page: int = 0, pages: int = 1):
+            self.add_item(self.BackButton(shopcog, user, page=page, disabled=page <= 0))
+            super().__init__(timeout=None)
+            for item in items:
                 self.add_item(self.ShopButton(item, shopcog, user))
             self.add_item(self.NextButton(shopcog, user, page=page, disabled=page + 1 >= pages))
 
@@ -337,7 +327,7 @@ class ShopCog(commands.Cog):
                 inline=False
             )
         embed.set_footer(text=f"Page {page + 1} of {pages} | Use the buttons below to navigate.")
-        view = self.ShopButtons(self, user, shop, buyable_items, page=page, pages=pages)
+        view = self.ShopButtons(self, user, buyable_items, page=page, pages=pages)
 
         return embed, view
         

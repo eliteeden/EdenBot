@@ -26,12 +26,12 @@ class ShopCog(commands.Cog):
                 Args:
                     name (str): The name of the item.
                     price (int): The price of the item in Eden Coins.
-                    description (str, optional): A description of the item.
+                    description (str, optional): A description of the item. Defaults to the function's docstring or "No description available.".
                 """
                 def decorator(func: Callable[[commands.Bot, discord.Interaction], Coroutine[None, None, bool]]) -> ShopItem:
                     item = cls(
                         name=name,
-                        description=description or func.__doc__ or "No description available.",
+                        description=(description or func.__doc__ or "No description available.").strip(),
                         price=price,
                         on_buy=func,
                     )
@@ -171,7 +171,10 @@ class ShopCog(commands.Cog):
         @shopitem(name="talk", price=2_500_000)
         @staticmethod
         async def talk_command_perms(bot: commands.Bot, interaction: discord.Interaction):
-            """Gives the user permission to use the /talk command."""
+            """
+            Allows you to use the /talk command.
+            (note: You may have to add the Eden Bot as a user-installed app to use it in capital.)
+            """
             if not isinstance(interaction.user, discord.Member):
                 await interaction.response.send_message("This command can only be run in the eden server.", ephemeral=True)
                 return False
@@ -183,7 +186,11 @@ class ShopCog(commands.Cog):
         @shopitem(name="Lock", price=500_000)
         @staticmethod
         async def lock(bot: commands.Bot, interaction: discord.Interaction):
-            """Makes stealing from you much harder. (Breaks after someone steals from you successfully)\nMax: 5"""
+            """
+            Makes stealing from you much harder.
+            Breaks after someone steals from you successfully.
+            Max: 5
+            """
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
             if inventory.get_item(interaction.user, "Lock") >= 5:
                 await interaction.response.send_message(
@@ -200,7 +207,11 @@ class ShopCog(commands.Cog):
         @shopitem(name="Lockpick", price=1_000_000)
         @staticmethod
         async def lockpick(bot: commands.Bot, interaction: discord.Interaction):
-            """Significantly increases the chance of stealing from someone with a lock. (Breaks on use).\nMax: 2"""
+            """
+            Significantly increases the chance of stealing from someone with a lock.
+            Breaks after one use, ignored if target doesn't have a lock.
+            Max: 2
+            """
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
             if inventory.get_item(interaction.user, "Lockpick") >= 2:
                 await interaction.response.send_message(
@@ -218,7 +229,10 @@ class ShopCog(commands.Cog):
         @shopitem(name="Butterfly", price=50_000)
         @staticmethod
         async def butterfly(bot: commands.Bot, interaction: discord.Interaction):
-            """A cute butterfly. Eden's mascot"""
+            """
+            A cute butterfly. Eden's mascot
+            Max: 5
+            """
             inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
             if inventory.get_item(interaction.user, "Butterfly") >= 5:
                 await interaction.response.send_message(

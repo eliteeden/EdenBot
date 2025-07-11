@@ -299,24 +299,21 @@ class ShopCog(commands.Cog):
                 if self.shop.economy().get(interaction.user) < self.item.price:
                     await self.disable(interaction)
                 return True
-        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", items: list[ShopItem], page: int = 0, pages: int = 1, hide_navigation: bool = False):
+        def __init__(self, shopcog: "ShopCog", user: discord.Member, shop: "ShopCog.Shop", items: list[ShopItem], page: int = 0, pages: int = 1):
             self.economy = shopcog.economy
             self.user = user
             self.bot = shopcog.bot
             self.shop = shop
             self.items = items
-            self.hide_navigation = hide_navigation
             self.page = page
-            if not hide_navigation:
-                self.add_item(self.BackButton(shopcog, user, page=page))
+            self.add_item(self.BackButton(shopcog, user, page=page))
             super().__init__(timeout=None)  # Disable timeout for the view
             for i, item in enumerate(self.items):
                 if not item.purchasable(self.bot, user):
                     continue
                 # Create a button for each item
                 self.add_item(self.ShopButton(item, shopcog, user))
-            if not hide_navigation:
-                self.add_item(self.NextButton(shopcog, user, page=page, disabled=page + 1 >= pages))
+            self.add_item(self.NextButton(shopcog, user, page=page, disabled=page + 1 >= pages))
 
 
     async def generate_shop_page(self, user: discord.Member, show_all: bool = False, page: int = 0) -> tuple[discord.Embed, discord.ui.View]:
@@ -340,7 +337,7 @@ class ShopCog(commands.Cog):
                 inline=False
             )
         embed.set_footer(text=f"Page {page + 1} of {pages} | Use the buttons below to navigate.")
-        view = self.ShopButtons(self, user, shop, buyable_items, page=page, pages=pages, hide_navigation=show_all)
+        view = self.ShopButtons(self, user, shop, buyable_items, page=page, pages=pages)
 
         return embed, view
         

@@ -1643,13 +1643,15 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
 @bot.command()
 async def nohup(ctx):
     try:
-        f.seek(0, 2)
-        f.seek(max(f.tell() - 2000, 0))
-        content = f.read().decode("utf-8", errors="replace")
+        with open("nohup.out", "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(f.tell() - 2000, 0))
+            content = f.read().decode("utf-8", errors="replace")
 
-        # Trim to 1990 to leave room for formatting (like backticks)
+        # Keep it safely under Discord's limit
         trimmed = content[-1990:]
         await ctx.send(f"```{trimmed}```")
+
     except Exception as e:
         await ctx.send(f"Error: {e}")
 

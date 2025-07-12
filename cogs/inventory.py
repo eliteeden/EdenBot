@@ -70,7 +70,7 @@ class InventoryCog(commands.Cog):
         inventory[item] += amount
         self.__save_inventories()
         return inventory[item]
-    def remove_item(self, user: discord.Member, item: Item, amount: int = 1) -> int:
+    def remove_item(self, user: MemberLike, item: Item, amount: int = 1) -> int:
         """Remove an item from a user's inventory."""
         inventory = self.get_inventory(user)
         if item not in inventory:
@@ -82,7 +82,7 @@ class InventoryCog(commands.Cog):
             del inventory[item]
         self.__save_inventories()
         return inventory.get(item, 0)
-    def has_item(self, user: discord.Member, item: Item, amount: int = 1) -> bool:
+    def has_item(self, user: MemberLike, item: Item, amount: int = 1) -> bool:
         """Check if a user has a certain amount of an item."""
         inventory = self.get_inventory(user)
         return inventory.get(item, 0) >= amount

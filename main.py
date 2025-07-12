@@ -3,6 +3,7 @@
 
 
 # Imports
+from typing import Optional
 import aiohttp
 import asyncio
 from asyncio import subprocess
@@ -20,6 +21,7 @@ import traceback
 import unicodedata
 
 from constants import CHANNELS, ROLES, USERS
+from cogs.inventory import InventoryCog
 
 # Initialize the report dictionary
 if os.path.exists("reports.json"):
@@ -1093,9 +1095,23 @@ async def ryan(ctx):
 slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
 
 @bot.tree.command(name="talk")
-@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS)
-async def talk(interaction: Interaction, message: str):
+#@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS)
+async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None):
+    # Check for the item or the role
+    allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS]
+    has_role = any(role.id in allowed_roles for role in interaction.user.roles) # type: ignore
+    inventory: InventoryCog = bot.get_cog("InventoryCog")  # type: ignore
+    if has_role or inventory.has_item(interaction.user, "Talk Command Permissions"):
+        pass
+    else:
+        await interaction.response.send_message("You do not have permission to use this command.\nGo check out the `;shop`.", ephemeral=True)
+        return
+
     await interaction.response.defer(ephemeral=True)
+    if channel is None:
+        channel = interaction.channel # type: ignore
+    if (not channel.permissions_for(interaction.user).send_messages) and (interaction.user.get_role(ROLES.TOTALLY_MOD) is not None):  # type: ignore
+        await interaction.response.send_message("You do not have permission to send messages in that channel.", ephemeral=True)
 
     # Check for bad words
     lowered = message.lower()
@@ -1117,7 +1133,7 @@ async def talk(interaction: Interaction, message: str):
     # Send the original message to the current channel
     try:
         if not blocked:
-            await interaction.channel.send(message)  # type: ignore
+            await channel.send(message)  # type: ignore
     except Exception as e:
         if isinstance(e, discord.Forbidden):
             await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)

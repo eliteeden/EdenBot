@@ -60,6 +60,8 @@ class ShopCog(commands.Cog):
                 self.description = description
                 self.required_roles: list[int] = []
                 self.excluded_roles: list[int] = []
+                self.items: list[tuple[str, int, Optional[int], str, str, bool]] = []
+                # [(item_name, amount, maximum_items, buy_message, maximum_message, hide_on_maximum)]
 
             def purchasable(self, bot: commands.Bot, member: discord.Member) -> bool:
                 """Checks if the item is purchasable by the member."""
@@ -68,6 +70,10 @@ class ShopCog(commands.Cog):
                         return False
                 for role in self.required_roles:
                     if member.get_role(role) is None:
+                        return False
+                for (item, amount, maximum_items, buy_message, maximum_message, hide_on_maximum) in self.items:
+                    if bot.get_cog("InventoryCog").get_item(member, item) >= (maximum_items or float('inf')) and hide_on_maximum: # type: ignore
+                        # If the user has the maximum amount of the item, they can't buy it again
                         return False
                 return True
                 # member_balance: int = bot.cogs["EconomyCog"].get(member) # type: ignore
@@ -133,6 +139,25 @@ class ShopCog(commands.Cog):
                 func.excluded_roles += list(roles)
                 return func
             return decorator
+        @staticmethod
+        def gives_item(item_name: str, amount: int = 1, /, maximum_items: Optional[int] = None, *, buy_message: str = "", maximum_message: str = "", hide_on_maximum: bool = False):
+            """Decorator to give an item to the user when they purchase the shop item.
+            If the function returns True, the item is given to the user.
+            Args:
+                item_name (str): The name of the item to give.
+                amount (int, optional): The amount of the item to give. Defaults to 1.
+                maximum_items (int, optional): The maximum number of items that can be given. Defaults to None, meaning no limit.
+                buy_message (str, optional): The message to send when the item is purchased. Defaults to "You have purchased {item_name}.".
+                maximum_message (str, optional): The message to send when the user already has the maximum amount of the item. Defaults to "You already have the maximum amount of {item_name}."
+            """
+            if buy_message == "":
+                buy_message = f"You have purchased {item_name}."
+            if maximum_message == "":
+                maximum_message = f"You already have the maximum amount of {item_name}."
+            def decorator(func: ShopItem):
+                func.items += [(item_name, amount, maximum_items, buy_message, maximum_message, hide_on_maximum)]
+                return func
+            return decorator
         shopitem = ShopItem.__decorator__  # Alias for the item decorator
 
 
@@ -167,7 +192,11 @@ class ShopCog(commands.Cog):
         
         # That should be one page
 
-        @excludes_roles(ROLES.TALK_PERMS)
+        @gives_item(
+            "Talk Command Permissins", 1, maximum_items=1,
+            buy_message="You can now use the /talk command.",
+            maximum_message="You already have the /talk command permissions.",
+            hide_on_maximum=True)
         @shopitem(name="talk", price=2_500_000)
         @staticmethod
         async def talk_command_perms(bot: commands.Bot, interaction: discord.Interaction):
@@ -179,10 +208,16 @@ class ShopCog(commands.Cog):
                 await interaction.response.send_message("This command can only be run in the eden server.", ephemeral=True)
                 return False
             if ROLES.TALK_PERMS not in [role.id for role in interaction.user.roles]:
-                await interaction.user.add_roles(discord.Object(id=ROLES.TALK_PERMS))
-                return True
+                try:
+                    await interaction.user.add_roles(discord.Object(id=ROLES.TALK_PERMS))
+                finally:
+                    return True
             await interaction.response.send_message("You are already able to use the /talk command.", ephemeral=True)
             return False # User already has the role, so they can't buy it again.
+        @gives_item(
+            "Lock", 1, maximum_items=5,
+            buy_message="You bought a lock!",
+            maximum_message="I think five locks is enough for now.")
         @shopitem(name="Lock", price=500_000)
         @staticmethod
         async def lock(bot: commands.Bot, interaction: discord.Interaction):
@@ -191,19 +226,11 @@ class ShopCog(commands.Cog):
             Breaks after someone steals from you successfully.
             Max: 5
             """
-            inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
-            if inventory.get_item(interaction.user, "Lock") >= 5:
-                await interaction.response.send_message(
-                    "I think five locks is enough for now.",
-                    ephemeral=True
-                )
-                return False
-            inventory.add_item(interaction.user, "Lock", 1) # type: ignore
-            await interaction.response.send_message(
-                "You bought a lock!",
-                ephemeral=True
-            )
-            return True # Item added to inventory
+            return True
+        @gives_item(
+            "Lockpick", 1, maximum_items=2, 
+            buy_message="Use it wisely, okay?", 
+            maximum_message="Woah there, you aren't De Santa")
         @shopitem(name="Lockpick", price=1_000_000)
         @staticmethod
         async def lockpick(bot: commands.Bot, interaction: discord.Interaction):
@@ -212,20 +239,11 @@ class ShopCog(commands.Cog):
             Breaks after one use, ignored if target doesn't have a lock.
             Max: 2
             """
-            inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
-            if inventory.get_item(interaction.user, "Lockpick") >= 2:
-                await interaction.response.send_message(
-                    "Woah there, you aren't De Santa", # GTA V reference
-                    ephemeral=True
-                )
-                return False
-            inventory.add_item(interaction.user, "Lockpick", 1) # type: ignore
-            await interaction.response.send_message(
-                "Use it wisely, okay?",
-                ephemeral=True
-            )
-            return True # Item added to inventory
-
+            return True
+        @gives_item(
+            "Butterfly", 1, maximum_items=5,
+            buy_message="You bought a pristine butterfly!",
+            maximum_message="That's too much love, hun.")
         @shopitem(name="Butterfly", price=50_000)
         @staticmethod
         async def butterfly(bot: commands.Bot, interaction: discord.Interaction):
@@ -233,24 +251,13 @@ class ShopCog(commands.Cog):
             A cute butterfly. Eden's mascot
             Max: 5
             """
-            inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
-            if inventory.get_item(interaction.user, "Butterfly") >= 5:
-                await interaction.response.send_message(
-                    "That's too much love, hun.",
-                    ephemeral=True
-                )
-                return False
-            inventory.add_item(interaction.user, "Butterfly", 1) # type: ignore
-            await interaction.response.send_message(
-                "You bought a pristine butterfly!",
-                ephemeral=True
-            )
-            return True # Item added to inventory
+            return True
 
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.economy: Callable[[], EconomyCog] =  lambda : bot.get_cog("EconomyCog") # type: ignore
+        self.inventory: Callable[[], InventoryCog] =  lambda : bot.get_cog("InventoryCog") # type: ignore
     class ShopButtons(discord.ui.View):
         """The view containing the shop buttons."""
         class BackButton(discord.ui.Button):
@@ -299,10 +306,17 @@ class ShopCog(commands.Cog):
             async def callback(self, interaction: discord.Interaction):
                 assert isinstance(interaction.user, discord.Member), "Interaction user must be a Member."
                 # await interaction.response.defer()  # defer the response to avoid timeout
-                if not self.shop.economy():
+                if not self.shop.economy() or not self.shop.inventory():
                     await self.disable(interaction)
-                    await interaction.response.send_message("Economy cog not found. Please try again later.", ephemeral=True)
+                    await interaction.response.send_message("Cogs not found. Please try again later.", ephemeral=True)
                     return False
+                for (item, amount, maximum_items, buy_message, maximum_message, hide_on_maximum) in self.item.items:
+                    if self.shop.inventory().get_item(interaction.user, item) >= (maximum_items or float('inf')):
+                        # If the user has the maximum amount of the item, they can't buy it again
+                        # Theoretically hide_on_maximum will always be false here.
+                        await self.disable(interaction)
+                        await interaction.response.send_message(maximum_message, ephemeral=True)
+                        return False
                 if not self.item.purchasable(self.shop.bot, interaction.user):
                     await self.disable(interaction)
                     await interaction.response.send_message(
@@ -328,6 +342,10 @@ class ShopCog(commands.Cog):
                     await self.disable(interaction)
                     return False
                 self.shop.economy().sub(interaction.user, self.item.price)
+                for (item, amount, maximum_items, buy_message, maximum_message, hide_on_maximum) in self.item.items:
+                    self.shop.inventory().add_item(interaction.user, item, amount) # type: ignore
+                    await interaction.followup.send(buy_message.format(item_name=item), ephemeral=True)
+                # Log the purchase
                 UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
                 await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {self.item.name} for {self.item.price:,} Eden Coins.")
                 await interaction.response.send_message(

@@ -193,7 +193,7 @@ class ShopCog(commands.Cog):
         # That should be one page
 
         @gives_item(
-            "Talk Command Permissins", 1, maximum_items=1,
+            "Talk Command Permissions", 1, maximum_items=1,
             buy_message="You can now use the /talk command.",
             maximum_message="You already have the /talk command permissions.",
             hide_on_maximum=True)

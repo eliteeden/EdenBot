@@ -289,7 +289,8 @@ class EconomyCog(commands.Cog):
             self.steal.reset_cooldown(ctx)  # type: ignore
             return
 
-        reward = min(2_500_000, random.randint(target_balance // 20, target_balance // 10))  # Steal between 5% and 20% of the target's balance
+        reward = random.randint(target_balance // 20, target_balance // 10)  # Steal between 5% and 20% of the target's balance
+        earned = min(reward, 5_000_000)
         break_lock = False
         break_lockpick = False
         if self.inventory().has_item(member, "Lock", 1):
@@ -306,12 +307,20 @@ class EconomyCog(commands.Cog):
 
         if success == 2:
             self.sub(member, reward)
-            self.add(thief, reward)
+            self.add(thief, earned)
             self.steal.reset_cooldown(ctx)  # type: ignore
-            message += (
-                f"You successfully stole {reward} coins from {member.display_name}!\n"
+            if reward == earned:
+                message += (
+                    f"You successfully stole {earned} coins from {member.display_name}!\n"
+                    
                 f"-# Don't worry, I won't ping them like a snitch"
-            )
+                )
+            else:
+                message += (
+                    f"You tried to steal {reward:,} coins from {member.display_name}.\n"
+                    f"However, you only managed to get away with {earned:,} coins.\n"
+                    "-# Just hope they don't see the giant pile of coins on the ground..."
+                )
             if break_lock:
                 self.inventory().remove_item(member, "Lock", 1)
                 message += "\nYou broke their lock, you little goblin!"

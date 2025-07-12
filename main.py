@@ -1639,6 +1639,15 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
         await ctx.send("What even is there to load?")
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
+
+@bot.command()
+async def nohup(ctx):
+    with open("nohup.out", "rb") as f:
+        f.seek(0, 2)
+        f.seek(max(f.tell() - 2000, 0))
+        content = f.read().decode("utf-8", errors="replace")
+    await ctx.send(f"```{content[-2000:]}```")
+
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 async def pull(ctx: commands.Context):

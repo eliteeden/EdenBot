@@ -109,7 +109,7 @@ class EconomyCog(commands.Cog):
             'You "found"',
         ]
         # TODO: fix
-        self.add(ctx.author, coins:=(random.randint(1, 5000)))
+        self.add(ctx.author, coins:=(random.randint(1, 2000)))
         await ctx.send(f"{random.choice(responses)} {coins} eden coins")
 
     @work.error
@@ -222,7 +222,7 @@ class EconomyCog(commands.Cog):
         fired_chamber = random.choice(chamber)
 
         if fired_chamber == 0:
-            earn = 5000 * bullets
+            earn = 1000 * bullets
             self.add(ctx.author, earn)
             await ctx.send(f'You earned {earn:,} eden coins!')
             self.roulette.reset_cooldown(ctx) # type: ignore
@@ -241,7 +241,7 @@ class EconomyCog(commands.Cog):
     @commands.command(name='slots', aliases=['slot', 'oldgamble'])
     async def slots(self, ctx: commands.Context):
         cost = 15_000
-        bot_choice = random.randint(1, 50)
+        bot_choice = random.randint(1, 75)
         if self.get(ctx.author) < cost:
             await ctx.send(f'You do not have enough coins, you need {cost:,} to participate')
             return
@@ -257,7 +257,7 @@ class EconomyCog(commands.Cog):
 
     protected_users = [USERS.HAPPY, USERS.RAINBOW, USERS.FROST, USERS.SLOINAC, USERS.MASCIAN, USERS.VIC]
     @commands.command(name="steal", aliases=["rob", "heist"])
-    @commands.cooldown(1, 7200, commands.BucketType.user)
+    @commands.cooldown(1, 43200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):
         thief = ctx.author
         protected_role_id = ROLES.MODERATOR  # Adjust as needed
@@ -367,8 +367,8 @@ class EconomyCog(commands.Cog):
             self.give.reset_cooldown(ctx) # type: ignore
             return
 
-        if coins > 1000000:
-            await ctx.send("You can't give more than a million bud\nWhere's the fun in that?")
+        if coins > 10001:
+            await ctx.send("You can't give more than that bud\nWhere's the fun in that?")
             self.give.reset_cooldown(ctx) # type: ignore
             return
 

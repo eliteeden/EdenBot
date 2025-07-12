@@ -1643,15 +1643,8 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
 @bot.command()
 async def nohup(ctx):
     try:
-        with open("nohup.out", "rb") as f:
-            f.seek(0, 2)
-            f.seek(max(f.tell() - 2000, 0))
-            content = f.read().decode("utf-8", errors="replace")
-
-        # Keep it safely under Discord's limit
-        trimmed = content[-1990:]
-        await ctx.send(f"```{trimmed}```")
-
+        with open(“nohup.out”, “r”) as f:
+        await ctx.send(f.read()[-1999:])
     except Exception as e:
         await ctx.send(f"Error: {e}")
 

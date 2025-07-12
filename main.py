@@ -1644,7 +1644,7 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
 async def nohup(ctx):
     try:
         with open(“nohup.out”, “r”) as f:
-        await ctx.send(f.read()[-1999:])
+            await ctx.send(f.read()[-1999:])
     except Exception as e:
         await ctx.send(f"Error: {e}")
 

@@ -447,7 +447,7 @@ class EconomyCog(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def gamble(self, ctx: commands.Context):
         """Let's go gambling!"""
-        cost = 6_500
+        cost = 100_000
         userid = ctx.author.name
         balance = self.get(userid)
         if balance < cost:

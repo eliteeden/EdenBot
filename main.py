@@ -1642,11 +1642,14 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
 
 @bot.command()
 async def nohup(ctx):
-    with open("nohup.out", "rb") as f:
-        f.seek(0, 2)
-        f.seek(max(f.tell() - 2000, 0))
-        content = f.read().decode("utf-8", errors="replace")
-    await ctx.send(f"```{content[-2000:]}```")
+    try:
+        with open("nohup.out", "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(f.tell() - 2000, 0))
+            content = f.read().decode("utf-8", errors="replace")
+        await ctx.send(f"```{content[-2000:]}```")
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
 
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)

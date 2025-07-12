@@ -1025,70 +1025,6 @@ async def halp(ctx):
         await ctx.send(f"Error: {e}")
 
 
-@bot.command()
-async def howgay(ctx, user: Member = None): # type: ignore
-    try:
-        if user is None:
-            user = ctx.author
-        await ctx.send(f'{user.mention} is {random.randint(0, 100)}% gay')
-    except Exception as e:
-        await ctx.send(f"Error: {e}")
-
-@bot.command()
-async def compliment(ctx):
-    good_words = [
-        'You are a valuable member',
-        'You are an icon!',
-        'Elite Eden has never seen a sweeter member',
-        'You bring joy to us all',
-        'I look up to you',
-        'I love you!! (platonically)',
-        'You make this server look good',
-        'You are such a breath of fresh air',
-        'Hi cutie~',
-        'I love watching over you',
-        'Hi my lil pog champ',
-        'I cannot believe one person could be so cool',
-        'It is truly an honor to be in the same server with you',
-        "You have a brilliant mind", "Your creativity is inspiring", "You light up every room you enter", "Your kindness knows no bounds", "You have a fantastic sense of humor", "Your determination is truly admirable", "You must be swimming in babes"
-        
-       
-    ]
-    bad_words = [
-        'No compliment for you',
-        'You are a piece of shit',
-        'Look at this loser fishing for online compliments',
-        'Go touch grass',
-        'Try this again with an actual person, oh wait-',
-        f'I spell annoying with {len(str(ctx.author.name))} letters, {ctx.author.name}',
-        'Ew',
-        'Whatever you say gooner',
-        'Boost the server first, then we can talk',
-        "Go cry to your mama, oh right she doesn't like you either",
-        'Um mods, this user is harassing me',
-        "You're giving NPC energy right now.",
-        "The server was a better place before you joined",
-        "You're the human equivalent of a buffering wheel.",
-        "You're like a TikTok trend, overhyped and irrelevant in a week.",
-        "Your drip is dryer than the Sahara.",
-        "You're the reason group chats have mute buttons.",
-        "You're like a panda, cute but utterly useless"
-    ]
-    chance = [0.75, 0.25]
-    words = random.choices([good_words, bad_words], weights=chance, k=1)[0]
-    roles = [role.id for role in ctx.author.roles]
-    if ROLES.MODERATOR not in roles and ROLES.SACRIFICE not in roles:
-        await ctx.send(random.choice(words))
-    elif ROLES.MODERATOR in roles:
-        await ctx.send(random.choice(good_words))
-    elif ROLES.SACRIFICE in roles:
-        await ctx.send(random.choice(bad_words))
-
-@bot.command()
-async def ryan(ctx):
-    await ctx.send("Ryan this, Ryan that\nI just want to know what the fate of my 6 siblings is")
-
-
 
 
 # List of banned words (case-insensitive)
@@ -1170,107 +1106,6 @@ async def embed(interaction: Interaction, title: str, message: str, color: str =
     except ValueError:
         await interaction.response.send_message("Invalid color code. Please provide a valid hexadecimal value.", ephemeral=True)
 
-# Run 
-
-@bot.command()
-async def define(ctx,*,  word: str):
-    """Fetches the definition of a word"""
-    url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
-    async with ctx.typing():
-        response = requests.get(url)
-
-        if response.status_code == 200:
-        
-            data = response.json()
-            definition = data[0]["meanings"][0]["definitions"][0]["definition"]
-            await ctx.send(f"**{word.capitalize()}**: {definition}")
-        else:
-            await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
-
-
-
-
-@bot.command()
-@commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, ROLES.WORDLES_WIDOWER, "Fden Bot Perms", 1118650807785619586) # last role is unknown (remove?)
-async def urban(ctx, *, word: str):
-    """Fetches the definition of a word from Urban Dictionary"""
-    url = f"https://api.urbandictionary.com/v0/define?term={word}"
-    async with ctx.typing():
-        response = requests.get(url)
-        
-
-        if response.status_code == 200:
-            data = response.json()
-            
-            if data["list"]:  # Ensure there's a definition
-                definition = data["list"][0]["definition"]
-                await ctx.send(f"**{word.capitalize()}**: {definition}")
-            else:
-                await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
-        else:
-            await ctx.send("Error fetching data from Urban Dictionary.")
-@urban.error
-async def urban_error(ctx, error):
-    if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("Exclusive to boosters")
-
-
-@bot.command()
-@commands.cooldown(1,40, commands.BucketType.channel)
-async def web(ctx,*,search_msg):
-    banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']
-    eden_meta = {
-        "beautiful member": f"<@{USERS.ESMERY}>",
-        "beautiful mod": f"<@{USERS.ZI}>",
-        "gayest ship": "Emi and Niki.",
-        "average eden iq": "The average eden IQ is still below room temperature.",
-        "glorious leader": f"<@{USERS.ZI}>",
-        "who stole the cheese": f"<@{USERS.SCAREX}>",
-        "who is eden's most annoying person": f"<@{USERS.DECK}>",
-        "best bot": "it's obviously me"
-    }
-
-
-    if search_msg.lower() in eden_meta:
-        await ctx.send(eden_meta[search_msg.lower()])
-        return  # Exit the function after responding
-
-    if any(banned_word in search_msg.lower() for banned_word in banned_words):
-        await ctx.send("Your search contains banned words and cannot be processed.")
-        web.reset_cooldown(ctx) # type: ignore
-        return
-    else:
-        async with ctx.typing():
-            for URL in search(search_msg, stop=1, safe='on', country='us'):
-                if "archive.org" not in URL or "files.catbox.moe" not in URL:
-                    await ctx.send(URL)
-                else:
-                    await ctx.send("No results found")
-
-
-
-@bot.command()
-@commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
-@commands.cooldown(1,2, commands.BucketType.channel)
-async def wiki(ctx,*,search_msg):
-    wiki_sites = ["https://en.wikipedia.org/wiki/", "fandom.com"]
-    banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']
-    if any(banned_word in search_msg.lower() for banned_word in banned_words):
-        await ctx.send("Your search contains banned words and cannot be processed.")
-        wiki.reset_cooldown(ctx) # type: ignore
-        return
-    else:
-        async with ctx.typing():
-            for URL in search(search_msg, stop=1, safe='on', country='us'):
-                if any(site in URL for site in wiki_sites):
-                    await ctx.send(URL)
-                else:
-                    await ctx.send("No wiki results found")
-
-@wiki.error
-async def wiki_error(ctx, error):
-    if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("Exclusive to boosters")
 
 user_colors = {}  # Dictionary to store user-specific colors
 
@@ -1336,67 +1171,6 @@ class ConfessCog(commands.Cog):
             return await super().cog_load()
 
 
-@bot.command()
-@commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
-async def fuck(ctx, member: Member):
-    embed = Embed(title=f'**{ctx.author.display_name}**! Where are you taking **{member.display_name}**', color=0x00FFFF)
-    makeouts = ['https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmYwNjUyeXJ6M2l5bTc3anc5bWxnN2szODJjMnd5aXZzZDVweGg3ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/dWrnYmDucWhDvkbLF6/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHJldHM5b2Nhc2tpcmQwM2xtdjcxNWlzNnI0eGFwczM4NXVucjJodCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/jUJgL0iByjsAS2MQH1/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDY2dm5pdmVldTQzdTl1MXRzMHBtdDBzOW5vYXAzdzh2dHplYXdqMCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/KptaYW4AuV2vSkn0Bh/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnUyY3lnOTF4bzlyMzlzdngweTEwdGYxd3N0M20yYzlsdjdlaHZnMSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/mpWQkl5jGLOjjApXUJ/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnUyY3lnOTF4bzlyMzlzdngweTEwdGYxd3N0M20yYzlsdjdlaHZnMSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/iMJwjtL5GLxPYWMob3/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdHNxYTg0aXdyMGV3NGZmZzQ2NmttOTZtZGw4M3pmNW5iMDB2ZHRyYyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/huCxiZ4aibaMngURGX/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2Q4amdnY216eTl1Z3NlZTR4emdvaGVncGttanRwNW03bnN1c2htayZlcD12MV9naWZzX3NlYXJjaCZjdD1n/cu1l1wN5bNDGUg9QME/giphy.gif',
-          'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDkxcmtyZzB4dGw2OWxoNTUyc2lkd2RhZDl0N3I2NGx2eXhzZWdwYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/oAvQOD7hJMXQFDDhBI/giphy.gif']
-    embed.set_image(url=random.choice(makeouts))
-    if ctx.author != member:
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("That sounds like a lonely thing to do")
-
-@fuck.error
-async def fuck_error(ctx, error):
-    if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("Exclusive to boosters")
-
-
-@bot.command()
-async def hug(ctx, member: Member):
-    embed = Embed(title=f'**{ctx.author.display_name}** is giving **{member.display_name}** a hug', color=0x00FFFF)
-    hugs = ['https://www.icegif.com/wp-content/uploads/hug-icegif-3.gif',
-          'https://media.giphy.com/media/XsVaoJbWMASZUmWjT9/giphy.gif?cid=ecf05e470psm6ftj52elckjyyndiv9d3m85j0po2oj3zzgtp&ep=v1_gifs_search&rid=giphy.gif',
-          'https://media.giphy.com/media/3o6Zth3OnNv6qDGQ9y/giphy.gif?cid=790b7611fk69752zuim3jfbjuztlsehpjl8270trdbc6e1ad&ep=v1_gifs_search&rid=giphy.gif']
-    embed.set_image(url=random.choice(hugs))
-    if ctx.author != member:
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("That's a weird thing to do but okay")
-
-
-
-
-@bot.command()
-async def kiss(ctx, member: Member):
-    embed = Embed(title=f'**{ctx.author.display_name}** is giving **{member.display_name}** a kiss', color=0xFFC0CB)
-    kisses = ['https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDl5YTg4NHQ0OWp5ZXAwZm96ZW00NjE1em1yNG84YWR3cHN0MHg0ZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hJioaFkX7sjSe7Tkd1/giphy.gif',
-              'https://cdn.discordapp.com/attachments/1328742188384911422/1332983986397380638/IMG_6977.gif',
-              'https://media.giphy.com/media/4H28yacGCjrkQ/giphy.gif?cid=ecf05e47425g9kf69f1i2kddb1jcln6zkf5ewb2o8z39ljo3&ep=v1_gifs_related&rid=giphy.gif',
-              'https://cdn.discordapp.com/attachments/760988796249833472/857741056237764648/image0.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZ0c2VxcHk2Mjh1NGIzbXE2am9sdjB5NDF3anJyZXYyNWZrNXllbSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/9G0AdBbVrkV3O/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHJxcHYyMmE0enQ2YjN0aWR2dzB0OHN4anlwN252ejd6ZGx5MXlsNyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/G3va31oEEnIkM/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2lvZWpza25oeTU3bzd4MTI4bzFuMjZzbDN2ZWowNW00dzJqcmVnZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/DhclkBm2dRlRKSgRmV/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExamZxM3dub25hOWdrbzlibzlicWx4MjV4MXR1dzNxeWZzcHY2cWJvbyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/c7mnNZUxrK8VxXIioH/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZ0c2VxcHk2Mjh1NGIzbXE2am9sdjB5NDF3anJyZXYyNWZrNXllbSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/11hAbqRK5D0pnW/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZ0c2VxcHk2Mjh1NGIzbXE2am9sdjB5NDF3anJyZXYyNWZrNXllbSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/frHK797nhEUow/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZ0c2VxcHk2Mjh1NGIzbXE2am9sdjB5NDF3anJyZXYyNWZrNXllbSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/Vi0Ws3t4JSLOgdkaBq/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHJxcHYyMmE0enQ2YjN0aWR2dzB0OHN4anlwN252ejd6ZGx5MXlsNyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/5ubHiAtBlv9lSlhVld/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHJxcHYyMmE0enQ2YjN0aWR2dzB0OHN4anlwN252ejd6ZGx5MXlsNyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/bm2O3nXTcKJeU/giphy.gif']
-    embed.set_image(url=random.choice(kisses))
-    if ctx.author != member:
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("Kissing yourself won't make you feel better")
-
 def is_unusual_name(name):
     """Checks if a name contains non-standard characters or excessive symbols."""
     if name is None:
@@ -1429,75 +1203,6 @@ async def rfs(ctx):
 
     except Exception as e:
         await ctx.send(f"Error: {e}")
-
-
-@bot.command()
-@commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)
-async def murder(ctx, member: Member):
-    author = ctx.author
-    if author.top_role.position > member.top_role.position:
-        try:
-            extra_text = "'s ghost"
-
-            current_nick = member.nick if member.nick else member.name
-            
-            # Prevent nickname length issues
-            if current_nick and len(current_nick) >= 22:
-                current_nick = member.name
-
-
-            new_nick = f"{current_nick} {extra_text}"  # Append new words
-            await member.edit(nick=new_nick)
-            await ctx.send(f"{member.name} is dead")
-        
-
-        except Exception as e:
-            await ctx.send(f"An unexpected error occurred: {e}")
-            print(f"An error occurred: {e}")
-
-    else:
-        await ctx.send("You are not high enough in role hierarchy to do this")
-
-
-@murder.error
-async def murder_error(ctx, error):
-    if isinstance(error, discord.errors.HTTPException):
-        await ctx.send("Member is dead but the name is too long in length to edit.")
-
-
-
-@bot.command()
-async def kill(ctx, member: Member):
-    embed = Embed(title=f'**{ctx.author.display_name}** just killed **{member.display_name}**', color=0x780606)
-    kills = ['https://cdn.discordapp.com/attachments/968071856055808050/1287417809290395720/anime-dokuro-chan.gif',
-          'https://cdn.discordapp.com/attachments/968071856055808050/1287417810254823565/Meet_the_Spy.gif',
-          'https://cdn.discordapp.com/attachments/968071856055808050/1287395920631173151/mobile-suit-gundam.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZnJ1M3JrbDM1N3NzOXhicDIxc3B2dndldmIyYXk4aWU2eWxsanhyZiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/U0KOiTfDChnuyauMpB/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExa3lqeGIxYzA5c3hsNWZjNjBoazh3anBzdnZ3djd4c2VvaWxwcW42ZSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/dVcdb4nSu7RXC9j0q4/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeXM5YmNveDNpbmkxN2g4ZzhhZDZvenhzbmptcnBhN3FrZ3dxeWo1ZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/moWba8OhAmhZ6/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOWRteWxrZm16MjB5YXVyYm9yMjk3YXZkeXFnc2Jmc2tybDhpYmoxYiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/FduDZQp8oRb86aMEbe/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmd6ZGE1Y2ttajdhbWZnMmNlM2N3am5nbjhzczNyNzdodDJxMTRwayZlcD12MV9naWZzX3NlYXJjaCZjdD1n/HdVtsppIpBigM/giphy.gif',
-          'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdXV1ZTducXR1czh3MGI1cnprcjFkY3M5N2NydGJ2cTZ5cjMwamF5dyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/CatCCFZa6U8nK/giphy.gif']
-    embed.set_image(url=random.choice(kills))
-    if ctx.author != member:
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("Suicide is so last year smh")
-
-
-@bot.command()
-async def cheer(ctx, member: Member):
-    embed = Embed(title=f'{ctx.author.display_name} is cheering {member.display_name} up', color=0xf0e130)
-    cheers = ['https://tenor.com/view/hug-brandon-terry-carson-the-ms-pat-show-good-job-gif-22509570',
-          'https://tenor.com/view/sami-en-dina-sami-dina-dina-sami-dina-en-sami-gif-15422575992980791421',
-          'https://tenor.com/view/hug-warm-hug-depressed-hug-gif-45850647380683423']
-    embed.set_image(url=random.choice(cheers))
-    await ctx.send(embed=embed)
-
-@bot.command()
-async def timer(ctx):
-    await ctx.send('WIP')
-
 
 # Event commands
 
@@ -1677,7 +1382,7 @@ async def pull_error(ctx: commands.Context, error: commands.CommandError):
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
 
-# This was created by Happy!
+# This was mostly created by Happy!
 load_dotenv()
 
 token = os.environ.get("TOKEN")

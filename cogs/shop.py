@@ -204,16 +204,7 @@ class ShopCog(commands.Cog):
             Allows you to use the /talk command.
             (note: You may have to add the Eden Bot as a user-installed app to use it in capital.)
             """
-            if not isinstance(interaction.user, discord.Member):
-                await interaction.response.send_message("This command can only be run in the eden server.", ephemeral=True)
-                return False
-            if ROLES.TALK_PERMS not in [role.id for role in interaction.user.roles]:
-                try:
-                    await interaction.user.add_roles(discord.Object(id=ROLES.TALK_PERMS))
-                finally:
-                    return True
-            await interaction.response.send_message("You are already able to use the /talk command.", ephemeral=True)
-            return False # User already has the role, so they can't buy it again.
+            return True
         @gives_item(
             "Lock", 1, maximum_items=5,
             buy_message="You bought a lock!",

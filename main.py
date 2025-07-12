@@ -1098,7 +1098,7 @@ slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dy
 #@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS)
 async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None):
     # Check for the item or the role
-    allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS]
+    allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]# ROLES.TALK_PERMS]
     has_role = any(role.id in allowed_roles for role in interaction.user.roles) # type: ignore
     inventory: InventoryCog = bot.get_cog("InventoryCog")  # type: ignore
     if has_role or inventory.has_item(interaction.user, "Talk Command Permissions"):
@@ -1110,7 +1110,7 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
     await interaction.response.defer(ephemeral=True)
     if channel is None:
         channel = interaction.channel # type: ignore
-    if (not channel.permissions_for(interaction.user).send_messages) and (interaction.user.get_role(ROLES.TOTALLY_MOD) is not None):  # type: ignore
+    if (not channel.permissions_for(interaction.user).send_messages) and (not has_role):  # type: ignore
         await interaction.response.send_message("You do not have permission to send messages in that channel.", ephemeral=True)
 
     # Check for bad words

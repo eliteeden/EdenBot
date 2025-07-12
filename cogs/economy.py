@@ -293,11 +293,11 @@ class EconomyCog(commands.Cog):
         break_lock = False
         break_lockpick = False
         if self.inventory().has_item(member, "Lock", 1):
-            chance = 10
+            chance = 15
             break_lock = True
             if self.inventory().has_item(thief, "Lockpick", 1): # type: ignore
                 break_lockpick = True
-                chance = 4
+                chance = 5
         else:
             chance = 3
 

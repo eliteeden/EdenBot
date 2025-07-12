@@ -155,7 +155,7 @@ class EconomyCog(commands.Cog):
             for i in range(0, len(top_users), 10):  # 10 users per page
                 embed = discord.Embed(title="Economy Leaderboard", color=discord.Color.gold())
                 for idx, user_id in enumerate(top_users[i:i + 10]):
-                    embed.add_field(name=f"{i*10+idx+1}. {user.name or 'Unknown User' if (user:=self.bot.get_user(int(user_id))) else 'Unknown User'}", value=f"{self.get(user_id):,} Eden coins", inline=False)
+                    embed.add_field(name=f"{i+idx+1}. {user.name or 'Unknown User' if (user:=self.bot.get_user(int(user_id))) else 'Unknown User'}", value=f"{self.get(user_id):,} Eden coins", inline=False)
                 paginator.add_page(embed)
 
             await paginator.send(ctx)

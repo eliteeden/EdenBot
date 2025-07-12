@@ -342,14 +342,15 @@ class ShopCog(commands.Cog):
                     await self.disable(interaction)
                     return False
                 self.shop.economy().sub(interaction.user, self.item.price)
+                buy_msg = ""
                 for (item, amount, maximum_items, buy_message, maximum_message, hide_on_maximum) in self.item.items:
                     self.shop.inventory().add_item(interaction.user, item, amount) # type: ignore
-                    await interaction.followup.send(buy_message.format(item_name=item), ephemeral=True)
+                    buy_msg += f"\n{buy_message.format(item_name=item)}"
                 # Log the purchase
                 UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
                 await UPDATES_CHANNEL.send(f"{interaction.user.mention} ({interaction.user.name}) has purchased {self.item.name} for {self.item.price:,} Eden Coins.")
                 await interaction.response.send_message(
-                    f"You have successfully purchased {self.item.name} for {self.item.price:,} Eden Coins.",
+                    f"You have successfully purchased {self.item.name} for {self.item.price:,} Eden Coins." + buy_msg,
                     ephemeral=True)
                 if self.shop.economy().get(interaction.user) < self.item.price:
                     await self.disable(interaction)

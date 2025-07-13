@@ -197,7 +197,7 @@ class ShopCog(commands.Cog):
             buy_message="You can now use the /talk command.",
             maximum_message="You already have the /talk command permissions.",
             hide_on_maximum=True)
-        @shopitem(name="talk", price=2_500_000)
+        @shopitem(name="talk", price=250_000)
         @staticmethod
         async def talk_command_perms(bot: commands.Bot, interaction: discord.Interaction):
             """
@@ -207,9 +207,9 @@ class ShopCog(commands.Cog):
             return True
         @gives_item(
             "Lock", 1, maximum_items=5,
-            buy_message="You bought a lock!",
+            buy_message="",
             maximum_message="I think five locks is enough for now.")
-        @shopitem(name="Lock", price=500_000)
+        @shopitem(name="Lock", price=50_000)
         @staticmethod
         async def lock(bot: commands.Bot, interaction: discord.Interaction):
             """
@@ -222,7 +222,7 @@ class ShopCog(commands.Cog):
             "Lockpick", 1, maximum_items=2, 
             buy_message="Use it wisely, okay?", 
             maximum_message="Woah there, you aren't De Santa")
-        @shopitem(name="Lockpick", price=1_000_000)
+        @shopitem(name="Lockpick", price=100_000)
         @staticmethod
         async def lockpick(bot: commands.Bot, interaction: discord.Interaction):
             """

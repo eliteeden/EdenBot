@@ -240,13 +240,13 @@ class EconomyCog(commands.Cog):
 
     @commands.command(name='slots', aliases=['slot', 'oldgamble'])
     async def slots(self, ctx: commands.Context):
-        cost = 15_000
-        bot_choice = random.randint(1, 75)
+        cost = 1_500
+        bot_choice = random.randint(1, 50)
         if self.get(ctx.author) < cost:
             await ctx.send(f'You do not have enough coins, you need {cost:,} to participate')
             return
         if bot_choice == 6:
-            earn = 800_000 # break-even is 750,000
+            earn = 80_000 # break-even is 75,000
             self.add(ctx.author, earn)
             await ctx.send(f'You won {earn:,} eden coins!')
             bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
@@ -456,7 +456,7 @@ class EconomyCog(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def gamble(self, ctx: commands.Context):
         """Let's go gambling!"""
-        cost = 100_000
+        cost = 6_000
         userid = ctx.author.name
         balance = self.get(userid)
         if balance < cost:
@@ -476,9 +476,9 @@ class EconomyCog(commands.Cog):
         # TODO: chance logic
         if random.randint(1, chance) == 3:
             # User wins
-            win_amount = min(10_000_000, self.jackpot['jackpot'] * 2)  # Maximum win amount is 10 million
+            win_amount = min(1_000_000, self.jackpot['jackpot'] * 2)  # Maximum win amount is 1 million
             self.set(userid, balance + win_amount)
-            self.jackpot['jackpot'] = max(100_000, self.jackpot['jackpot'] - win_amount)  # Reset jackpot after win
+            self.jackpot['jackpot'] = max(10_000, self.jackpot['jackpot'] - win_amount)  # Reset jackpot after win
             await self.save_jackpot_task()
             await ctx.send(random.choice([
                 f"{ctx.author.mention} won {win_amount:,} coins! The jackpot is now {self.jackpot['jackpot']:,} coins.",
@@ -490,7 +490,7 @@ class EconomyCog(commands.Cog):
         else:
             # User loses
             self.set(userid, balance - cost)
-            self.jackpot['jackpot'] += 6_000  # Increase jackpot by 6,000 coins
+            self.jackpot['jackpot'] += 3_000  # Increase jackpot by 3,000 coins
             await self.save_jackpot_task()
             await ctx.send(random.choice([
                 "Aw dang it.",
@@ -512,10 +512,10 @@ class EconomyCog(commands.Cog):
     @tasks.loop(minutes=1)
     async def jackpot_task(self):
         """A task that runs every minute to check if the jackpot should be increased."""
-        if self.jackpot['jackpot'] < 10_000_000:
-            self.jackpot['jackpot'] += 36_000
-        if self.jackpot['jackpot'] < 100_000:
-            self.jackpot['jackpot'] += 100_000
+        if self.jackpot['jackpot'] < 1_000_000:
+            self.jackpot['jackpot'] += 3_600
+        if self.jackpot['jackpot'] < 10_000:
+            self.jackpot['jackpot'] += 10_000
         await self.save_jackpot_task()
         # print(f"Jackpot increased to {self.jackpot['jackpot']} coins")
     @tasks.loop(hours=1)

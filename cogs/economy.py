@@ -476,7 +476,7 @@ class EconomyCog(commands.Cog):
         # TODO: chance logic
         if random.randint(1, chance) == 3:
             # User wins
-            win_amount = min(1_000_000, self.jackpot['jackpot'] * 2)  # Maximum win amount is 1 million
+            win_amount = min(1_000_000, self.jackpot['jackpot'] * 20)  # Maximum win amount is 1 million
             self.set(userid, balance + win_amount)
             self.jackpot['jackpot'] = max(10_000, self.jackpot['jackpot'] - win_amount)  # Reset jackpot after win
             await self.save_jackpot_task()

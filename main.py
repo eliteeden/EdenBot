@@ -59,16 +59,14 @@ EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web", "roll", "d20", "d6", "d10
 
 @bot.check
 async def block_commands_in_channel(ctx: commands.Context):
-    inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
-    if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
-        if inventory.has_item(ctx.author, "Capital Bot Permissions"):
-            return True
-        if ctx.command.name not in EXEMPT_COMMANDS:  # type: ignore
-            try:
-                await ctx.send(BLOCK_MESSAGE)
-            except discord.Forbidden:
-                pass
-            return False  # Block execution
+    if not any(role.id == ROLES.MODERATOR or role.id == ROLES.TOTALLY_MOD for role in ctx.author.roles):
+        if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
+            if ctx.command.name not in EXEMPT_COMMANDS:  # type: ignore
+                try:
+                    await ctx.send(BLOCK_MESSAGE)
+                except discord.Forbidden:
+                    pass
+                return False  # Block execution
     return True  # Allow execution
 
 @bot.event

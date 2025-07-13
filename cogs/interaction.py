@@ -231,20 +231,8 @@ class InteractionCog(commands.Cog):
     @commands.command(name='kiss')
     async def kiss(self, ctx: commands.Context, member: Member):
         embed = Embed(title=f'**{ctx.author.display_name}** is giving **{member.display_name}** a kiss', color=0xFFC0CB)
-        kisses = ['https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDl5YTg4NHQ0OWp5ZXAwZm96ZW00NjE1em1yNG84YWR3cHN0MHg0ZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hJioaFkX7sjSe7Tkd1/giphy.gif',
-                  'https://cdn.discordapp.com/attachments/1328742188384911422/1332983986397380638/IMG_6977.gif',
-                  'https://media.giphy.com/media/4H28yacGCjrkQ/giphy.gif?cid=ecf05e47425g9kf69f1i2kddb1jcln6zkf5ewb2o8z39ljo3&ep=v1_gifs_related&rid=giphy.gif',
-                  'https://cdn.discordapp.com/attachments/760988796249833472/857741056237764648/image0.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZ0c2VxcHk2Mjh1NGIzbXE2am9sdjB5NDF3anJyZXYyNWZrNXllbSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/9G0AdBbVrkV3O/giphy.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHJxcHYyMmE0enQ2YjN0aWR2dzB0OHN4anlwN252ejd6ZGx5MXlsNyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/G3va31oEEnIkM/giphy.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2lvZWpza25oeTU3bzd4MTI4bzFuMjZzbDN2ZWowNW00dzJqcmVnZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/DhclkBm2dRlRKSgRmV/giphy.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExamZxM3dub25hOWdrbzlibzlicWx4MjV4MXR1dzNxeWZzcHY2cWJvbyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/c7mnNZUxrK8VxXIioH/giphy.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZ0c2VxcHk2Mjh1NGIzbXE2am9sdjB5NDF3anJyZXYyNWZrNXllbSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/11hAbqRK5D0pnW/giphy.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZ0c2VxcHk2Mjh1NGIzbXE2am9sdjB5NDF3anJyZXYyNWZrNXllbSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/frHK797nhEUow/giphy.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZ0c2VxcHk2Mjh1NGIzbXE2am9sdjB5NDF3anJyZXYyNWZrNXllbSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/Vi0Ws3t4JSLOgdkaBq/giphy.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHJxcHYyMmE0enQ2YjN0aWR2dzB0OHN4anlwN252ejd6ZGx5MXlsNyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/5ubHiAtBlv9lSlhVld/giphy.gif',
-                  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHJxcHYyMmE0enQ2YjN0aWR2dzB0OHN4anlwN252ejd6ZGx5MXlsNyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/bm2O3nXTcKJeU/giphy.gif']
-        embed.set_image(url=random.choice(kisses))
+        file = self.get_gif("kiss")
+        embed.set_image(url=f"attachment://{file.filename}")
         if ctx.author == member:
             await ctx.send("Kissing yourself won't make you feel better")
         elif member == self.bot.user:
@@ -256,7 +244,7 @@ class InteractionCog(commands.Cog):
             else:
                 await ctx.send("I'm flattered but your loneliness is such a turn off")
         else:
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, file=file)
 
     @commands.command(name="murder")
     @commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)

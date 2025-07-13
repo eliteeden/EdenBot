@@ -207,10 +207,10 @@ class ShopCog(commands.Cog):
             return True
         @gives_item(
                 "Capital Bot Permissions", 1, maximum_items=1,
-                buy_message=f"You can now use commands in {CHANNELS.CAPITAL}",
-                maximum_message=f"You can already use commands in {CHANNELS.CAPITAL}!",
+                buy_message=f"You can now use commands in <#{CHANNELS.CAPITAL}>",
+                maximum_message=f"You can already use commands in <#{CHANNELS.CAPITAL}>!",
                 hide_on_maximum=True)
-        @shopitem(name="Capital Bot Commands", price=1_500_000)
+        @shopitem(name="Capital Bot Commands", price=150_000)
         @staticmethod
         async def capital_bot_commands(bot: commands.Bot, interaction: discord.Interaction):
             """

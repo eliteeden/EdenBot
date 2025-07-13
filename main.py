@@ -3,7 +3,6 @@
 
 
 # Imports
-from typing import Optional
 import aiohttp
 import asyncio
 from asyncio import subprocess
@@ -12,15 +11,14 @@ from dotenv import load_dotenv
 import discord
 from discord import app_commands, Embed, Intents, Interaction, Member, User 
 from discord.ext import commands
-from googlesearch import search
 import json
 import os
 import random
-import requests
 import traceback
+from typing import Optional
 import unicodedata
 
-from constants import CHANNELS, ROLES, USERS
+from constants import CHANNELS, ROLES
 from cogs.inventory import InventoryCog
 
 # Initialize the report dictionary
@@ -56,12 +54,15 @@ if not token:
 
 
 DISABLED_COMMAND_CHANNEL_ID = CHANNELS.CAPITAL
-BLOCK_MESSAGE = f"No commands in <#{CHANNELS.CAPITAL}>\nUse bot commands in <#{CHANNELS.BOT_COMMANDS}>, you brat"
+BLOCK_MESSAGE = f"No commands in <#{CHANNELS.CAPITAL}>\nUse bot commands in <#{CHANNELS.EDEN_BOT_COMMANDS}>, you brat"
 EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web", "roll", "d20", "d6", "d100", "endslow", "slowmode", "ban", "mute", "snipe"]
 
 @bot.check
 async def block_commands_in_channel(ctx: commands.Context):
+    inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
     if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
+        if inventory.has_item(ctx.author, "Capital Bot Permissions"):
+            return True
         if ctx.command.name not in EXEMPT_COMMANDS:  # type: ignore
             try:
                 await ctx.send(BLOCK_MESSAGE)

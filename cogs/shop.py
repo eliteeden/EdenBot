@@ -206,6 +206,18 @@ class ShopCog(commands.Cog):
             """
             return True
         @gives_item(
+                "Capital Bot Permissions", 1, maximum_items=1,
+                buy_message=f"You can now use commands in {CHANNELS.CAPITAL}",
+                maximum_message=f"You can already use commands in {CHANNELS.CAPITAL}!",
+                hide_on_maximum=True)
+        @shopitem(name="Capital Bot Commands", price=1_500_000)
+        @staticmethod
+        async def capital_bot_commands(bot: commands.Bot, interaction: discord.Interaction):
+            """
+            Allows you to use Eden Bot commands in Capital.
+            """
+            return True
+        @gives_item(
             "Lock", 1, maximum_items=5,
             buy_message="You bought a lock!",
             maximum_message="I think five locks is enough for now.")

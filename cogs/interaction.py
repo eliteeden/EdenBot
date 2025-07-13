@@ -20,7 +20,7 @@ class InteractionCog(commands.Cog):
         """Returns a random gif from the specified folder"""
         files = os.listdir("media/" + folder)
         if files:
-            return File(random.choice(files))
+            return File(f"media/{folder}/" + random.choice(files))
         else:
             raise FileNotFoundError(f"No files found in media/{folder}")
 

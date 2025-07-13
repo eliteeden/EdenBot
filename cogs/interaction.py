@@ -1,6 +1,8 @@
 from datetime import datetime
+import os
 import discord
 from discord import Embed, Member
+from discord import File
 from discord.ext import commands
 from googlesearch import search
 import random
@@ -13,6 +15,14 @@ class InteractionCog(commands.Cog):
     """Some more random commands"""
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    def get_gif(self, folder: str) -> File:
+        """Returns a random gif from the specified folder"""
+        files = os.listdir("media/" + folder)
+        if files:
+            return File(random.choice(files))
+        else:
+            raise FileNotFoundError(f"No files found in media/{folder}")
 
     @commands.command(name='howgay', aliases=['gaydar', 'howgayareyou', 'ilikecheese'])
     async def howgay(self, ctx: commands.Context, user: Member = None): # type: ignore
@@ -205,10 +215,8 @@ class InteractionCog(commands.Cog):
     @commands.command(name='hug')
     async def hug(self, ctx: commands.Context, member: Member):
         embed = Embed(title=f'**{ctx.author.display_name}** is giving **{member.display_name}** a hug', color=0x00FFFF)
-        hugs = ['https://www.icegif.com/wp-content/uploads/hug-icegif-3.gif',
-              'https://media.giphy.com/media/XsVaoJbWMASZUmWjT9/giphy.gif?cid=ecf05e470psm6ftj52elckjyyndiv9d3m85j0po2oj3zzgtp&ep=v1_gifs_search&rid=giphy.gif',
-              'https://media.giphy.com/media/3o6Zth3OnNv6qDGQ9y/giphy.gif?cid=790b7611fk69752zuim3jfbjuztlsehpjl8270trdbc6e1ad&ep=v1_gifs_search&rid=giphy.gif']
-        embed.set_image(url=random.choice(hugs))
+        file = self.get_gif("hugs")
+        embed.set_image(url=f"attachment://{file.filename}")
         if ctx.author == member:
             await ctx.send("That's a weird thing to do but okay")
         elif member == self.bot.user:
@@ -218,7 +226,7 @@ class InteractionCog(commands.Cog):
             else:
                 await ctx.send("Sorry... I have trust issues. People call me slurs way too much.")
         else:
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, file=file)
     
     @commands.command(name='kiss')
     async def kiss(self, ctx: commands.Context, member: Member):

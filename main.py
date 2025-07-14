@@ -1108,11 +1108,17 @@ async def embed(
         allowed_role_ids = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]
         has_role = any(role.id in allowed_role_ids for role in interaction.user.roles)
 
-        # Add footer conditionally if user lacks roles/items
-        avatar_url = interaction.user.avatar.url if interaction.user.avatar else None
-        embed.set_footer(text=f"Requested by {interaction.user.name}", icon_url=avatar_url)
+        allowed_role_ids = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]
+        user_roles = [role.id for role in interaction.user.roles]
+        has_role = any(role_id in allowed_role_ids for role_id in user_roles)
 
+        # Fallback check: inventory item presence
+        has_permission = has_role 
 
+        # Set footer only if user lacks required permissions
+        if not has_permission:
+            avatar_url = interaction.user.avatar.url if interaction.user.avatar else None
+            embed.set_footer(text=f"Requested by {interaction.user.name}", icon_url=avatar_url)
 
         # Defer the response (ephemeral)
         await interaction.response.defer(ephemeral=True)

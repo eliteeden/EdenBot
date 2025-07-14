@@ -1109,13 +1109,10 @@ async def embed(
         has_role = any(role.id in allowed_role_ids for role in interaction.user.roles)
 
         # Add footer conditionally if user lacks roles/items
-        if not has_role:
-            if interaction.user.avatar:
-                avatar_url = interaction.user.avatar.url
-            else:
-                avatar_url = None  # or a default icon URL if you like
+        avatar_url = interaction.user.avatar.url if interaction.user.avatar else None
+        embed.set_footer(text=f"Requested by {interaction.user.name}", icon_url=avatar_url)
 
-        embed.set_footer(text="Requested by " + interaction.user.name, icon_url=avatar_url)
+
 
         # Defer the response (ephemeral)
         await interaction.response.defer(ephemeral=True)

@@ -12,10 +12,24 @@ from constants import CHANNELS, ROLES, USERS
 from cogs.inventory import InventoryCog
 from cogs.paginator import PaginatorCog
 
+STREAKS_FILE = "streaks.json"
+
+def load_streaks():
+    if os.path.exists(STREAKS_FILE):
+        with open(STREAKS_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_streaks(streaks):
+    with open(STREAKS_FILE, "w") as f:
+        json.dump(streaks, f, indent=4)
+
+
 class EconomyCog(commands.Cog):
     """All economy related commands and tasks."""
     ECONOMY_FILE = "bank.json"
     JACKPOT_FILE = "jackpot.json"
+
     type strint = str # Contains an ID, not a string
     type MemberLike = discord.User | discord.Member | str | int | strint
     def __init__(self, bot: commands.Bot):
@@ -109,7 +123,7 @@ class EconomyCog(commands.Cog):
             'You "found"',
         ]
         # TODO: fix
-        self.add(ctx.author, coins:=(random.randint(1, 2000)))
+        self.add(ctx.author, coins:=(random.randint(1, 1000)))
         await ctx.send(f"{random.choice(responses)} {coins} eden coins")
 
     @work.error
@@ -121,6 +135,19 @@ class EconomyCog(commands.Cog):
     async def bal(self, ctx: commands.Context, user: Optional[Member] = None): # type: ignore
         await ctx.send(f"{user.mention + '\'s' if user else 'Your'} balance is {self.get(user or ctx.author):,} eden coins.")
     
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    @commands.command(name='resetbank', aliases=['resetbal', 'wtfcoot'])
+    async def fixbank(self, ctx: commands.Context):
+        """Sets all existing balances in the bank to 15,000."""
+        affected = 0
+
+        for key in self.bank.keys():
+            self.bank[key] = 15000
+            affected += 1
+
+        self.__save_bank()  # Persist the updated balances
+        await ctx.send(f"Fixed {affected} bank entries to 15,000.")
+
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     @commands.command(name='fixbank', aliases=['fixbal', 'wtfhappy'])
     async def fixbank(self, ctx: commands.Context, key: str = "users"):
@@ -180,8 +207,8 @@ class EconomyCog(commands.Cog):
 
     @commands.command(name='subbal')
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def subbal(self, ctx: commands.Context, member: MemberLike, amount: int):
-        self.sub(member, amount)
+    async def subbal(self, ctx: commands.Context, member: MemberLike):
+        self.set(member, 0)
         await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
 
     @commands.command(name='setbal')
@@ -198,7 +225,7 @@ class EconomyCog(commands.Cog):
     @commands.command(name='win')
     async def win(self, ctx: commands.Context):
         userid = ctx.author.name
-        price = 1_000_000
+        price = 10_000_000
         if self.get(ctx.author) < price:
             await ctx.send(f"You do not have enough coins to win. You need at least {price:,} eden coins.")
             return
@@ -240,13 +267,13 @@ class EconomyCog(commands.Cog):
 
     @commands.command(name='slots', aliases=['slot', 'oldgamble'])
     async def slots(self, ctx: commands.Context):
-        cost = 1_500
-        bot_choice = random.randint(1, 50)
+        cost = 10_000
+        bot_choice = random.randint(1, 120)
         if self.get(ctx.author) < cost:
             await ctx.send(f'You do not have enough coins, you need {cost:,} to participate')
             return
         if bot_choice == 6:
-            earn = 80_000 # break-even is 75,000
+            earn = 1_000_000 # break-even is 75,000
             self.add(ctx.author, earn)
             await ctx.send(f'You won {earn:,} eden coins!')
             bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
@@ -376,7 +403,7 @@ class EconomyCog(commands.Cog):
             self.give.reset_cooldown(ctx) # type: ignore
             return
 
-        if coins > 10001:
+        if coins > 1001:
             await ctx.send("You can't give more than that bud\nWhere's the fun in that?")
             self.give.reset_cooldown(ctx) # type: ignore
             return
@@ -418,20 +445,35 @@ class EconomyCog(commands.Cog):
             f"{ctx.author.mention} decided to buy *totally legal* substances from {member.mention} for {coins:,} eden coins.",
             f"{member.mention}, you should buy \"sugar\" from {ctx.author.mention} with the {coins:,} eden coins they just gave you.\n-# (blame Germanic)",
         ]))
-
     @commands.command(name="daily")
-    @commands.cooldown(1, 86400, commands.BucketType.user)  # 24-hour cooldown
+    @commands.cooldown(1, 8, commands.BucketType.user)  # 24-hour cooldown
     async def daily(self, ctx: commands.Context):
-        """Log in every day for your rewards"""
+        """Log in every day for your rewards."""
         user = ctx.author
-        user_id = user.id
-        earn = 10_000
+        user_id = str(user.id)
+        base_earn = 5_000
+        bonus_per_streak = 1_000
 
-        # TODO: Add a JSON file that records a user's streak and gives an appropriate bonus
+        # Load current streak data
+        streaks = load_streaks()
+        streak = streaks.get(user_id, 0)
+        streak += 1
+
+        # Calculate total earnings
+        total_earn = base_earn + (bonus_per_streak * streak)
+
+        # Update the bank
         current_balance = self.get(user_id)
-        self.add(user, earn)
+        self.add(user, total_earn)
 
-        await ctx.send(f"{user.display_name}, you’ve claimed your daily reward of {earn:,} Eden coins!")
+        # Save streak back
+        streaks[user_id] = streak
+        save_streaks(streaks)
+
+        await ctx.send(
+            f"🌟 {user.display_name}, you’ve claimed your daily reward of {base_earn:,} Eden coins + "
+            f"{bonus_per_streak:,} x {streak} streak bonus = {total_earn:,} coins!"
+        )
     @daily.error
     async def daily_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
@@ -456,7 +498,7 @@ class EconomyCog(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def gamble(self, ctx: commands.Context):
         """Let's go gambling!"""
-        cost = 6_000
+        cost = 7_500
         userid = ctx.author.name
         balance = self.get(userid)
         if balance < cost:

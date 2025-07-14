@@ -456,7 +456,7 @@ class EconomyCog(commands.Cog):
         bonus_per_streak = 1_000
 
         # Load current streak data
-        streaks = load_streaks()
+        streaks = self.load_streaks()
         streak = streaks.get(user_id, 0)
         streak += 1
         await ctx.author.send(streak)
@@ -470,7 +470,7 @@ class EconomyCog(commands.Cog):
 
         # Save streak back
         streaks[user_id] = streak
-        save_streaks(streaks)
+        self.save_streaks(streaks)
 
         await ctx.send(
             f"🌟 {user.display_name}, you’ve claimed your daily reward of {base_earn:,} Eden coins + "

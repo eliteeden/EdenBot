@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 import discord
 from discord import Member
 import json
+import os
 import random
 from typing import Optional, overload
 from constants import CHANNELS, ROLES, USERS

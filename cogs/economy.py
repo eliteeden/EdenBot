@@ -73,13 +73,13 @@ class EconomyCog(commands.Cog):
         with open(self.ECONOMY_FILE, "w") as s:
             json.dump(self.bank, s, indent=4)
         
-    def load_streaks():
+    def load_streaks(self):
         if os.path.exists(STREAKS_FILE):
             with open(STREAKS_FILE, "r") as f:
                 return json.load(f)
         return {}
 
-    def save_streaks(streaks):
+    def save_streaks(self, streaks):
         with open(STREAKS_FILE, "w") as f:
             json.dump(streaks, f, indent=4)
     def add(self, user: MemberLike, coins: int):

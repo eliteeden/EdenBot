@@ -1115,7 +1115,7 @@ async def embed(
             else:
                 avatar_url = None  # or a default icon URL if you like
 
-                embed.set_footer(text="Requested by " + interaction.user.name, icon_url=avatar_url)
+        embed.set_footer(text="Requested by " + interaction.user.name, icon_url=avatar_url)
 
         # Defer the response (ephemeral)
         await interaction.response.defer(ephemeral=True)

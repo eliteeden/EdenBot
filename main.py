@@ -1080,30 +1080,53 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
     await interaction.delete_original_response()
 
 
-
 @bot.tree.command(name="embed")
-@app_commands.describe(title="The title of the embed", message="The description of the embed", color="The hexadecimal color code for the embed")
-async def embed(interaction: Interaction, title: str, message: str, color: str = str(discord.Color.blurple())):
+@app_commands.describe(
+    title="The title of the embed",
+    message="The description of the embed, separate lines with '|'",
+    color="The hexadecimal color code for the embed"
+)
+async def embed(
+    interaction: Interaction, 
+    title: str, 
+    message: str, 
+    color: str = "#5865F2"  # Discord blurple hex
+):
     """Create an embed with a title, description, and color."""
     try:
+        # Format the message into separate lines
+        formatted_message = "\n".join(message.split('|'))
 
-        lines = message.split('|')
-        formatted_message = "\n".join(lines)
+        # Convert hex string to integer color
+        color = color.lstrip('#')  
+        color_int = int(color, 16)
 
-        # Convert the color from string to integer
-        color = color.lstrip('#')  # Remove leading '#' if present
-        color = int(color, 16) # type: ignore
-        embed = Embed(title=title, description=formatted_message, color=color) # type: ignore
+        # Create the embed
+        embed = Embed(title=title, description=formatted_message, color=color_int)
+
+        # Check user roles
+        allowed_role_ids = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]
+        has_role = any(role.id in allowed_role_ids for role in interaction.user.roles)
+
+        # Add footer conditionally if user lacks roles/items
+        if not has_role:
+            if interaction.user.avatar:
+                embed.set_footer(icon_url=interaction.user.avatar.url)
+
+        # Defer the response (ephemeral)
         await interaction.response.defer(ephemeral=True)
-        
-        # Send the embed
-        await interaction.channel.send(embed=embed) # type: ignore
 
-        # Optionally delete the original interaction message if visible
+        # Send the embed to the channel
+        await interaction.channel.send(embed=embed)
+
+        # Clean up the original interaction message if needed
         await interaction.delete_original_response()
 
     except ValueError:
-        await interaction.response.send_message("Invalid color code. Please provide a valid hexadecimal value.", ephemeral=True)
+        await interaction.response.send_message(
+            "Invalid color code. Please provide a valid hexadecimal value like #FF5733.",
+            ephemeral=True
+        )
 
 
 user_colors = {}  # Dictionary to store user-specific colors

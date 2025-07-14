@@ -284,7 +284,8 @@ class EconomyCog(commands.Cog):
             self.sub(ctx.author, cost)
             await ctx.send(f'You lost {cost:,} eden coins.')
 
-    protected_users = [USERS.HAPPY, USERS.RAINBOW, USERS.FROST, USERS.SLOINAC, USERS.MASCIAN, USERS.VIC]
+    # "0" means user not found
+    protected_users = ["0", USERS.HAPPY, USERS.RAINBOW, USERS.FROST, USERS.SLOINAC, USERS.MASCIAN, USERS.VIC]
     @commands.command(name="steal", aliases=["rob", "heist"])
     @commands.cooldown(1, 43200, commands.BucketType.user)
     async def steal(self, ctx: commands.Context, member: Member):

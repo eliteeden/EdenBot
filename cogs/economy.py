@@ -75,13 +75,13 @@ class EconomyCog(commands.Cog):
             json.dump(self.bank, s, indent=4)
         
     def load_streaks(self):
-        if os.path.exists(STREAKS_FILE):
-            with open(STREAKS_FILE, "r") as f:
+        if os.path.exists(self.STREAKS_FILE):
+            with open(self.STREAKS_FILE, "r") as f:
                 return json.load(f)
         return {}
 
     def save_streaks(self, streaks):
-        with open(STREAKS_FILE, "w") as f:
+        with open(self.STREAKS_FILE, "w") as f:
             json.dump(streaks, f, indent=4)
     def add(self, user: MemberLike, coins: int):
         """Adds coins to a user's balance."""
@@ -139,7 +139,7 @@ class EconomyCog(commands.Cog):
     
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     @commands.command(name='resetbank', aliases=['resetbal', 'wtfcoot'])
-    async def fixbank(self, ctx: commands.Context):
+    async def resetbank(self, ctx: commands.Context):
         """Sets all existing balances in the bank to 15,000."""
         affected = 0
 

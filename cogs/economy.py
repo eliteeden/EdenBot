@@ -480,6 +480,11 @@ class EconomyCog(commands.Cog):
     async def daily_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send("Come back again tomorrow\n-# impatient ass")
+        else:
+            error_type = type(error).__name__
+            await ctx.send(f"⚠️ Unexpected error: `{error_type}`\nMessage: {error}")
+
+        
 
     @commands.command(name='pot', aliases=['jackpot'])
     async def pot(self, ctx: commands.Context):

@@ -12,23 +12,14 @@ from constants import CHANNELS, ROLES, USERS
 from cogs.inventory import InventoryCog
 from cogs.paginator import PaginatorCog
 
-STREAKS_FILE = "streaks.json"
 
-def load_streaks():
-    if os.path.exists(STREAKS_FILE):
-        with open(STREAKS_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_streaks(streaks):
-    with open(STREAKS_FILE, "w") as f:
-        json.dump(streaks, f, indent=4)
 
 
 class EconomyCog(commands.Cog):
     """All economy related commands and tasks."""
     ECONOMY_FILE = "bank.json"
     JACKPOT_FILE = "jackpot.json"
+    STREAKS_FILE = "streaks.json"
 
     type strint = str # Contains an ID, not a string
     type MemberLike = discord.User | discord.Member | str | int | strint
@@ -81,6 +72,16 @@ class EconomyCog(commands.Cog):
     def __save_bank(self):
         with open(self.ECONOMY_FILE, "w") as s:
             json.dump(self.bank, s, indent=4)
+        
+    def load_streaks():
+        if os.path.exists(STREAKS_FILE):
+            with open(STREAKS_FILE, "r") as f:
+                return json.load(f)
+        return {}
+
+    def save_streaks(streaks):
+        with open(STREAKS_FILE, "w") as f:
+            json.dump(streaks, f, indent=4)
     def add(self, user: MemberLike, coins: int):
         """Adds coins to a user's balance."""
         self.set(user, self.get(user) + coins)
@@ -458,6 +459,7 @@ class EconomyCog(commands.Cog):
         streaks = load_streaks()
         streak = streaks.get(user_id, 0)
         streak += 1
+        await ctx.author.send(streak)
 
         # Calculate total earnings
         total_earn = base_earn + (bonus_per_streak * streak)

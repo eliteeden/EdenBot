@@ -189,15 +189,8 @@ class InteractionCog(commands.Cog):
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
     async def fuck(self, ctx: commands.Context, member: Member):
         embed = Embed(title=f'**{ctx.author.display_name}**! Where are you taking **{member.display_name}**', color=0x00FFFF)
-        makeouts = ['https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmYwNjUyeXJ6M2l5bTc3anc5bWxnN2szODJjMnd5aXZzZDVweGg3ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/dWrnYmDucWhDvkbLF6/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHJldHM5b2Nhc2tpcmQwM2xtdjcxNWlzNnI0eGFwczM4NXVucjJodCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/jUJgL0iByjsAS2MQH1/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDY2dm5pdmVldTQzdTl1MXRzMHBtdDBzOW5vYXAzdzh2dHplYXdqMCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/KptaYW4AuV2vSkn0Bh/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnUyY3lnOTF4bzlyMzlzdngweTEwdGYxd3N0M20yYzlsdjdlaHZnMSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/mpWQkl5jGLOjjApXUJ/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnUyY3lnOTF4bzlyMzlzdngweTEwdGYxd3N0M20yYzlsdjdlaHZnMSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/iMJwjtL5GLxPYWMob3/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdHNxYTg0aXdyMGV3NGZmZzQ2NmttOTZtZGw4M3pmNW5iMDB2ZHRyYyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/huCxiZ4aibaMngURGX/giphy.gif',
-              'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2Q4amdnY216eTl1Z3NlZTR4emdvaGVncGttanRwNW03bnN1c2htayZlcD12MV9naWZzX3NlYXJjaCZjdD1n/cu1l1wN5bNDGUg9QME/giphy.gif',
-              'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDkxcmtyZzB4dGw2OWxoNTUyc2lkd2RhZDl0N3I2NGx2eXhzZWdwYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/oAvQOD7hJMXQFDDhBI/giphy.gif']
-        embed.set_image(url=random.choice(makeouts))
+        file = self.get_gif("fuck")
+        embed.set_image(url=f"attachment://{file.filename}")
         if ctx.author == member:
             await ctx.send("That sounds like a lonely thing to do")
         elif self.bot.user == member:
@@ -206,7 +199,7 @@ class InteractionCog(commands.Cog):
             else:
                 await ctx.send("But why?")
         else:
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, file=file)
     @fuck.error
     async def fuck_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingAnyRole):

@@ -491,7 +491,7 @@ async def on_message(message):
     if global_repeat_counts[channel_id]["last_message"] == content:
         global_repeat_counts[channel_id]["repeat_count"] += 1
     else:
-        if global_repeat_counts[channel_id]["repeat_count"] >= 3:
+        if global_repeat_counts[channel_id]["repeat_count"] >= 3 and content.strip() != "":
             await message.channel.send(
                 f"Broke the chain of {global_repeat_counts[channel_id]['repeat_count']} messages!"
             )

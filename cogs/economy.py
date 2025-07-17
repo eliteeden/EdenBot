@@ -575,7 +575,7 @@ class EconomyCog(commands.Cog):
         self.jackpot_file.write(json.dumps(self.jackpot))
         self.jackpot_file.seek(0, 0) # start of file
         self.jackpot_file.flush()
-        print("Jackpot data saved.")
+        # print("Jackpot data saved.")
 
     async def cog_load(self):
         """Fires when the cog is loaded."""

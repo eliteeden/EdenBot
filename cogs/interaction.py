@@ -300,15 +300,29 @@ class InteractionCog(commands.Cog):
             await ctx.send("What did I do this time?")
         else:
             await ctx.send(embed=embed)
+            
     @commands.command(name='zi')
     async def zi(self, ctx: commands.Context):
         """Checks the last time Zi sent a message"""
         try:
             if ctx.author.id == USERS.ZI:
                 await ctx.send("Oh Zi hii, nothing to see here💖")
-            zi: Member = ctx.guild.get_member(USERS.ZI) # type: ignore
-            async for message in zi.history(limit=1):
-                await ctx.send(f"<t:{math.floor(message.created_at.timestamp())}:R> days since Zi's last message\nShe'll be back for Thanksgiving")
+                return
+
+            zi: Member = ctx.guild.get_member(USERS.ZI)  # type: ignore
+            for channel in ctx.guild.text_channels:
+                try:
+                    async for message in channel.history(limit=100):
+                        if message.author.id == USERS.ZI:
+                            timestamp = math.floor(message.created_at.timestamp())
+                            await ctx.send(
+                                f"<t:{timestamp}:R> since Zi's last message in #{channel.name}\nShe'll be back for Thanksgiving"
+                            )
+                            return
+                except discord.Forbidden:
+                    continue
+
+            await ctx.send("Couldn't find any recent messages from Zi")
         except Exception as e:
             await ctx.send(f"Error: {e}")
 

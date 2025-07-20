@@ -306,8 +306,8 @@ class InteractionCog(commands.Cog):
         if ctx.author.id == USERS.ZI:
             await ctx.send("You are Zi!")
         zi: Member = ctx.guild.get_member(USERS.ZI) # type: ignore
-        async for message in zi.history(limit=1):
-            await ctx.send(f"Zi's last message was sent <t:{math.floor(message.created_at.timestamp())}:R>")
+        async for message in zi.history(limit=5, oldest_first=True):
+            await ctx.send(f"Zi's last message was sent <t:{math.floor(message.created_at.timestamp())}:R>\nLink: {message.jump_url}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(InteractionCog(bot))

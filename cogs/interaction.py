@@ -299,6 +299,14 @@ class InteractionCog(commands.Cog):
             await ctx.send("What did I do this time?")
         else:
             await ctx.send(embed=embed)
+    @commands.command(name='zi')
+    async def zi(self, ctx: commands.Context):
+        """Checks the last time Zi sent a message"""
+        if ctx.author.id == USERS.ZI:
+            await ctx.send("Oh Zi hii, nothing to see here💖")
+        zi: Member = ctx.guild.get_member(USERS.ZI) # type: ignore
+        async for message in zi.history(limit=1):
+            await ctx.send(f"<t:{math.floor(message.created_at.timestamp())}:R> days since Zi's last message\nShe'll be back for Thanksgiving")
 
 
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+import math
 import os
 import discord
 from discord import Embed, Member
@@ -299,8 +300,14 @@ class InteractionCog(commands.Cog):
             await ctx.send("What did I do this time?")
         else:
             await ctx.send(embed=embed)
-
-
+    @commands.command(name='zi')
+    async def zi(self, ctx: commands.Context):
+        """Checks the last time Zi sent a message"""
+        if ctx.author.id == USERS.ZI:
+            await ctx.send("You are Zi!")
+        zi: Member = ctx.guild.get_member(USERS.ZI) # type: ignore
+        async for message in zi.history(limit=1):
+            await ctx.send(f"Zi's last message was sent <t:{math.floor(message.created_at.timestamp())}:R>")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(InteractionCog(bot))

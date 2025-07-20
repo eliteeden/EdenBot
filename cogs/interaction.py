@@ -300,7 +300,7 @@ class InteractionCog(commands.Cog):
             await ctx.send("What did I do this time?")
         else:
             await ctx.send(embed=embed)
-            
+
     @commands.command(name='zi')
     async def zi(self, ctx: commands.Context):
         """Checks the last time Zi sent a message"""
@@ -312,13 +312,13 @@ class InteractionCog(commands.Cog):
             zi: Member = ctx.guild.get_member(USERS.ZI)  # type: ignore
             for channel in ctx.guild.text_channels:
                 try:
-                    async for message in channel.history(limit=100):
-                        if message.author.id == USERS.ZI:
-                            timestamp = math.floor(message.created_at.timestamp())
-                            await ctx.send(
-                                f"<t:{timestamp}:R> since Zi's last message in #{channel.name}\nShe'll be back for Thanksgiving"
-                            )
-                            return
+                    message = [msg async for msg in zi.history(oldest_first=True)][-1]
+                    if message.author.id == USERS.ZI:
+                        timestamp = math.floor(message.created_at.timestamp())
+                        await ctx.send(
+                            f"<t:{timestamp}:R> since Zi's last message\nShe'll be back for Thanksgiving"
+                        )
+                        return
                 except discord.Forbidden:
                     continue
 

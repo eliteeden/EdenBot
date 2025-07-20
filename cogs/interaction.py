@@ -302,11 +302,14 @@ class InteractionCog(commands.Cog):
     @commands.command(name='zi')
     async def zi(self, ctx: commands.Context):
         """Checks the last time Zi sent a message"""
-        if ctx.author.id == USERS.ZI:
-            await ctx.send("Oh Zi hii, nothing to see here💖")
-        zi: Member = ctx.guild.get_member(USERS.ZI) # type: ignore
-        async for message in zi.history(limit=1):
-            await ctx.send(f"<t:{math.floor(message.created_at.timestamp())}:R> days since Zi's last message\nShe'll be back for Thanksgiving")
+        try:
+            if ctx.author.id == USERS.ZI:
+                await ctx.send("Oh Zi hii, nothing to see here💖")
+            zi: Member = ctx.guild.get_member(USERS.ZI) # type: ignore
+            async for message in zi.history(limit=1):
+                await ctx.send(f"<t:{math.floor(message.created_at.timestamp())}:R> days since Zi's last message\nShe'll be back for Thanksgiving")
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
 
 
 

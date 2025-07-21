@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+from typing import Optional
 import discord
 from discord import Embed, Member
 from discord import File
@@ -306,12 +307,12 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name='find', aliases=["zii", "yoink", "stalk", "hunt", "track"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def find(self, ctx: commands.Context, member: discord.Member = None):
+    async def find(self, ctx: commands.Context, member: Optional[discord.Member] = None): # type: ignore
         """Finds the most recent message from a member across all text channels, using cache + parallel scanning."""
         try:
             async with ctx.typing():
-                member = member or ctx.guild.get_member(USERS.ZI)
-                member_id = member.id
+                member: Member = member or ctx.guild.get_member(USERS.ZI) # type: ignore
+                member_id = member.id # type: ignore
 
                 # Try cached message first
                 if member_id in self.messages:
@@ -331,7 +332,7 @@ class InteractionCog(commands.Cog):
                     except discord.Forbidden:
                         return None
 
-                tasks = [scan_channel(channel) for channel in ctx.guild.text_channels]
+                tasks = [scan_channel(channel) for channel in ctx.guild.text_channels] # type: ignore
                 results = await asyncio.gather(*tasks)
                 messages = [msg for msg in results if msg]
 

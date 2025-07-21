@@ -325,38 +325,43 @@ class InteractionCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"Error: {e}")
 
-    @commands.command(name='find')
-    async def find(self, ctx: commands.Context, member: discord.Member):
-        if member.id in self.messages:
-            """Finds the most recent message from a member in the channel."""
-            latest_msg = self.messages[member.id]
-            timestamp = int(latest_msg.created_at.timestamp())
-            await ctx.send(
-                f"{member.display_name} was recently seen in #{latest_msg.channel.name if hasattr(latest_msg.channel, 'name') else 'DMs'} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})" # type: ignore
-            )
-        try:
-            """Finds the most recent message from a member across all text channels."""
-            latest_msg = None
-
-            for channel in ctx.guild.text_channels:
-                try:
-                    async for msg in channel.history(limit=100):
-                        if msg.author == member:
-                            if not latest_msg or msg.created_at > latest_msg.created_at:
-                                latest_msg = msg
-                except discord.Forbidden:
-                    continue
-
-            if latest_msg:
+    @commands.command(name='find', aliases=["zi"])
+    async def find(self, ctx: commands.Context, member: discord.Member = None):
+        if not member:
+            member_id = USERS.ZI
+        else:
+            member_id = member.id
+        async with ctx.typing:    
+            if member_id in self.messages:
+                """Finds the most recent message from a member in the channel."""
+                latest_msg = self.messages[member_id]
                 timestamp = int(latest_msg.created_at.timestamp())
                 await ctx.send(
-                    # weird python bs (why does .name not return None)
                     f"{member.display_name} was last seen in #{latest_msg.channel.name if hasattr(latest_msg.channel, 'name') else 'DMs'} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})" # type: ignore
                 )
-            else:
-                await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
-        except Exception as e:
-            await ctx.send(f"Error: {e}")
+            try:
+                """Finds the most recent message from a member across all text channels."""
+                latest_msg = None
+
+                for channel in ctx.guild.text_channels:
+                    try:
+                        async for msg in channel.history(limit=100):
+                            if msg.author == member:
+                                if not latest_msg or msg.created_at > latest_msg.created_at:
+                                    latest_msg = msg
+                    except discord.Forbidden:
+                        continue
+
+                if latest_msg:
+                    timestamp = int(latest_msg.created_at.timestamp())
+                    await ctx.send(
+                        # weird python bs (why does .name not return None)
+                        f"{member.display_name} was last seen in #{latest_msg.channel.name if hasattr(latest_msg.channel, 'name') else 'DMs'} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})" # type: ignore
+                    )
+                else:
+                    await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
+            except Exception as e:
+                await ctx.send(f"Error: {e}")
     # On message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

@@ -303,31 +303,73 @@ class InteractionCog(commands.Cog):
             await ctx.send("What did I do this time?")
         else:
             await ctx.send(embed=embed)
-            
-    @commands.command(name='find')
-    async def find(self, ctx: commands.Context, member: discord.Member):
-        """Finds the most recent message from a member across all text channels by paginating beyond 100 messages."""
+
+    @commands.command(name='find', aliases=["zii"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
+    async def find(self, ctx: commands.Context, member: discord.Member = None):
+        """Hybrid system that checks cache, scans priority channels, then paginates if needed."""
         try:
             async with ctx.typing():
+                member = member or ctx.guild.get_member(USERS.ZI)
                 member_id = member.id
-                latest_msg = None
-                max_pages = 10  # 10 pages × 100 messages = 1000 max
-                for channel in ctx.guild.text_channels:
-                    try:
-                        last_message = None
-                        for _ in range(max_pages):
-                            history_kwargs = {'limit': 100}
-                            if last_message:
-                                history_kwargs['before'] = last_message
 
-                            async for msg in channel.history(**history_kwargs):
-                                last_message = msg
-                                if msg.author.id == member_id:
-                                    if not latest_msg or msg.created_at > latest_msg.created_at:
-                                        latest_msg = msg
-                        await asyncio.sleep(0.1)  # gentle delay to avoid hitting rate limits
+                # 💾 1. Check cached messages
+                if member_id in self.messages:
+                    cached_msg = self.messages[member_id]
+                    timestamp = int(cached_msg.created_at.timestamp())
+                    await ctx.send(
+                        f"{member.display_name} was last seen in #{getattr(cached_msg.channel, 'name', 'DMs')} — <t:{timestamp}:R>. [Jump!]({cached_msg.jump_url})"
+                    )
+                    return
+
+                # 📌 2. Scan priority channels first (e.g., top 5 visible channels)
+                priority_channels = [
+                    ch for ch in ctx.guild.text_channels[:5]
+                    if ch.permissions_for(ctx.guild.me).read_message_history
+                ]
+
+                async def scan_channel(channel):
+                    try:
+                        async for msg in channel.history(limit=50):
+                            if msg.author.id == member_id:
+                                return msg
                     except discord.Forbidden:
+                        return None
+
+                tasks = [scan_channel(ch) for ch in priority_channels]
+                results = await asyncio.gather(*tasks)
+                messages = [msg for msg in results if msg]
+
+                if messages:
+                    latest_msg = max(messages, key=lambda m: m.created_at)
+                    timestamp = int(latest_msg.created_at.timestamp())
+                    await ctx.send(
+                        f"{member.display_name} was last seen in #{getattr(latest_msg.channel, 'name', 'DMs')} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})"
+                    )
+                    return
+
+                # 🕵️ 3. Deep scan with pagination (fallback)
+                latest_msg = None
+                max_pages = 5
+                after_time = discord.utils.utcnow() - timedelta(days=60)
+
+                for ch in ctx.guild.text_channels:
+                    perms = ch.permissions_for(ctx.guild.me)
+                    if not perms.read_message_history:
                         continue
+
+                    last_msg = None
+                    for _ in range(max_pages):
+                        history_kwargs = {'limit': 100, 'after': after_time}
+                        if last_msg:
+                            history_kwargs['before'] = last_msg
+
+                        async for msg in ch.history(**history_kwargs):
+                            last_msg = msg
+                            if msg.author.id == member_id:
+                                if not latest_msg or msg.created_at > latest_msg.created_at:
+                                    latest_msg = msg
+                    await asyncio.sleep(0.1)
 
                 if latest_msg:
                     timestamp = int(latest_msg.created_at.timestamp())

@@ -329,7 +329,7 @@ class InteractionCog(commands.Cog):
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def find(self, ctx: commands.Context, member: discord.Member = None):
         try:
-            async with ctx.typing:    
+            async with ctx.typing():    
                 if not member:
                     member_id = USERS.ZI
                 else:

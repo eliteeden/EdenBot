@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import math
 import os
 import discord
@@ -306,8 +306,10 @@ class InteractionCog(commands.Cog):
         if ctx.author.id == USERS.ZI:
             await ctx.send("You are Zi!")
         zi: Member = ctx.guild.get_member(USERS.ZI) # type: ignore
-        async for message in zi.history(limit=5, oldest_first=True):
+        async for message in zi.history(after=datetime.now() - timedelta(days=7)):
             await ctx.send(f"Zi's last message was sent <t:{math.floor(message.created_at.timestamp())}:R>\nLink: {message.jump_url}")
+        else:
+            await ctx.send("Zi has not sent any messages in the last 7 days.")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(InteractionCog(bot))

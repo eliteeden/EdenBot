@@ -364,11 +364,11 @@ class InteractionCog(commands.Cog):
                     await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
             except Exception as e:
                 await ctx.send(f"Error: {e}")
-        # On message event
-        @commands.Cog.listener()
-        async def on_message(self, message: discord.Message):
-            """Listens for messages and responds to specific keywords."""
-            self.messages[message.author.id] = message
+    # On message event
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        """Listens for messages and responds to specific keywords."""
+        self.messages[message.author.id] = message
 
 
 async def setup(bot: commands.Bot):

@@ -328,42 +328,45 @@ class InteractionCog(commands.Cog):
     @commands.command(name='find', aliases=["zii"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def find(self, ctx: commands.Context, member: discord.Member = None):
-        async with ctx.typing:    
-            if not member:
-                member_id = USERS.ZI
-            else:
-                member_id = member.id
-        
-            if member_id in self.messages:
-                """Finds the most recent message from a member in the channel."""
-                latest_msg = self.messages[member_id]
-                timestamp = int(latest_msg.created_at.timestamp())
-                await ctx.send(
-                    f"{member.display_name} was last seen in #{latest_msg.channel.name if hasattr(latest_msg.channel, 'name') else 'DMs'} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})" # type: ignore
-                )
-            try:
-                """Finds the most recent message from a member across all text channels."""
-                latest_msg = None
-
-                for channel in ctx.guild.text_channels:
-                    try:
-                        async for msg in channel.history(limit=100):
-                            if msg.author == member:
-                                if not latest_msg or msg.created_at > latest_msg.created_at:
-                                    latest_msg = msg
-                    except discord.Forbidden:
-                        continue
-
-                if latest_msg:
+        try:
+            async with ctx.typing:    
+                if not member:
+                    member_id = USERS.ZI
+                else:
+                    member_id = member.id
+            
+                if member_id in self.messages:
+                    """Finds the most recent message from a member in the channel."""
+                    latest_msg = self.messages[member_id]
                     timestamp = int(latest_msg.created_at.timestamp())
                     await ctx.send(
-                        # weird python bs (why does .name not return None)
                         f"{member.display_name} was last seen in #{latest_msg.channel.name if hasattr(latest_msg.channel, 'name') else 'DMs'} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})" # type: ignore
                     )
-                else:
-                    await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
-            except Exception as e:
-                await ctx.send(f"Error: {e}")
+                try:
+                    """Finds the most recent message from a member across all text channels."""
+                    latest_msg = None
+
+                    for channel in ctx.guild.text_channels:
+                        try:
+                            async for msg in channel.history(limit=100):
+                                if msg.author == member:
+                                    if not latest_msg or msg.created_at > latest_msg.created_at:
+                                        latest_msg = msg
+                        except discord.Forbidden:
+                            continue
+
+                    if latest_msg:
+                        timestamp = int(latest_msg.created_at.timestamp())
+                        await ctx.send(
+                            # weird python bs (why does .name not return None)
+                            f"{member.display_name} was last seen in #{latest_msg.channel.name if hasattr(latest_msg.channel, 'name') else 'DMs'} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})" # type: ignore
+                        )
+                    else:
+                        await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
+                except Exception as e:
+                    await ctx.send(f"Error: {e}")
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
     # On message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

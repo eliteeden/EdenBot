@@ -322,7 +322,7 @@ class InteractionCog(commands.Cog):
             await ctx.send("Couldn't find any recent messages from Zi")
         except Exception as e:
             await ctx.send(f"Error: {e}")
-    @commands.command(name='lastseen')
+    @commands.command(name='find')
     async def find(self, ctx: commands.Context, member: discord.Member):
         """Checks when a member was last seen sending a message."""
         for channel in ctx.guild.text_channels:

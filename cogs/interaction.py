@@ -304,16 +304,16 @@ class InteractionCog(commands.Cog):
         else:
             await ctx.send(embed=embed)
 
-    @commands.command(name='find', aliases=["zii"])
+    @commands.command(name='find', aliases=["zii", "yoink", "stalk", "hunt", "track"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def find(self, ctx: commands.Context, member: discord.Member = None):
-        """Hybrid system that checks cache, scans priority channels, then paginates if needed."""
+        """Finds the most recent message from a member across all text channels, using cache + parallel scanning."""
         try:
             async with ctx.typing():
                 member = member or ctx.guild.get_member(USERS.ZI)
                 member_id = member.id
 
-                # 💾 1. Check cached messages
+                # Try cached message first
                 if member_id in self.messages:
                     cached_msg = self.messages[member_id]
                     timestamp = int(cached_msg.created_at.timestamp())
@@ -322,21 +322,16 @@ class InteractionCog(commands.Cog):
                     )
                     return
 
-                # 📌 2. Scan priority channels first (e.g., top 5 visible channels)
-                priority_channels = [
-                    ch for ch in ctx.guild.text_channels[:5]
-                    if ch.permissions_for(ctx.guild.me).read_message_history
-                ]
-
+                # Scan all channels concurrently
                 async def scan_channel(channel):
                     try:
-                        async for msg in channel.history(limit=50):
+                        async for msg in channel.history(limit=100):
                             if msg.author.id == member_id:
                                 return msg
                     except discord.Forbidden:
                         return None
 
-                tasks = [scan_channel(ch) for ch in priority_channels]
+                tasks = [scan_channel(channel) for channel in ctx.guild.text_channels]
                 results = await asyncio.gather(*tasks)
                 messages = [msg for msg in results if msg]
 
@@ -344,43 +339,12 @@ class InteractionCog(commands.Cog):
                     latest_msg = max(messages, key=lambda m: m.created_at)
                     timestamp = int(latest_msg.created_at.timestamp())
                     await ctx.send(
-                        f"{member.display_name} was last seen in #{getattr(latest_msg.channel, 'name', 'DMs')} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})"
-                    )
-                    return
-
-                # 🕵️ 3. Deep scan with pagination (fallback)
-                latest_msg = None
-                max_pages = 5
-                after_time = discord.utils.utcnow() - timedelta(days=60)
-
-                for ch in ctx.guild.text_channels:
-                    perms = ch.permissions_for(ctx.guild.me)
-                    if not perms.read_message_history:
-                        continue
-
-                    last_msg = None
-                    for _ in range(max_pages):
-                        history_kwargs = {'limit': 100, 'after': after_time}
-                        if last_msg:
-                            history_kwargs['before'] = last_msg
-
-                        async for msg in ch.history(**history_kwargs):
-                            last_msg = msg
-                            if msg.author.id == member_id:
-                                if not latest_msg or msg.created_at > latest_msg.created_at:
-                                    latest_msg = msg
-                    await asyncio.sleep(0.1)
-
-                if latest_msg:
-                    timestamp = int(latest_msg.created_at.timestamp())
-                    await ctx.send(
-                        f"{member.display_name} was last seen in #{getattr(latest_msg.channel, 'name', 'DMs')} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})"
+                        f"It has been <t:{timestamp}:R> since {member.display_name} was last seen in #{getattr(latest_msg.channel, 'name', 'DMs')}. [Jump!]({latest_msg.jump_url})"
                     )
                 else:
                     await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
         except Exception as e:
             await ctx.send(f"Error: {e}")
-
     # On message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

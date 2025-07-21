@@ -325,13 +325,15 @@ class InteractionCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"Error: {e}")
 
-    @commands.command(name='find', aliases=["zi"])
+    @commands.command(name='find', aliases=["zii"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def find(self, ctx: commands.Context, member: discord.Member = None):
-        if not member:
-            member_id = USERS.ZI
-        else:
-            member_id = member.id
         async with ctx.typing:    
+            if not member:
+                member_id = USERS.ZI
+            else:
+                member_id = member.id
+        
             if member_id in self.messages:
                 """Finds the most recent message from a member in the channel."""
                 latest_msg = self.messages[member_id]
@@ -362,11 +364,11 @@ class InteractionCog(commands.Cog):
                     await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
             except Exception as e:
                 await ctx.send(f"Error: {e}")
-    # On message event
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        """Listens for messages and responds to specific keywords."""
-        self.messages[message.author.id] = message
+        # On message event
+        @commands.Cog.listener()
+        async def on_message(self, message: discord.Message):
+            """Listens for messages and responds to specific keywords."""
+            self.messages[message.author.id] = message
 
 
 async def setup(bot: commands.Bot):

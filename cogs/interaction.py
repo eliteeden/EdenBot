@@ -17,6 +17,7 @@ class InteractionCog(commands.Cog):
     """Some more random commands"""
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.messages: dict[int, discord.Message] = {}
 
     def get_gif(self, folder: str) -> File:
         """Returns a random gif from the specified folder"""
@@ -326,6 +327,13 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name='find')
     async def find(self, ctx: commands.Context, member: discord.Member):
+        if member.id in self.messages:
+            """Finds the most recent message from a member in the channel."""
+            latest_msg = self.messages[member.id]
+            timestamp = int(latest_msg.created_at.timestamp())
+            await ctx.send(
+                f"{member.display_name} was recently seen in #{latest_msg.channel.name if hasattr(latest_msg.channel, 'name') else 'DMs'} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})" # type: ignore
+            )
         try:
             """Finds the most recent message from a member across all text channels."""
             latest_msg = None
@@ -342,12 +350,18 @@ class InteractionCog(commands.Cog):
             if latest_msg:
                 timestamp = int(latest_msg.created_at.timestamp())
                 await ctx.send(
-                    f"{member.display_name} was last seen in #{latest_msg.channel.name} — <t:{timestamp}:R>"
+                    # weird python bs (why does .name not return None)
+                    f"{member.display_name} was last seen in #{latest_msg.channel.name if hasattr(latest_msg.channel, 'name') else 'DMs'} — <t:{timestamp}:R>. [Jump!]({latest_msg.jump_url})" # type: ignore
                 )
             else:
                 await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
         except Exception as e:
             await ctx.send(f"Error: {e}")
+    # On message event
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        """Listens for messages and responds to specific keywords."""
+        self.messages[message.author.id] = message
 
 
 async def setup(bot: commands.Bot):

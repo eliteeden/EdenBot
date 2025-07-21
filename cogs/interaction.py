@@ -307,6 +307,7 @@ class InteractionCog(commands.Cog):
             await ctx.send("You are Zi!")
         zi: Member = ctx.guild.get_member(USERS.ZI) # type: ignore
         await ctx.send(f"Zi is {zi.display_name}/{zi.nick} (@ {zi.name}, id {zi.id})")
+        await ctx.send(f"History: {(await zi.history(limit=1).__anext__()).jump_url}")
         async for message in zi.history(after=datetime.now() - timedelta(days=7)):
             await ctx.send(f"Zi's last message was sent <t:{math.floor(message.created_at.timestamp())}:R>\nLink: {message.jump_url}")
         else:

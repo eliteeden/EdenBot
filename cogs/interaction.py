@@ -326,16 +326,19 @@ class InteractionCog(commands.Cog):
     @commands.command(name='find')
     async def find(self, ctx: commands.Context, member: discord.Member):
         """Checks when a member was last seen sending a message."""
-        for channel in ctx.guild.text_channels:
-            try:
-                async for msg in channel.history(limit=100):
-                    if msg.author == member:
-                        days_ago = (utcnow() - msg.created_at).days
-                        await ctx.send(f"{member.display_name} was last seen {days_ago} day(s) ago in #{channel.name}.")
-                        return
-            except discord.Forbidden:
-                continue
-        await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
+        try:
+            for channel in ctx.guild.text_channels:
+                try:
+                    async for msg in channel.history(limit=100):
+                        if msg.author == member:
+                            days_ago = (utcnow() - msg.created_at).days
+                            await ctx.send(f"{member.display_name} was last seen {days_ago} day(s) ago in #{channel.name}.")
+                            return
+                except discord.Forbidden:
+                    continue
+            await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
 
 
 async def setup(bot: commands.Bot):

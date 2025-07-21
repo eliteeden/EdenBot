@@ -311,7 +311,6 @@ class InteractionCog(commands.Cog):
 
             zi: Member = ctx.guild.get_member(USERS.ZI)  # type: ignore
             for channel in ctx.guild.text_channels:
-                try:
                     message = [msg async for msg in zi.history(oldest_first=True)][-1]
                     if message.author.id == USERS.ZI:
                         timestamp = math.floor(message.created_at.timestamp())
@@ -319,12 +318,24 @@ class InteractionCog(commands.Cog):
                             f"<t:{timestamp}:R> since Zi's last message\nShe'll be back for Thanksgiving"
                         )
                         return
-                except discord.Forbidden:
-                    continue
 
             await ctx.send("Couldn't find any recent messages from Zi")
         except Exception as e:
             await ctx.send(f"Error: {e}")
+    @commands.command(name='lastseen')
+    async def find(self, ctx: commands.Context, member: discord.Member):
+        """Checks when a member was last seen sending a message."""
+        for channel in ctx.guild.text_channels:
+            try:
+                async for msg in channel.history(limit=100):
+                    if msg.author == member:
+                        days_ago = (utcnow() - msg.created_at).days
+                        await ctx.send(f"{member.display_name} was last seen {days_ago} day(s) ago in #{channel.name}.")
+                        return
+            except discord.Forbidden:
+                continue
+        await ctx.send(f"Couldn’t find any recent messages from {member.display_name}.")
+
 
 
 

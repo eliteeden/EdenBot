@@ -545,14 +545,14 @@ async def on_member_remove(member: User):
     except discord.NotFound:
         print(f"{member} left the server (not banned)")
         channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
-        await channel.send(f'{member.mention} just left Elite Eden like a pussy.')
+        await channel.send(f'{member.mention} ({member.name}) just left Elite Eden like a pussy.')
 
        
 
 @bot.event
 async def on_member_ban(guild, member: User):
     channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
-    await channel.send(f'Good riddance to {member.mention}.')    
+    await channel.send(f'Good riddance to {member.mention} ({member.name}).')    
 
 
 @bot.command()

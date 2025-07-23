@@ -18,7 +18,7 @@ import traceback
 from typing import Optional
 import unicodedata
 
-from constants import CHANNELS, ROLES
+from constants import CHANNELS, GUILDS, ROLES
 from cogs.inventory import InventoryCog
 
 # Initialize the report dictionary
@@ -1030,7 +1030,7 @@ async def halp(ctx):
 slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
 
 @bot.tree.command(name="talk")
-@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS)
+@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms")
 async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None):
     # Check for the item or the role
     allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]# ROLES.TALK_PERMS]
@@ -1055,7 +1055,7 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
 
 
     # If flagged, notify a specific channel
-    if flagged:
+    if flagged and interaction.guild.id == GUILDS.ELITE_EDEN:
         blocked = True
         # The ID of the channel where alerts should be sent
         alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore

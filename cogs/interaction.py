@@ -169,7 +169,7 @@ class InteractionCog(commands.Cog):
                         await ctx.send("No results found")
 
     @commands.command(name='wiki', aliases=['wikipedia', 'fandom'])
-    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
+    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     @commands.cooldown(1,2, commands.BucketType.channel)
     async def wiki(self, ctx: commands.Context, *, search_msg: str):
         wiki_sites = ["https://en.wikipedia.org/wiki/", "fandom.com"]
@@ -191,7 +191,7 @@ class InteractionCog(commands.Cog):
             await ctx.send("Exclusive to boosters")
     
     @commands.command(name='fuck')
-    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
+    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def fuck(self, ctx: commands.Context, member: Member):
         embed = Embed(title=f'**{ctx.author.display_name}**! Where are you taking **{member.display_name}**', color=0x00FFFF)
         file = self.get_gif("fuck")
@@ -245,7 +245,7 @@ class InteractionCog(commands.Cog):
             await ctx.send(embed=embed, file=file)
 
     @commands.command(name="murder")
-    @commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)
+    @commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER, "Fden Bot Perms")
     async def murder(self, ctx: commands.Context, member: Member):
         author: Member = ctx.author # type: ignore
         if author.get_role(ROLES.TOTALLY_MOD) is not None or author.top_role.position > member.top_role.position:

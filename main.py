@@ -1036,7 +1036,7 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
     allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]# ROLES.TALK_PERMS]
     has_role = any(role.id in allowed_roles for role in interaction.user.roles) # type: ignore
     inventory: InventoryCog = bot.get_cog("InventoryCog")  # type: ignore
-    if has_role or interaction.guild_id == GUILDS.ELITE_EDEN: # or inventory.has_item(interaction.user, "Talk Command Permissions"):
+    if has_role or interaction.guild_id != GUILDS.ELITE_EDEN: # or inventory.has_item(interaction.user, "Talk Command Permissions"):
         pass
     else:
         await interaction.response.send_message("You do not have permission to use this command.\nGo check out the `;shop`.", ephemeral=True)
@@ -1055,7 +1055,7 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
 
 
     # If flagged, notify a specific channel
-    if flagged and interaction.guild.id == GUILDS.ELITE_EDEN:
+    if flagged and interaction.guild_id == GUILDS.ELITE_EDEN:
         blocked = True
         # The ID of the channel where alerts should be sent
         alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore

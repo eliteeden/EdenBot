@@ -157,7 +157,6 @@ class InteractionCog(commands.Cog):
 
         if any(banned_word in search_msg.lower() for banned_word in banned_words):
             await ctx.send("Your search contains banned words and cannot be processed.")
-            self.web.reset_cooldown(ctx) # type: ignore
             return
         else:
             async with ctx.typing():
@@ -169,13 +168,11 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name='wiki', aliases=['wikipedia', 'fandom'])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
-    @commands.cooldown(1,2, commands.BucketType.channel)
     async def wiki(self, ctx: commands.Context, *, search_msg: str):
         wiki_sites = ["https://en.wikipedia.org/wiki/", "fandom.com"]
         banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']
         if any(banned_word in search_msg.lower() for banned_word in banned_words):
             await ctx.send("Your search contains banned words and cannot be processed.")
-            self.wiki.reset_cooldown(ctx) # type: ignore
             return
         else:
             async with ctx.typing():

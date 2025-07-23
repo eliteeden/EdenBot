@@ -1031,7 +1031,7 @@ slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dy
 
 @bot.tree.command(name="talk")
 @app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms")
-async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None):
+async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None): # type: ignore
     # Check for the item or the role
     allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]# ROLES.TALK_PERMS]
     has_role = any(role.id in allowed_roles for role in interaction.user.roles) # type: ignore
@@ -1044,7 +1044,7 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
 
     await interaction.response.defer(ephemeral=True)
     if channel is None:
-        channel = interaction.channel # type: ignore
+        channel: discord.TextChannel = interaction.channel # type: ignore
     if (not channel.permissions_for(interaction.user).send_messages) and (not has_role):  # type: ignore
         await interaction.response.send_message("You do not have permission to send messages in that channel.", ephemeral=True)
 
@@ -1055,10 +1055,10 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
 
 
     # If flagged, notify a specific channel
-    if flagged and interaction.guild_id == GUILDS.ELITE_EDEN:
+    alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
+    if flagged and channel.guild.id == alert_channel.guild.id:
         blocked = True
         # The ID of the channel where alerts should be sent
-        alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
         if alert_channel:
             await alert_channel.send(
                 f"🚨 Message from {interaction.user.mention} in {interaction.channel.mention if isinstance(interaction.channel, discord.TextChannel) else f'(non-text-channel id: {interaction.channel_id})'} "

@@ -301,23 +301,22 @@ class InteractionCog(commands.Cog):
         else:
             await ctx.send(embed=embed)
     
-    
     @commands.command(name="getmods", aliases=["mods"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def getmods(self, ctx: commands.Context, chosen_role: discord.Role = None):
-        if not chosen_role :
-            role_id = 993475229798113320  # Replace with the actual role ID
-        else: 
-            role_id = chosen_role
+        # Use default role ID if no role is provided
+        role_id = 993475229798113320 if not chosen_role else chosen_role.id
 
-        # Find the role object in the guild
+        # Find the role object by ID
         role = discord.utils.get(ctx.guild.roles, id=role_id)
 
-        # If the role exists, get members with it and print their display names
+        # Respond with member mentions or error message
         if role:
-            for member in role.members:
-                await ctx.send('\n'.join([member.mention for member in role.members]))
-                break
+            if role.members:
+                mentions = '\n'.join([member.mention for member in role.members])
+                await ctx.send(mentions)
+            else:
+                await ctx.send("No members have that role.")
         else:
             await ctx.send("Role not found.")
 

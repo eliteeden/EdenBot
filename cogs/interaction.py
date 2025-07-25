@@ -303,6 +303,23 @@ class InteractionCog(commands.Cog):
             await ctx.send("What did I do this time?")
         else:
             await ctx.send(embed=embed)
+    
+    
+    @commands.command(name="getmods", aliases=["mods"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
+    async def getmods(self, ctx: commands.Context):
+        role_id = 993475229798113320  # Replace with the actual role ID
+
+        # Find the role object in the guild
+        role = discord.utils.get(ctx.guild.roles, id=role_id)
+
+        # If the role exists, get members with it and print their display names
+        if role:
+            for member in role.members:
+                await ctx.send('\n'.join([member.display_name for member in role.members]))
+        else:
+            await ctx.send("Role not found.")
+
 
     @commands.command(name='find', aliases=["zii", "yoink", "stalk", "hunt", "track"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)

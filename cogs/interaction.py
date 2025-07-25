@@ -342,6 +342,32 @@ class InteractionCog(commands.Cog):
 
         await paginator.send(ctx)
 
+    @commands.command(name="pinglist", aliases=["modlist", "pings"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
+    async def pinglist(self, ctx: commands.Context, chosen_role: discord.Role = None):
+        # Use default role ID if no role is provided
+        role_id = 993475229798113320 if not chosen_role else chosen_role.id
+
+        # Get the role object
+        role = discord.utils.get(ctx.guild.roles, id=role_id)
+
+        if not role:
+            await ctx.send("Role not found.")
+            return
+
+        if not role.members:
+            await ctx.send("No members have that role.")
+            return
+
+        # Get mentions of all members
+        mentions = [member.mention for member in role.members]
+
+        # Break into chunks of up to 50 mentions per message
+        chunk_size = 50
+        for i in range(0, len(mentions), chunk_size):
+            chunk = '\n'.join(mentions[i:i + chunk_size])
+            await ctx.send(chunk)
+
     @commands.command(name='find', aliases=["zii", "yoink", "stalk", "hunt", "track"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def find(self, ctx: commands.Context, member: Optional[discord.Member] = None): # type: ignore

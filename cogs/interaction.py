@@ -304,25 +304,43 @@ class InteractionCog(commands.Cog):
     @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def getmods(self, ctx: commands.Context, chosen_role: discord.Role = None):
-        try:
-            # Use default role ID if no role is provided
-            role_id = 993475229798113320 if not chosen_role else chosen_role.id
+        # Use default role ID if no role is provided
+        role_id = 993475229798113320 if not chosen_role else chosen_role.id
 
-            # Find the role object by ID
-            role = discord.utils.get(ctx.guild.roles, id=role_id)
+        # Find the role object by ID
+        role = discord.utils.get(ctx.guild.roles, id=role_id)
 
-            # Respond with member mentions or error message
-            if role:
-                if role.members:
-                    mentions = '\n'.join([member.mention for member in role.members])
-                    await ctx.send(mentions)
-                else:
-                    await ctx.send("No members have that role.")
-            else:
-                await ctx.send("Role not found.")
-        except Exception as e:
-            await ctx.send(f"Error: {e}")
+        if not role:
+            await ctx.send("Role not found.")
+            return
 
+        if not role.members:
+            await ctx.send("No members have that role.")
+            return
+
+        # Get paginator cog
+        paginator_cog = self.bot.get_cog("PaginatorCog")
+        if not paginator_cog:
+            await ctx.send("PaginatorCog is not loaded.")
+            return
+
+        paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore
+
+        members = role.members
+        for i in range(0, len(members), 10):  # 10 members per page
+            embed = discord.Embed(
+                title=f"{role.name} Members ({len(role.members)} total)",
+                color=discord.Color.blurple()
+            )
+            for idx, member in enumerate(members[i:i + 10]):
+                embed.add_field(
+                    name=f"{i + idx + 1}. {member.display_name}",
+                    value=member.mention,
+                    inline=False
+                )
+            paginator.add_page(embed)
+
+        await paginator.send(ctx)
 
     @commands.command(name='find', aliases=["zii", "yoink", "stalk", "hunt", "track"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
@@ -338,7 +356,7 @@ class InteractionCog(commands.Cog):
                     cached_msg = self.messages[member_id]
                     timestamp = int(cached_msg.created_at.timestamp())
                     await ctx.send(
-                        f"{member.display_name} was last seen in #{getattr(cached_msg.channel, 'name', 'DMs')} — <t:{timestamp}:R>. [Jump!]({cached_msg.jump_url})"
+                        f"{member.display_name} was last seen in <#{cached_msg.channel.id}> — <t:{timestamp}:R>. [Jump!]({cached_msg.jump_url})"
                     )
                     return
 

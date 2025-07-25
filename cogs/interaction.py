@@ -314,6 +314,7 @@ class InteractionCog(commands.Cog):
         if role:
             for member in role.members:
                 await ctx.send('\n'.join([member.display_name for member in role.members]))
+                break
         else:
             await ctx.send("Role not found.")
 

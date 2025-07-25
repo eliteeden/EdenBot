@@ -304,8 +304,11 @@ class InteractionCog(commands.Cog):
     
     @commands.command(name="getmods", aliases=["mods"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def getmods(self, ctx: commands.Context):
-        role_id = 993475229798113320  # Replace with the actual role ID
+    async def getmods(self, ctx: commands.Context, chosen_role: discord.Role = None):
+        if not chosen_role :
+            role_id = 993475229798113320  # Replace with the actual role ID
+        else: 
+            role_id = chosen_role
 
         # Find the role object in the guild
         role = discord.utils.get(ctx.guild.roles, id=role_id)
@@ -313,7 +316,7 @@ class InteractionCog(commands.Cog):
         # If the role exists, get members with it and print their display names
         if role:
             for member in role.members:
-                await ctx.send('\n'.join([member.display_name for member in role.members]))
+                await ctx.send('\n'.join([member.mention for member in role.members]))
                 break
         else:
             await ctx.send("Role not found.")

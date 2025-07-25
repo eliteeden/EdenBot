@@ -28,14 +28,14 @@ class RedditCog(commands.Cog):
                     data = response.json()
                     posts = [
                         post["data"] for post in data["data"]["children"]
-                        if post["data"]["url"].endswith(("jpg", "png", "gif")) and not post["data"].get("over_18", False)
+                        if post["data"]["url"].endswith(("jpg", "png", "gif", "jpeg")) and not post["data"].get("over_18", False)
                     ]
 
                     if posts:
                         latest_post = posts[0]
                         post_id = latest_post["id"]
 
-                        if self.LAST_POST_IDS.get(subreddit) != post_id:
+                        if self.LAST_POST_IDS.get(subreddit) or post_id != post_id: # None should also fail this check
                             self.LAST_POST_IDS[subreddit] = post_id
                             embed = Embed(
                                 title=latest_post["title"],
@@ -53,6 +53,7 @@ class RedditCog(commands.Cog):
     @commands.command(name="meme")
     async def meme(self, ctx: commands.Context, subreddit: str = "memes"):
         """Fetches a random safe-for-work meme from Reddit."""
+        subreddit = subreddit.lower().removeprefix("r/").strip()
         headers = {"User-Agent": "Mozilla/5.0"}
         url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=120"
         try:
@@ -62,7 +63,7 @@ class RedditCog(commands.Cog):
                     data = response.json()
                     valid_posts = [
                         post["data"] for post in data["data"]["children"]
-                        if post["data"]["url"].endswith(("jpg", "png", "gif")) and not post["data"].get("over_18", False)
+                        if post["data"]["url"].endswith(("jpg", "png", "gif", "jpeg")) and not post["data"].get("over_18", False)
                     ]
 
                     if valid_posts:
@@ -91,6 +92,12 @@ class RedditCog(commands.Cog):
                             "of course you'd find this funny",
                             "I don't get it but here you go",
                             "Is this good enough for you?",
+                            "dank memer",
+                            f"blame {ctx.author.name} for this",
+                            "blame germanic, like usual.",
+                            "it's always happy. blame happy.",
+                            "why?",
+                            f"brought to you by the idiots in r/{subreddit}",
                         ]
                         embed.set_footer(text=f"{random.choice(meme_footer_responses)}")
                         await ctx.send(embed=embed)

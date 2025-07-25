@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+from typing import Optional
 import discord
 from discord import Embed, Member
 from discord import File
@@ -135,7 +136,6 @@ class InteractionCog(commands.Cog):
             await ctx.send("Exclusive to boosters")
     
     @commands.command(name='web', aliases=['search', 'google'])
-    @commands.cooldown(1,40, commands.BucketType.channel)
     async def web(self, ctx: commands.Context, *, search_msg: str):
         banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']
         eden_meta = {
@@ -157,7 +157,6 @@ class InteractionCog(commands.Cog):
 
         if any(banned_word in search_msg.lower() for banned_word in banned_words):
             await ctx.send("Your search contains banned words and cannot be processed.")
-            self.web.reset_cooldown(ctx) # type: ignore
             return
         else:
             async with ctx.typing():
@@ -168,14 +167,12 @@ class InteractionCog(commands.Cog):
                         await ctx.send("No results found")
 
     @commands.command(name='wiki', aliases=['wikipedia', 'fandom'])
-    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
-    @commands.cooldown(1,2, commands.BucketType.channel)
+    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def wiki(self, ctx: commands.Context, *, search_msg: str):
         wiki_sites = ["https://en.wikipedia.org/wiki/", "fandom.com"]
         banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']
         if any(banned_word in search_msg.lower() for banned_word in banned_words):
             await ctx.send("Your search contains banned words and cannot be processed.")
-            self.wiki.reset_cooldown(ctx) # type: ignore
             return
         else:
             async with ctx.typing():
@@ -190,7 +187,7 @@ class InteractionCog(commands.Cog):
             await ctx.send("Exclusive to boosters")
     
     @commands.command(name='fuck')
-    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
+    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def fuck(self, ctx: commands.Context, member: Member):
         embed = Embed(title=f'**{ctx.author.display_name}**! Where are you taking **{member.display_name}**', color=0x00FFFF)
         file = self.get_gif("fuck")
@@ -244,7 +241,7 @@ class InteractionCog(commands.Cog):
             await ctx.send(embed=embed, file=file)
 
     @commands.command(name="murder")
-    @commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER)
+    @commands.has_any_role('MODERATOR', ROLES.SERVER_BOOSTER, "Fden Bot Perms")
     async def murder(self, ctx: commands.Context, member: Member):
         author: Member = ctx.author # type: ignore
         if author.get_role(ROLES.TOTALLY_MOD) is not None or author.top_role.position > member.top_role.position:
@@ -323,12 +320,12 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name='find', aliases=["zii", "yoink", "stalk", "hunt", "track"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def find(self, ctx: commands.Context, member: discord.Member = None):
+    async def find(self, ctx: commands.Context, member: Optional[discord.Member] = None): # type: ignore
         """Finds the most recent message from a member across all text channels, using cache + parallel scanning."""
         try:
             async with ctx.typing():
-                member = member or ctx.guild.get_member(USERS.ZI)
-                member_id = member.id
+                member: Member = member or ctx.guild.get_member(USERS.ZI) # type: ignore
+                member_id = member.id # type: ignore
 
                 # Try cached message first
                 if member_id in self.messages:
@@ -348,7 +345,7 @@ class InteractionCog(commands.Cog):
                     except discord.Forbidden:
                         return None
 
-                tasks = [scan_channel(channel) for channel in ctx.guild.text_channels]
+                tasks = [scan_channel(channel) for channel in ctx.guild.text_channels] # type: ignore
                 results = await asyncio.gather(*tasks)
                 messages = [msg for msg in results if msg]
 

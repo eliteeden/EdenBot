@@ -18,7 +18,7 @@ import traceback
 from typing import Optional
 import unicodedata
 
-from constants import CHANNELS, ROLES
+from constants import CHANNELS, GUILDS, ROLES
 from cogs.inventory import InventoryCog
 
 # Initialize the report dictionary
@@ -545,14 +545,14 @@ async def on_member_remove(member: User):
     except discord.NotFound:
         print(f"{member} left the server (not banned)")
         channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
-        await channel.send(f'{member.mention} just left Elite Eden like a pussy.')
+        await channel.send(f'{member.mention} ({member.name}) just left Elite Eden like a pussy.')
 
        
 
 @bot.event
 async def on_member_ban(guild, member: User):
     channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
-    await channel.send(f'Good riddance to {member.mention}.')    
+    await channel.send(f'Good riddance to {member.mention} ({member.name}).')    
 
 
 @bot.command()
@@ -1030,21 +1030,21 @@ async def halp(ctx):
 slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
 
 @bot.tree.command(name="talk")
-@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS)
-async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None):
+@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms")
+async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None): # type: ignore
     # Check for the item or the role
     allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]# ROLES.TALK_PERMS]
     has_role = any(role.id in allowed_roles for role in interaction.user.roles) # type: ignore
     inventory: InventoryCog = bot.get_cog("InventoryCog")  # type: ignore
-    # if has_role or inventory.has_item(interaction.user, "Talk Command Permissions"):
-    #     pass
-    # else:
-    #     await interaction.response.send_message("You do not have permission to use this command.\nGo check out the `;shop`.", ephemeral=True)
-    #     return
+    if has_role or interaction.guild_id != GUILDS.ELITE_EDEN: # or inventory.has_item(interaction.user, "Talk Command Permissions"):
+        pass
+    else:
+        await interaction.response.send_message("You do not have permission to use this command.\nGo check out the `;shop`.", ephemeral=True)
+        return
 
     await interaction.response.defer(ephemeral=True)
     if channel is None:
-        channel = interaction.channel # type: ignore
+        channel: discord.TextChannel = interaction.channel # type: ignore
     if (not channel.permissions_for(interaction.user).send_messages) and (not has_role):  # type: ignore
         await interaction.response.send_message("You do not have permission to send messages in that channel.", ephemeral=True)
 
@@ -1055,10 +1055,10 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
 
 
     # If flagged, notify a specific channel
-    if flagged:
+    alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
+    if flagged and channel.guild.id == alert_channel.guild.id:
         blocked = True
         # The ID of the channel where alerts should be sent
-        alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
         if alert_channel:
             await alert_channel.send(
                 f"🚨 Message from {interaction.user.mention} in {interaction.channel.mention if isinstance(interaction.channel, discord.TextChannel) else f'(non-text-channel id: {interaction.channel_id})'} "

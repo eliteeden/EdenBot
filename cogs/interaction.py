@@ -301,24 +301,27 @@ class InteractionCog(commands.Cog):
         else:
             await ctx.send(embed=embed)
     
-    @commands.command(name="getmods", aliases=["mods"])
+    @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def getmods(self, ctx: commands.Context, chosen_role: discord.Role = None):
-        # Use default role ID if no role is provided
-        role_id = 993475229798113320 if not chosen_role else chosen_role.id
+        try:
+            # Use default role ID if no role is provided
+            role_id = 993475229798113320 if not chosen_role else chosen_role.id
 
-        # Find the role object by ID
-        role = discord.utils.get(ctx.guild.roles, id=role_id)
+            # Find the role object by ID
+            role = discord.utils.get(ctx.guild.roles, id=role_id)
 
-        # Respond with member mentions or error message
-        if role:
-            if role.members:
-                mentions = '\n'.join([member.mention for member in role.members])
-                await ctx.send(mentions)
+            # Respond with member mentions or error message
+            if role:
+                if role.members:
+                    mentions = '\n'.join([member.mention for member in role.members])
+                    await ctx.send(mentions)
+                else:
+                    await ctx.send("No members have that role.")
             else:
-                await ctx.send("No members have that role.")
-        else:
-            await ctx.send("Role not found.")
+                await ctx.send("Role not found.")
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
 
 
     @commands.command(name='find', aliases=["zii", "yoink", "stalk", "hunt", "track"])

@@ -344,18 +344,17 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name="pinglist", aliases=["modlist", "pings"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def pinglist(self, ctx: commands.Context, chosen_role: discord.Role = None):
+    async def pinglist(self, ctx: commands.Context, role: Optional[discord.Role | int] = None):
         # Use default role ID if no role is provided
-        role_id = 993475229798113320 if not chosen_role else chosen_role.id
-
-        # Get the role object
-        role = discord.utils.get(ctx.guild.roles, id=role_id)
+        assert ctx.guild is not None
+        if not isinstance(role, discord.Role):
+            role = ctx.guild.get_role(role or ROLES.PROTECTOR)
 
         if not role:
             await ctx.send("Role not found.")
             return
 
-        if not role.members:
+        if not role.members or len(role.members) == 0:
             await ctx.send("No members have that role.")
             return
 

@@ -17,7 +17,12 @@ class Counting(commands.Cog):
         try:
             number = int(message.content.strip())
         except ValueError:
-            return  # Not a number, ignore
+            await message.channel.send(
+                f"{message.author.mention} broke the chain by sending an invalid message!"
+            )
+            self.current_count = 0
+            return
+
 
         # Same user posting twice
         if message.author.id == self.last_user_id:
@@ -25,6 +30,7 @@ class Counting(commands.Cog):
             await message.channel.send(
                 f"{message.author.mention} broke the chain by counting twice!"
             )
+            self.current_count = 0
             return
 
         # Wrong number
@@ -33,6 +39,7 @@ class Counting(commands.Cog):
             await message.channel.send(
                 f"{message.author.mention} broke the chain at {self.current_count}. Expected {self.current_count + 1}."
             )
+            self.current_count = 0
             return
 
         # Valid count

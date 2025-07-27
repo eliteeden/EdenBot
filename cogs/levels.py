@@ -30,16 +30,9 @@ class Levels(commands.Cog):
     def is_ban(self, member: discord.Member) -> bool:
         banned_names = {"BadUser"}
         banned_roles = {"Muted"}
-        return member.name in banned_names or any(role.
+        return member.name in banned_names or any(role.name in banned_roles for role in member.roles)
 
-    @commands.command(name="levels")
-    async def levels_cmd(self, ctx):
-        url = f"http://mee6.xyz/levels/{ctx.guild.id}"
-        await ctx.send(f"Go check **{ctx.guild.name}**'s leaderboard here: {url} 😉")
-
-    import requests
-
-    @commands.command(name="mee6")
+    @commands.command(name="import_mee6")
     async def import_mee6(self, ctx):
         """Imports MEE6 leaderboard data into local storage"""
         guild_id = str(ctx.guild.id)
@@ -63,6 +56,11 @@ class Levels(commands.Cog):
             await ctx.send(f"✅ Imported {len(mee6_data)} players from MEE6.")
         except requests.exceptions.RequestException as e:
             await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
+
+    @commands.command(name="levels")
+    async def levels_cmd(self, ctx):
+        url = f"http://mee6.xyz/levels/{ctx.guild.id}"
+        await ctx.send(f"Go check **{ctx.guild.name}**'s leaderboard here: {url} 😉")
 
     @commands.command(name="rank")
     async def rank_cmd(self, ctx, member: discord.Member = None):

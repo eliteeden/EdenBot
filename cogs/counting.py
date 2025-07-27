@@ -17,11 +17,14 @@ class Counting(commands.Cog):
         try:
             number = int(message.content.strip())
         except ValueError:
-            await message.channel.send(
-                f"{message.author.mention} broke the chain by sending an invalid message!"
-            )
-            self.current_count = 0
-            return
+            if ";setcount" in message.content:
+                return # ignore 
+            else:
+                await message.channel.send(
+                    f"{message.author.mention} broke the chain by sending an invalid message!"
+                )
+                self.current_count = 0
+                return
 
 
         # Same user posting twice

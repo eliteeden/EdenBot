@@ -5,6 +5,9 @@ import logging
 import io 
 from random import randint
 import json
+import requests
+
+
 
 log = logging.getLogger(__name__)
 
@@ -27,12 +30,39 @@ class Levels(commands.Cog):
     def is_ban(self, member: discord.Member) -> bool:
         banned_names = {"BadUser"}
         banned_roles = {"Muted"}
-        return member.name in banned_names or any(role.name in banned_roles for role in member.roles)
+        return member.name in banned_names or any(role.
 
     @commands.command(name="levels")
     async def levels_cmd(self, ctx):
         url = f"http://mee6.xyz/levels/{ctx.guild.id}"
         await ctx.send(f"Go check **{ctx.guild.name}**'s leaderboard here: {url} 😉")
+
+    import requests
+
+    @commands.command(name="mee6")
+    async def import_mee6(self, ctx):
+        """Imports MEE6 leaderboard data into local storage"""
+        guild_id = str(ctx.guild.id)
+        api_url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}"
+
+        try:
+            response = requests.get(api_url)
+            response.raise_for_status()
+            mee6_data = response.json().get("players", [])
+
+            if not mee6_data:
+                await ctx.send("No leaderboard data found from MEE6.")
+                return
+
+            for player in mee6_data:
+                user_id = str(player["id"])
+                total_xp = int(player["xp"])
+                self.storage.set(f"{guild_id}:{user_id}:xp", total_xp)
+                self.storage.add(f"{guild_id}:players", user_id)
+
+            await ctx.send(f"✅ Imported {len(mee6_data)} players from MEE6.")
+        except requests.exceptions.RequestException as e:
+            await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
 
     @commands.command(name="rank")
     async def rank_cmd(self, ctx, member: discord.Member = None):

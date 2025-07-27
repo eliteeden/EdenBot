@@ -13,22 +13,22 @@ class UnintroducedRemover(commands.Cog):
         if message.author.bot:
             return
 
-        if message.channel.id == self.channel_id and "Name:" in message.content:
+        if message.channel.id == self.channel_id and "➸Nickname:" in message.content:
             guild = message.guild
             member = message.author
             role = guild.get_role(self.role_id)
 
-            # Search for "Name:" line only
+            # Search for "➸Nickname:" line only
             try:
-                name_line = next((line for line in message.content.splitlines() if "Name:" in line), None)
+                name_line = next((line for line in message.content.splitlines() if "➸Nickname:" in line), None)
                 if name_line:
-                    extracted = name_line.split("Name:", 1)[1].strip()
+                    extracted = name_line.split("➸Nickname:", 1)[1].strip()
                     new_name = extracted if len(extracted) <= self.max_nick_length else member.name
 
                     await member.edit(nick=new_name)
                     await message.channel.send(f"{member.mention}'s nickname updated to `{new_name}`.")
                 else:
-                    await message.channel.send(f"No valid 'Name:' line found in {member.mention}'s message.")
+                    await message.channel.send(f"No valid '➸Nickname:' line found in {member.mention}'s message.")
 
             except Exception as e:
                 await message.channel.send(f"Could not update nickname for {member.mention}. Error: `{e}`")

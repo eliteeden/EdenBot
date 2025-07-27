@@ -10,34 +10,33 @@ class UnintroducedRemover(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        # Ignore bot messages
         if message.author.bot:
             return
 
-        # Trigger condition
         if message.channel.id == self.channel_id and "Name:" in message.content:
             guild = message.guild
             member = message.author
             role = guild.get_role(self.role_id)
 
-            # Attempt to extract name
+            # Search for "Name:" line only
             try:
-                extracted = message.content.split("Name:", 1)[1].strip()
-                new_name = extracted if len(extracted) <= self.max_nick_length else member.name
+                name_line = next((line for line in message.content.splitlines() if "Name:" in line), None)
+                if name_line:
+                    extracted = name_line.split("Name:", 1)[1].strip()
+                    new_name = extracted if len(extracted) <= self.max_nick_length else member.name
 
-                # Change nickname
-                await member.edit(nick=new_name)
-                await message.channel.send(f"{member.mention}'s nickname updated to `{new_name}`.")
+                    await member.edit(nick=new_name)
+                    await message.channel.send(f"{member.mention}'s nickname updated to `{new_name}`.")
+                else:
+                    await message.channel.send(f"No valid 'Name:' line found in {member.mention}'s message.")
 
             except Exception as e:
                 await message.channel.send(f"Could not update nickname for {member.mention}. Error: `{e}`")
 
-            # Remove role if they have it
             if role in member.roles:
                 await member.remove_roles(role)
                 await message.channel.send(f"Role removed from {member.display_name}.")
 
-        # Ensure commands still work
         await self.bot.process_commands(message)
 
 # Setup function to add the Cog

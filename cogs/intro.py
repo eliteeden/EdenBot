@@ -37,8 +37,6 @@ class UnintroducedRemover(commands.Cog):
                 await member.remove_roles(role)
                 await message.channel.send(f"Role removed from {member.display_name}.")
 
-        await self.bot.process_commands(message)
-
 # Setup function to add the Cog
 async def setup(bot: commands.Bot):
     await bot.add_cog(UnintroducedRemover(bot))

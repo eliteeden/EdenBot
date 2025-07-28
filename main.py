@@ -1030,7 +1030,7 @@ async def halp(ctx):
 slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
 
 @bot.tree.command(name="talk")
-@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms")
+@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms", "happy")
 async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None): # type: ignore
     # Check for the item or the role
     allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]# ROLES.TALK_PERMS]

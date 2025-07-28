@@ -415,7 +415,7 @@ async def responses(ctx):
         await ctx.send(f"Unexpected error: `{e}`")
 
 @bot.command()
-@commands.has_any_role(ROLES.MODERATOR)
+@commands.has_any_role(ROLES.MODERATOR, "happy")
 async def ar(ctx, category: str, trigger: str, *, reply: str = "remove"):
     """
     Usage:

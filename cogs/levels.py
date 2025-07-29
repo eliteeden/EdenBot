@@ -48,11 +48,20 @@ class Levels(commands.Cog):
                 response.raise_for_status()
                 data = response.json().get("players", [])
 
+                if response.status_code == 429:
+                    await asyncio.sleep(10)
+                    continue  # retry the same page
                 if not data:
                     break  # Stop when no more data is returned
 
                 all_players.extend(data)
+                await asyncio.sleep(1) 
                 page += 1
+
+
+
+            
+
 
             if not all_players:
                 await ctx.send("No leaderboard data found from MEE6.")

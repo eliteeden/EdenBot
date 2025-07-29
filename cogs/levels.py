@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import logging
+import os
 import io 
 from random import randint
 import json
@@ -57,11 +58,6 @@ class Levels(commands.Cog):
                 all_players.extend(data)
                 await asyncio.sleep(1) 
                 page += 1
-
-
-
-            
-
 
             if not all_players:
                 await ctx.send("No leaderboard data found from MEE6.")
@@ -177,6 +173,18 @@ class DummyStorage:
 
     def add(self, key, value):
         self.db.setdefault(key, set()).add(value)
+
+    def load_or_fetch_data(self):
+        filepath = "levels_data.json"
+
+        if os.path.exists(filepath):
+            print("✅ Found cached data. Loading from file...")
+            with open(filepath, "r") as f:
+                data = json.load(f)
+            return data
+        else:
+            return
+
 
     def export_to_json(self, filepath="levels_data.json"):
         json_ready = {k: list(v) if isinstance(v, set) else v for k, v in self.db.items()}

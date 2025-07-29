@@ -21,12 +21,12 @@ class Levels(commands.Cog):
         # XP needed to reach the *next* level
         return 5 * (level ** 2) + 50 * level + 100
 
-
     def _get_level_from_xp(self, xp: int) -> int:
         level = 0
-        while xp >= 5 * (level ** 2) + 50 * level + 100:
+        while xp >= sum(self._get_level_xp(i) for i in range(level + 1)):
             level += 1
         return level
+
 
     def is_ban(self, member: discord.Member) -> bool:
         banned_names = {"BadUser"}

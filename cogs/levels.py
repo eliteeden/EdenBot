@@ -22,8 +22,7 @@ class Levels(commands.Cog):
 
     def _get_level_from_xp(self, xp: int) -> int:
         level = 0
-        while xp >= self._get_level_xp(level):
-            xp -= self._get_level_xp(level)
+        while xp >= 5 * (level ** 2) + 50 * level + 100:
             level += 1
         return level
 
@@ -86,7 +85,12 @@ class Levels(commands.Cog):
         xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
         level_xp = self._get_level_xp(level)
         players = self.storage.get(f"{server_id}:players") or set()
-        rank = 1  # Placeholder
+        player_xps = [
+            int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
+            for pid in players
+        ]
+        rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
+
 
         await ctx.send(
             f"{member.mention} : **LEVEL {level}** | **XP {xp_in_level}/{level_xp}** | "
@@ -101,26 +105,23 @@ class Levels(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or not message.guild:
+        if message.author.bot:
             return
 
-        member = message.author
-        guild = message.guild
-        user_id = str(member.id)
-        server_id = str(guild.id)
-
-        if self.is_ban(member):
-            return
-
+        user_id = str(message.author.id)
+        server_id = str(message.guild.id)
         now = asyncio.get_event_loop().time()
+
         if self.cooldowns.get(user_id, 0) > now:
             return
-        self.cooldowns[user_id] = now + 60
+
+        self.cooldowns[user_id] = now + 60  # ⏱️ 60s cooldown per user
 
         xp_key = f"{server_id}:{user_id}:xp"
         prev_xp = int(self.storage.get(xp_key) or 0)
-        xp_gain = randint(5, 10)
+        xp_gain = randint(15, 25)  # slightly higher to match MEE6's pace
         new_xp = prev_xp + xp_gain
+
         prev_level = self._get_level_from_xp(prev_xp)
         new_level = self._get_level_from_xp(new_xp)
 
@@ -128,8 +129,7 @@ class Levels(commands.Cog):
         self.storage.add(f"{server_id}:players", user_id)
 
         if new_level > prev_level:
-            await message.channel.send(f"{member.mention} just reached **Level {new_level}**! 🎉")
-
+            await message.channel.send(f"{message.author.mention} leveled up to **Level {new_level}**! 🚀")
 
     @commands.command(name="alllevels")
     async def alllevels(self, ctx):

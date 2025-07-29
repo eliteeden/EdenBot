@@ -31,29 +31,39 @@ class Levels(commands.Cog):
         banned_names = {"BadUser"}
         banned_roles = {"Muted"}
         return member.name in banned_names or any(role.name in banned_roles for role in member.roles)
-
+    
     @commands.command(name="import_mee6")
     async def import_mee6(self, ctx):
-        """Imports MEE6 leaderboard data into local storage"""
+        """Imports full MEE6 leaderboard data into local storage"""
         guild_id = str(ctx.guild.id)
-        api_url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}"
+        all_players = []
+        page = 0
+        per_page = 100  # MEE6's default page size
 
         try:
-            response = requests.get(api_url)
-            response.raise_for_status()
-            mee6_data = response.json().get("players", [])
+            while True:
+                api_url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}"
+                response = requests.get(api_url)
+                response.raise_for_status()
+                data = response.json().get("players", [])
 
-            if not mee6_data:
+                if not data:
+                    break  # Stop when no more data is returned
+
+                all_players.extend(data)
+                page += 1
+
+            if not all_players:
                 await ctx.send("No leaderboard data found from MEE6.")
                 return
 
-            for player in mee6_data:
+            for player in all_players:
                 user_id = str(player["id"])
                 total_xp = int(player["xp"])
                 self.storage.set(f"{guild_id}:{user_id}:xp", total_xp)
                 self.storage.add(f"{guild_id}:players", user_id)
 
-            await ctx.send(f"✅ Imported {len(mee6_data)} players from MEE6.")
+            await ctx.send(f"✅ Imported {len(all_players)} players from MEE6.")
         except requests.exceptions.RequestException as e:
             await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
 

@@ -195,4 +195,14 @@ class DummyStorage:
 # 🔧 Cog setup function
 async def setup(bot: commands.Bot):
     storage = DummyStorage()
+
+    # Load previously exported data (if it exists)
+    cached_data = storage.load_or_fetch_data()
+    if cached_data:
+        for key, value in cached_data.items():
+            if isinstance(value, list):
+                storage.db[key] = set(value)
+            else:
+                storage.db[key] = value
+
     await bot.add_cog(Levels(bot, storage))

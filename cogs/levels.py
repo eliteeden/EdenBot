@@ -18,7 +18,9 @@ class Levels(commands.Cog):
         self.cooldowns = {}
 
     def _get_level_xp(self, level: int) -> int:
-        return int(100 * (1.2 ** level))
+        # XP needed to reach the *next* level
+        return 5 * (level ** 2) + 50 * level + 100
+
 
     def _get_level_from_xp(self, xp: int) -> int:
         level = 0

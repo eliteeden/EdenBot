@@ -112,7 +112,7 @@ class InteractionCog(commands.Cog):
                 await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
     
     @commands.command(name="urban", aliases=['urbandictionary', 'dic'])
-    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, ROLES.WORDLES_WIDOWER, "Fden Bot Perms", 1118650807785619586) # last role is unknown (remove?)
+    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, ROLES.WORDLES_WIDOWER, "Fden Bot Perms", 1118650807785619586, "happy") # last role is unknown (remove?)
     async def urban(self, ctx: commands.Context, *, word: str):
         """Fetches the definition of a word from Urban Dictionary"""
         url = f"https://api.urbandictionary.com/v0/define?term={word}"

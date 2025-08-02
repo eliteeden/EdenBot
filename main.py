@@ -1374,6 +1374,8 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
 
+# Main commands
+
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
 async def jsons(ctx):

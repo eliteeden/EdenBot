@@ -139,7 +139,7 @@ class EconomyCog(commands.Cog):
     async def bal(self, ctx: commands.Context, user: Optional[Member] = None): # type: ignore
         await ctx.send(f"{user.mention + '\'s' if user else 'Your'} balance is {self.get(user or ctx.author):,} eden coins.")
     
-    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
     @commands.command(name='resetbank', aliases=['resetbal', 'wtfcoot'])
     async def resetbank(self, ctx: commands.Context):
         """Sets all existing balances in the bank to 15,000."""

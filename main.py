@@ -415,7 +415,7 @@ async def responses(ctx):
         await ctx.send(f"Unexpected error: `{e}`")
 
 @bot.command()
-@commands.has_any_role(ROLES.MODERATOR)
+@commands.has_any_role(ROLES.MODERATOR, "happy")
 async def ar(ctx, category: str, trigger: str, *, reply: str = "remove"):
     """
     Usage:
@@ -812,59 +812,59 @@ async def lurk(ctx):
 @commands.has_any_role('MODERATOR', 'happy', 'Midnight Watcher', ROLES.SERVER_BOOSTER, ROLES.PRESIDENT)
 async def warn(ctx, user: discord.Member = None, *, reason: str = None): # type: ignore
     author = ctx.author
-    if author.top_role.position > user.top_role.position:
-        # Check if the user is valid
-        if not user:
-            await ctx.send("Please specify a valid member to warn.")
-            return
-    
-        roles = [role.id for role in ctx.author.roles]
+    # Check if the user is valid
+    if not user:
+        await ctx.send("Please specify a valid member to warn.")
+        return
 
-        # Ensure reason is not empty
-        if not reason or not reason.strip():
-            await ctx.send("Please provide a valid reason.")
-            return
-        
-        if ROLES.MODERATOR in roles:
-            # Get the next warning ID
-            warn_id = report["next_warn_id"]
-            report["next_warn_id"] += 1  # Increment the counter
-
-            # Notify the user in the channel
-            await ctx.send(f'{user.mention} has been warned for: {reason}.')
-
-            # Attempt to DM the user and handle failure gracefully
-            try:
-                await user.send(f'You have been warned in **{ctx.guild.name}** by **{author.name}** for: {reason}. (ID: {warn_id})\nDM the mods your noods in order to appeal')
-            except Exception:
-                await ctx.send(f"Couldn't send DM to {user.mention}, but the warning has been recorded.")
-
-            # Update the report dictionary
-            found = False
-            for current_user in report['users']:
-                if current_user['name'] == user.name:
-                    current_user['warnings'].append({'id': warn_id, 'reason': reason})
-                    found = True
-                    break
-
-            # Add a new user if they don't already exist
-            if not found:
-                report['users'].append({
-                    'name': user.name,
-                    'warnings': [{'id': warn_id, 'reason': reason}]
-                })
-
-            # Save the report to file
-            try:
-                with open('reports.json', 'w+') as f:
-                    json.dump(report, f, indent=4)  # Pretty-print for readability
-            except Exception as file_error:
-                await ctx.send("Couldn't save the report due to a file error.")
-        else:
-            await ctx.send(f'{user.mention} stop annoying **{ctx.author.name}** by {reason}.')
-
-    else:
+    if author.top_role.position <= user.top_role.position:
         await ctx.send("You are not high enough in role hierarchy to do that")
+        return
+
+    roles = [role.id for role in ctx.author.roles]
+
+    # Ensure reason is not empty
+    if not reason or not reason.strip():
+        await ctx.send("Please provide a valid reason.")
+        return
+
+    if ROLES.MODERATOR in roles:
+        # Get the next warning ID
+        warn_id = report["next_warn_id"]
+        report["next_warn_id"] += 1  # Increment the counter
+
+        # Notify the user in the channel
+        await ctx.send(f'{user.mention} has been warned for: {reason}.')
+
+        # Attempt to DM the user and handle failure gracefully
+        try:
+            await user.send(f'You have been warned in **{ctx.guild.name}** by **{author.name}** for: {reason}. (ID: {warn_id})\nDM the mods your noods in order to appeal')
+        except Exception:
+            await ctx.send(f"Couldn't send DM to {user.mention}, but the warning has been recorded.")
+
+        # Update the report dictionary
+        found = False
+        for current_user in report['users']:
+            if current_user['name'] == user.name:
+                current_user['warnings'].append({'id': warn_id, 'reason': reason})
+                found = True
+                break
+
+        # Add a new user if they don't already exist
+        if not found:
+            report['users'].append({
+                'name': user.name,
+                'warnings': [{'id': warn_id, 'reason': reason}]
+            })
+
+        # Save the report to file
+        try:
+            with open('reports.json', 'w+') as f:
+                json.dump(report, f, indent=4)  # Pretty-print for readability
+        except Exception as file_error:
+            await ctx.send("Couldn't save the report due to a file error.")
+    else:
+        await ctx.send(f'{user.mention} stop annoying **{ctx.author.name}** by {reason}.')
 
 @bot.command(pass_context=True, aliases=["rwarn", "-warn"])
 @commands.has_any_role('MODERATOR', 'happy')
@@ -1030,7 +1030,7 @@ async def halp(ctx):
 slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
 
 @bot.tree.command(name="talk")
-@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms")
+@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms", "happy")
 async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None): # type: ignore
     # Check for the item or the role
     allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]# ROLES.TALK_PERMS]
@@ -1313,7 +1313,7 @@ async def districtclaim(ctx, category_id: int):
         await ctx.send("No replies detected for remaining messages within the timeout period.")
 
 # Cog commands
-@commands.has_any_role(ROLES.TOTALLY_MOD)
+@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
 @bot.command()
 async def cogs(ctx: commands.Context):
     await ctx.send("Loaded cogs: `" + "`, `".join(bot.cogs.keys()) + "`")
@@ -1332,7 +1332,7 @@ async def cogs_error(ctx: commands.Context, error: commands.CommandError):
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
 @bot.command()
-@commands.has_any_role(ROLES.TOTALLY_MOD)
+@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
 async def reload(ctx: commands.Context, cog: str):
     """Reloads a specific cog."""
     try:
@@ -1353,7 +1353,7 @@ async def reload_error(ctx: commands.Context, error: commands.CommandError):
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
 @bot.command()
-@commands.has_any_role(ROLES.TOTALLY_MOD)
+@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
 async def load(ctx: commands.Context, cog: str):
     """Loads a specific cog."""
     try:
@@ -1374,6 +1374,30 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
 
+# Main commands
+
+@bot.command()
+@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
+async def jsons(ctx):
+    """Lists all JSON files in the current directory."""
+    files = [f for f in os.listdir('.') if f.endswith('.json')]
+    if files:
+        await ctx.send("📄 JSON files:\n" + '\n'.join(files))
+    else:
+        await ctx.send("No JSON files found.")
+
+@bot.command(aliases=["fetchjson", "getjson", "json"])
+@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
+async def fetch(ctx, *, filename):
+    """Sends the JSON file by filename (extension optional)."""
+    file_path = filename if filename.endswith('.json') else f"{filename}.json"
+    
+    if os.path.exists(file_path):
+        await ctx.send(file=discord.File(file_path))
+    else:
+        await ctx.send("JSON file not found.")
+
+
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 async def nohup(ctx):
@@ -1384,7 +1408,7 @@ async def nohup(ctx):
         await ctx.send(f"Error: {e}")
 
 @bot.command()
-@commands.has_any_role(ROLES.TOTALLY_MOD)
+@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
 async def pull(ctx: commands.Context):
     """Fetches the latest changes from git."""
     try:

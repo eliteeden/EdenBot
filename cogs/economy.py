@@ -132,12 +132,14 @@ class EconomyCog(commands.Cog):
     async def work_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send("Please make an account with `;bal` first.")
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.send("If you're this impatient, try looking for a real job.")
     # Economy commands
     @commands.command(name='bal')
     async def bal(self, ctx: commands.Context, user: Optional[Member] = None): # type: ignore
         await ctx.send(f"{user.mention + '\'s' if user else 'Your'} balance is {self.get(user or ctx.author):,} eden coins.")
     
-    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
     @commands.command(name='resetbank', aliases=['resetbal', 'wtfcoot'])
     async def resetbank(self, ctx: commands.Context):
         """Sets all existing balances in the bank to 15,000."""
@@ -449,7 +451,7 @@ class EconomyCog(commands.Cog):
             f"{member.mention}, you should buy \"sugar\" from {ctx.author.mention} with the {coins:,} eden coins they just gave you.\n-# (blame Germanic)",
         ]))
     @commands.command(name="daily")
-    @commands.cooldown(1, 8, commands.BucketType.user)  # 24-hour cooldown
+    @commands.cooldown(1, 86400, commands.BucketType.user)  # 24-hour cooldown
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards."""
         user = ctx.author

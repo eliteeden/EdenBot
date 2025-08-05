@@ -3,6 +3,7 @@ import os
 from typing import Optional
 import discord
 from discord import Embed, Member
+import aiohttp
 from discord import File
 from discord.ext import commands
 from discord.utils import utcnow
@@ -138,23 +139,6 @@ class InteractionCog(commands.Cog):
                             await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
                     else:
                         await ctx.send("Error fetching data from Urban Dictionary.")
-    async def urban(self, ctx: commands.Context, *, word: str):
-        """Fetches the definition of a word from Urban Dictionary"""
-        url = f"https://api.urbandictionary.com/v0/define?term={word}"
-        async with ctx.typing():
-            response = requests.get(url)
-
-
-            if response.status_code == 200:
-                data = response.json()
-
-                if data["list"]:  # Ensure there's a definition
-                    definition = data["list"][0]["definition"]
-                    await ctx.send(f"**{word.capitalize()}**: {definition}")
-                else:
-                    await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
-            else:
-                await ctx.send("Error fetching data from Urban Dictionary.")
     @urban.error
     async def urban_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingAnyRole):

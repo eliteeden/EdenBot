@@ -211,12 +211,12 @@ class EconomyCog(commands.Cog):
 
     @commands.command(name='subbal')
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def subbal(self, ctx: commands.Context, member: MemberLike):
-        self.set(member, 0)
+    async def subbal(self, ctx: commands.Context, member: MemberLike, amount: int):
+        self.set(member, amount)
         await ctx.send(f"{member}'s balance is now {self.get(member)} eden coins")
 
     @commands.command(name='setbal')
-    @commands.has_any_role("Bonked by Zi")
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def setbal(self, ctx: commands.Context, member: MemberLike, coins: int):
         self.set(member, coins)  # Set balance to specified coins
         await ctx.send(f"{member.mention if isinstance(member, Member) else member} 's balance is {coins} eden coins")
@@ -224,7 +224,7 @@ class EconomyCog(commands.Cog):
     @setbal.error
     async def setbal_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingAnyRole):
-            await ctx.send('You do not have permission to use this command.')
+            await ctx.send('You do not have permission to do a happy.')
 
     @commands.command(name='win')
     async def win(self, ctx: commands.Context):

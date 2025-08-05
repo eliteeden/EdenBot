@@ -95,24 +95,49 @@ class InteractionCog(commands.Cog):
     @commands.command("ryan")
     async def ryan(self, ctx: commands.Context):
         await ctx.send("Ryan this, Ryan that\nI just want to know what the fate of my 6 siblings is")
-    
+
     @commands.command(name="define", aliases=['wtfenglish'])
     async def define(self, ctx: commands.Context, *, word: str):
-        """Fetches the definition of a word"""
-        url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
+        """Fetches the definition of a word using Free Dictionary API (no API key required)"""
+        import aiohttp
+
+        api_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
+
         async with ctx.typing():
-            response = requests.get(url)
-    
-            if response.status_code == 200:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(api_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if isinstance(data, list) and data and "meanings" in data[0]:
+                            meanings = data[0]["meanings"]
+                            if meanings and "definitions" in meanings[0] and meanings[0]["definitions"]:
+                                definition = meanings[0]["definitions"][0]["definition"]
+                                await ctx.send(f"**{word.capitalize()}**: {definition}")
+                            else:
+                                await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
+                        else:
+                            await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
+                    else:
             
-                data = response.json()
-                definition = data[0]["meanings"][0]["definitions"][0]["definition"]
-                await ctx.send(f"**{word.capitalize()}**: {definition}")
-            else:
-                await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
-    
+                        await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
     @commands.command(name="urban", aliases=['urbandictionary', 'dic'])
-    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, ROLES.WORDLES_WIDOWER, "Fden Bot Perms", 1118650807785619586, "happy") # last role is unknown (remove?)
+    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, ROLES.WORDLES_WIDOWER, "Fden Bot Perms", 1118650807785619586, "happy")
+    async def urban(self, ctx: commands.Context, *, word: str):
+        """Fetches the definition of a word from Urban Dictionary (no API key required)"""
+
+        url = f"https://api.urbandictionary.com/v0/define?term={word}"
+        async with ctx.typing():
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data["list"]:
+                            definition = data["list"][0]["definition"]
+                            await ctx.send(f"**{word.capitalize()}**: {definition}")
+                        else:
+                            await ctx.send(f"Sorry, I couldn't find a definition for '{word}'.")
+                    else:
+                        await ctx.send("Error fetching data from Urban Dictionary.")
     async def urban(self, ctx: commands.Context, *, word: str):
         """Fetches the definition of a word from Urban Dictionary"""
         url = f"https://api.urbandictionary.com/v0/define?term={word}"

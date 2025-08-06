@@ -7,7 +7,7 @@ import io
 from random import randint
 import json
 import requests
-
+from constants import ROLES
 
 
 log = logging.getLogger(__name__)
@@ -34,6 +34,30 @@ class Levels(commands.Cog):
         banned_roles = {"Muted"}
         return member.name in banned_names or any(role.name in banned_roles for role in member.roles)
     
+    async def assign_level_roles(self, member: discord.Member):
+        milestone_roles = {
+            10: 1000316894567485471,
+            20: 1000317394020995082,
+            30: 1000317942065545327,
+            50: 1000318886396309577,
+            75: 1000321714837782529,
+            100: 1000322372466909274
+        }
+
+        guild_id = str(member.guild.id)
+        user_id = str(member.id)
+        xp = int(self.storage.get(f"{guild_id}:{user_id}:xp") or 0)
+        level = self._get_level_from_xp(xp)
+
+        for milestone, role_id in milestone_roles.items():
+            role = member.guild.get_role(role_id)
+            if role and level >= milestone and role not in member.roles:
+                try:
+                    await member.add_roles(role)
+                    log.info(f"Gave role {role.name} to {member.name} for Level {level}")
+                except discord.Forbidden:
+                    log.warning(f"Cannot assign {role.name} — check bot permissions!")
+
     @commands.command(name="import_mee6")
     async def import_mee6(self, ctx):
         """Imports full MEE6 leaderboard data into local storage"""
@@ -110,6 +134,30 @@ class Levels(commands.Cog):
         self.storage.export_to_json("levels_data.json")
         await ctx.send("✅ Level data exported to `levels_data.json`")
 
+    @commands.command(name="setxp")
+    @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
+    @commands.has_permissions(administrator=True)
+    async def setxp(self, ctx, member: discord.Member, level: int):
+        """Sets a member's XP to match the requested level - 10 XP"""
+        if self.is_ban(member):
+            await ctx.send("⛔ Member is restricted from XP updates.")
+            return
+
+        # Calculate total XP needed to reach the target level
+        target_xp = sum(self._get_level_xp(i) for i in range(level)) - 10
+
+        server_id = str(ctx.guild.id)
+        user_id = str(member.id)
+
+        self.storage.set(f"{server_id}:{user_id}:xp", target_xp)
+        self.storage.add(f"{server_id}:players", user_id)
+
+        await ctx.send(f"✅ {member.mention}'s XP has been set to match **Level {level} - 10 XP**.")
+
+        # Optionally, reassign level roles immediately
+        await self.assign_level_roles(member)
+    
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -137,6 +185,8 @@ class Levels(commands.Cog):
 
         if new_level > prev_level:
             await message.channel.send(f"{message.author.mention} leveled up to **Level {new_level}**! 🚀")
+            await self.assign_level_roles(message.author)
+
 
     @commands.command(name="alllevels")
     async def alllevels(self, ctx):

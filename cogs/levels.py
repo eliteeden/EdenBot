@@ -6,6 +6,7 @@ import os
 import io 
 from random import randint
 import json
+from flask import ctx
 import requests
 from constants import ROLES
 
@@ -136,26 +137,28 @@ class Levels(commands.Cog):
 
     @commands.command(name="setxp")
     @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
-    @commands.has_permissions(administrator=True)
     async def setxp(self, ctx, member: discord.Member, level: int):
-        """Sets a member's XP to match the requested level - 10 XP"""
-        if self.is_ban(member):
-            await ctx.send("⛔ Member is restricted from XP updates.")
-            return
+        try:
+            """Sets a member's XP to match the requested level - 10 XP"""
+            if self.is_ban(member):
+                await ctx.send("⛔ Member is restricted from XP updates.")
+                return
 
-        # Calculate total XP needed to reach the target level
-        target_xp = sum(self._get_level_xp(i) for i in range(level)) - 10
+            # Calculate total XP needed to reach the target level
+            target_xp = sum(self._get_level_xp(i) for i in range(level)) - 10
 
-        server_id = str(ctx.guild.id)
-        user_id = str(member.id)
+            server_id = str(ctx.guild.id)
+            user_id = str(member.id)
 
-        self.storage.set(f"{server_id}:{user_id}:xp", target_xp)
-        self.storage.add(f"{server_id}:players", user_id)
+            self.storage.set(f"{server_id}:{user_id}:xp", target_xp)
+            self.storage.add(f"{server_id}:players", user_id)
 
-        await ctx.send(f"✅ {member.mention}'s XP has been set to match **Level {level} - 10 XP**.")
+            await ctx.send(f"✅ {member.mention}'s XP has been set to match **Level {level} - 10 XP**.")
 
-        # Optionally, reassign level roles immediately
-        await self.assign_level_roles(member)
+            # Optionally, reassign level roles immediately
+            await self.assign_level_roles(member)
+        except Exception as e:
+            await ctx.send(f"⚠️ Error setting XP: {str(e)}")
     
 
     @commands.Cog.listener()

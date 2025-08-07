@@ -8,12 +8,15 @@ class FilesCog(commands.Cog):
         os.makedirs("files", exist_ok=True)
 
     @commands.command()
-    async def grabfile(self, ctx, channel_id: int):
+    async def grabfile(self, ctx, channel_id: int = None):
         """Grabs the most recent attachment from a specified channel."""
-        channel = self.bot.get_channel(channel_id)
-        if not channel:
-            await ctx.send("Channel not found.")
-            return
+        if channel_id == None:
+            channel = ctx.channel
+        else:
+            channel = self.bot.get_channel(channel_id)
+            if not channel:
+                await ctx.send("Channel not found.")
+                return
 
         async for message in channel.history(limit=50):
             if message.attachments:
@@ -27,15 +30,26 @@ class FilesCog(commands.Cog):
         await ctx.send("No attachments found in recent messages.")
 
     @commands.command()
-    async def sendfile(self, ctx, channelID: int, filename: str):
+    async def sendfile(self, ctx, channelID: int = None, filename: str = None):
         """Sends a previously saved file."""
+        if filename is None:
+            await ctx.send("Please specify a filename.")
+            return
+
         file_path = f"files/{filename}"
 
         if not os.path.exists(file_path):
             await ctx.send("File not found. Use `!grabfile` first.")
             return
 
-        channel = self.bot.get_channel(channelID)
+        if channelID is None:
+            channel = ctx.channel
+        else:
+            channel = self.bot.get_channel(channelID)
+            if not channel:
+                await ctx.send("Channel not found.")
+                return
+
         await channel.send(file=discord.File(file_path))
 
 # Required function to load this cog

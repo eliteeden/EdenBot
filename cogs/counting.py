@@ -10,21 +10,14 @@ class Counting(commands.Cog):
         self.breaker = None
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if message.author.bot or message.channel.id != self.channel_id:
             return
 
         try:
             number = int(message.content.strip())
         except ValueError:
-            if ";setcount" in message.content:
-                return # ignore 
-            else:
-                await message.channel.send(
-                    f"{message.author.mention} broke the chain by sending an invalid message!"
-                )
-                self.current_count = 0
-                return
+            return # We got a message that wasn't a number, ignore it
 
 
         # Same user posting twice

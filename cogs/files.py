@@ -27,7 +27,7 @@ class FilesCog(commands.Cog):
         await ctx.send("No attachments found in recent messages.")
 
     @commands.command()
-    async def sendfile(self, ctx, channelID, filename: str):
+    async def sendfile(self, ctx, channelID: int, filename: str):
         """Sends a previously saved file."""
         file_path = f"files/{filename}"
 

@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import os
+from constants import ROLES
 
 class FilesCog(commands.Cog):
     def __init__(self, bot):
@@ -8,6 +9,8 @@ class FilesCog(commands.Cog):
         os.makedirs("files", exist_ok=True)
 
     @commands.command()
+    @commands.has_permissions(manage_messages=True)
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def grabfile(self, ctx, channel_id: int = None):
         """Grabs the most recent attachment from a specified channel."""
         if channel_id == None:
@@ -30,6 +33,33 @@ class FilesCog(commands.Cog):
         await ctx.send("No attachments found in recent messages.")
 
     @commands.command()
+    @commands.has_permissions(manage_messages=True)
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    async def deletefile(self, ctx, filename: str): 
+        """Deletes a saved file."""
+        file_path = f"files/{filename}"
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            await ctx.send(f"Deleted `{filename}`.")
+        else:
+            await ctx.send("File not found.")
+
+    @commands.command()
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    async def listfiles(self, ctx): 
+        """Lists all saved files."""
+        files = os.listdir("files")
+        if not files:
+            await ctx.send("No files found.")
+            return
+
+        file_list = "\n".join(files)
+        await ctx.send(f"Saved files:\n{file_list}")
+        
+
+    @commands.command()
+    @commands.has_permissions(manage_messages=True) 
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def sendfile(self, ctx, channelID: int = None, filename: str = None):
         """Sends a previously saved file."""
         if filename is None:

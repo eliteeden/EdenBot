@@ -4,3 +4,4 @@ venv
 *.json
 !.vscode/settings.json
 nohup.out
+files/

@@ -234,7 +234,7 @@ class Levels(commands.Cog):
             xp_color = "#00FFFF"  # Cyan
         else:
             xp_color = "#070DB8"  # Default blue
-        background_opacity = 100  # 👈 Only affects the rank card's background
+        background_opacity = 130  # 👈 Only affects the rank card's background
         
         # Generate rank card image
         card = RANKCARD()
@@ -279,21 +279,23 @@ class Levels(commands.Cog):
             custom_border = Image.open(f"/tmp/avatar.gif").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
 
-            # Extract frames from animated banner
-            frames = []
-            for frame in ImageSequence.Iterator(custom_border):
-                frames.append(frame.copy().convert("RGB").resize(canvas_size))
+            # Extract first frame from animated banner
+            first_frame = next(ImageSequence.Iterator(custom_border)).convert("RGBA").resize(canvas_size)
 
-            # Instead of saving as animated GIF, use first frame as still image
-            still_frame = frames[0]
+            # Composite the frame onto the background
+            composed = background.copy()
+            composed.paste(first_frame, (0, 0), first_frame)  # Use alpha mask for transparency
+
+            # Save the final rank card
             still_path = "/tmp/rank_card.png"
-            still_frame.save(still_path)
+            composed.save(still_path)
 
             # Send the still image
             file = discord.File(still_path, filename="rank.png")
             await ctx.send(file=file)
             return
 
+        
         # Load and resize custom border image
         if member.banner:
             await member.banner.with_format("png").save(f"/tmp/avatar.png")

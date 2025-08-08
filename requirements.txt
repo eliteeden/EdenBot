@@ -48,6 +48,7 @@ murmurhash==1.0.13
 networkx==3.4.2
 numpy==2.2.1
 packaging==25.0
+pillow==11.3.0
 playwright==1.52.0
 preshed==3.0.10
 propcache==0.2.1
@@ -57,7 +58,6 @@ pyee==13.0.0
 pygame==2.6.1
 Pygments==2.19.1
 python-dateutil==2.9.0.post0
-python-dotenv==1.1.1
 pytz==2024.2
 PyYAML==6.0.2
 regex==2024.11.6

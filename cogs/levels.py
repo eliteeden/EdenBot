@@ -16,10 +16,10 @@ from constants import ROLES
 log = logging.getLogger(__name__)
 
 class Levels(commands.Cog):
-    def __init__(self, bot: commands.Bot, storage):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.storage = storage
         self.cooldowns = {}
+        self.db = {}
 
     def _get_level_xp(self, level: int) -> int:
         # XP needed to reach the *next* level
@@ -93,8 +93,8 @@ class Levels(commands.Cog):
             for player in all_players:
                 user_id = str(player["id"])
                 total_xp = int(player["xp"])
-                self.storage.set(f"{guild_id}:{user_id}:xp", total_xp)
-                self.storage.add(f"{guild_id}:players", user_id)
+                self.set(f"{guild_id}:{user_id}:xp", total_xp)
+                self.add(f"{guild_id}:players", user_id)
 
             await ctx.send(f"✅ Imported {len(all_players)} players from MEE6.")
         except requests.exceptions.RequestException as e:
@@ -111,15 +111,15 @@ class Levels(commands.Cog):
             user_id = str(member.id)
 
             xp_key = f"{server_id}:{user_id}:xp"
-            xp = int(self.storage.get(xp_key) or 0)
+            xp = int(self.get(xp_key) or 0)
 
             level = self._get_level_from_xp(xp)
             xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
             level_xp = self._get_level_xp(level) or 1
 
-            players = self.storage.get(f"{server_id}:players") or []
+            players = self.get(f"{server_id}:players") or []
             player_xps = [
-                int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
+                int(self.get(f"{server_id}:{pid}:xp") or 0)
                 for pid in players
             ]
             rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
@@ -208,7 +208,7 @@ class Levels(commands.Cog):
     @commands.command(name="export_levels")
     async def export_levels(self, ctx):
         """Exports current level data to JSON file"""
-        self.storage.export_to_json("levels_data.json")
+        self.export_to_json("levels_data.json")
         await ctx.send("✅ Level data exported to `levels_data.json`")
 
     @commands.command(name="setxp")
@@ -226,8 +226,8 @@ class Levels(commands.Cog):
             server_id = str(ctx.guild.id)
             user_id = str(member.id)
 
-            self.storage.set(f"{server_id}:{user_id}:xp", target_xp)
-            self.storage.add(f"{server_id}:players", user_id)
+            self.set(f"{server_id}:{user_id}:xp", target_xp)
+            self.add(f"{server_id}:players", user_id)
 
             await ctx.send(f"✅ {member.mention}'s XP has been set to match **Level {level} - 10 XP**.")
 
@@ -252,15 +252,15 @@ class Levels(commands.Cog):
         self.cooldowns[user_id] = now + 60  # ⏱️ 60s cooldown per user
 
         xp_key = f"{server_id}:{user_id}:xp"
-        prev_xp = int(self.storage.get(xp_key) or 0)
+        prev_xp = int(self.get(xp_key) or 0)
         xp_gain = randint(15, 25)  # slightly higher to match MEE6's pace
         new_xp = prev_xp + xp_gain
 
         prev_level = self._get_level_from_xp(prev_xp)
         new_level = self._get_level_from_xp(new_xp)
 
-        self.storage.set(xp_key, new_xp)
-        self.storage.add(f"{server_id}:players", user_id)
+        self.set(xp_key, new_xp)
+        self.add(f"{server_id}:players", user_id)
 
         if new_level > prev_level:
             await message.channel.send(f"{message.author.mention} leveled up to **Level {new_level}**! 🚀")
@@ -268,12 +268,12 @@ class Levels(commands.Cog):
 
 
     @commands.command(name="alllevels")
-    async def alllevels(self, ctx):
+    async def alllevels(self, ctx: commands.Context):
         """DMs the author all stored level data in a TXT file"""
 
         # Build readable string from storage
         lines = []
-        for key, value in self.storage.db.items():
+        for key, value in self.db.items():
             pretty_value = ", ".join(value) if isinstance(value, set) else str(value)
             lines.append(f"{key}: {pretty_value}")
         full_text = "\n".join(lines)
@@ -287,12 +287,6 @@ class Levels(commands.Cog):
             await ctx.send("✅ Level data sent to your DMs.")
         except discord.Forbidden:
             await ctx.send("⚠️ I couldn't DM you. Check your privacy settings.")
-
-
-# 💾 Dummy storage with JSON export
-class DummyStorage:
-    def __init__(self):
-        self.db = {}
 
     def get(self, key):
         return self.db.get(key)
@@ -323,15 +317,13 @@ class DummyStorage:
 
 # 🔧 Cog setup function
 async def setup(bot: commands.Bot):
-    storage = DummyStorage()
-
+    cog = Levels(bot)
     # Load previously exported data (if it exists)
-    cached_data = storage.load_or_fetch_data()
+    await bot.add_cog(cog)
+    cached_data = cog.load_or_fetch_data()
     if cached_data:
         for key, value in cached_data.items():
             if isinstance(value, list):
-                storage.db[key] = set(value)
+                cog.db[key] = set(value)
             else:
-                storage.db[key] = value
-
-    await bot.add_cog(Levels(bot, storage))
+                cog.db[key] = value

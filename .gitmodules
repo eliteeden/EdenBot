@@ -1,3 +1,7 @@
 [submodule "DiscordLevelingCard"]
 	path = DiscordLevelingCard
 	url = https://github.com/krishsharma0413/DiscordLevelingCard.git
+
+[submodule "Python-discord-rankcard"]
+    path = Python-discord-rankcard
+    url = https://github.com/yangman946/Python-discord-rankcard.git

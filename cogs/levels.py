@@ -216,7 +216,24 @@ class Levels(commands.Cog):
             username = member.name
             avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
             custom_background = "#000000"
-            xp_color = "#AD8E4C"
+
+                        
+            # 🎨 Assign XP color based on level milestone
+            if level >= 100:
+                xp_color = "#FFD700"  # Gold
+            elif level >= 75:
+                xp_color = "#FF003C"  # Red
+            elif level >= 50:
+                xp_color = "#800080"  # Purple
+            elif level >= 30:
+                xp_color = "#30B924"  # Green
+            elif level >= 20:
+                xp_color = "#40E0B0"  # Turquoise
+            elif level >= 10:
+                xp_color = "#00FFFF"  # Cyan
+            else:
+                xp_color = "#070DB8"  # Default bronze-like
+
             background_opacity = 100  # 👈 Only affects the rank card's background
 
             # Generate rank card image

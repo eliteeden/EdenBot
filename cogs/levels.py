@@ -141,7 +141,6 @@ class Levels(commands.Cog):
             await ctx.send(f"⚠️ Error getting rank: {str(e)}")
 
     
-
     @commands.command(name="rank", aliases=["irank"])
     async def rank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
         try:
@@ -167,20 +166,35 @@ class Levels(commands.Cog):
             rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
 
             # 🌐 Build API URL safely
+            avatar_url = member.display_avatar.url
+            username = quote(member.display_name)
             api_url = (
                 "https://vacefron.nl/api/rankcard?"
-                f"username={quote(member.name)}"
-                f"&avatar={member.display_avatar.url}"
+                f"username={username}"
+                f"&avatar={avatar_url}"
                 f"&level={level}"
                 f"&currentxp={xp_in_level}"
                 f"&nextlevelxp={level_xp}"
                 f"&rank={rank}"
             )
 
+            # 🐛 Send debug info to Discord
+            await ctx.send(
+                f"🔧 **Debug Info**\n"
+                f"Username: `{member.display_name}`\n"
+                f"Avatar URL: `{avatar_url}`\n"
+                f"Level: `{level}`\n"
+                f"XP in Level: `{xp_in_level}`\n"
+                f"XP for Next Level: `{level_xp}`\n"
+                f"Rank: `#{rank}`\n"
+                f"API URL: `{api_url}`"
+            )
+
             # 📥 Fetch image from API with timeout
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
                 async with session.get(api_url) as resp:
                     if resp.status != 200:
+                        await ctx.send(f"❌ API request failed with status code: `{resp.status}`")
                         embed = discord.Embed(
                             title="⚠️ Rank Card Error",
                             description="Could not generate rank card image.",
@@ -203,7 +217,8 @@ class Levels(commands.Cog):
             )
 
         except Exception as e:
-            await ctx.send(f"⚠️ Error getting rank: {str(e)}")
+            await ctx.send(f"💥 Exception occurred: `{str(e)}`")
+
 
 
     @commands.command(name="leaderboard", aliases=["lb"])

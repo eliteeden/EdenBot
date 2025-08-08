@@ -150,7 +150,7 @@ class InteractionCog(commands.Cog):
     async def xkcd(self, ctx: commands.Context, *, title: str = None):
         """Fetches an xkcd comic by title. If no title is given, returns the latest comic."""
 
-        return await self.web(ctx, "site:xkcd.com " + title)
+        return await self.web(ctx, search_msg="site:xkcd.com " + title)
     @commands.command(name='web', aliases=['search', 'google'])
     async def web(self, ctx: commands.Context, *, search_msg: str):
         banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']

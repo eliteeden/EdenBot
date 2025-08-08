@@ -215,7 +215,7 @@ class Levels(commands.Cog):
             # Prepare rank card data
             username = member.name
             avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
-            custom_background = "#000000"
+            custom_background = "#080244"
             xp_color = "#956CD3"
 
             # Generate rank card image

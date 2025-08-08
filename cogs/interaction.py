@@ -174,7 +174,7 @@ class InteractionCog(commands.Cog):
                         await ctx.send(
                             f"**xkcd #{data['num']}: {data['title']}**\n{data['alt']}\n{data['img']}"
                         )
-                        return
+                        return self.web(ctx, search_msg=data["title"])
 
                 await ctx.send(f"No xkcd comic found with title containing '{title}'.")
             except Exception as e:

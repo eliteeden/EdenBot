@@ -237,7 +237,8 @@ class Levels(commands.Cog):
                 image.save(image_binary, 'PNG')
                 image_binary.seek(0)
                 embed.set_image(url='attachment://image.png')
-                await ctx.send(file=discord.File(fp=image_binary, filename='image.png'), embed=embed)
+                # await ctx.send(file=discord.File(fp=image_binary, filename='image.png'), embed=embed)
+                await ctx.send(image)
 
         except Exception as e:
             await ctx.send(f"💥 Exception occurred: `{str(e)}`")

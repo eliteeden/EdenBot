@@ -165,12 +165,11 @@ class Levels(commands.Cog):
             await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
     #Smoking that mee6 pack
 
-
     @commands.command(name="nrank", aliases=["m6rank"])
     async def newrank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
         try:
             member = member or ctx.author
-            if self.is_ban(member):  # Method to check bans
+            if self.is_ban(member):
                 return
 
             server_id = str(ctx.guild.id)
@@ -182,7 +181,7 @@ class Levels(commands.Cog):
 
             level = self._get_level_from_xp(xp)
             xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
-            level_xp = self._get_level_xp(level) or 1  # Avoid division by zero
+            level_xp = self._get_level_xp(level) or 1
 
             # Get rank
             players = self.storage.get(f"{server_id}:players") or []
@@ -195,8 +194,8 @@ class Levels(commands.Cog):
             # Prepare rank card data
             username = member.display_name
             avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
-            custom_background = "#1E1E2F"  # You can randomize or customize this
-            xp_color = "#00FFAA"  # Aqua green
+            custom_background = "#000000"
+            xp_color = "#FF0066"
 
             # Generate rank card image
             card = RANKCARD()
@@ -211,8 +210,15 @@ class Levels(commands.Cog):
                 next_level_xp=level_xp
             )
 
+            # Apply gray border to final image
+            from PIL import ImageOps, Image
+            img = Image.open(image_path)
+            img_with_border = ImageOps.expand(img, border=5, fill='gray')
+            bordered_path = f"{os.getcwd()}/rankcards2.png"
+            img_with_border.save(bordered_path)
+
             # Send image
-            file = discord.File(image_path, filename="rank.jpg")
+            file = discord.File(bordered_path, filename="rank.jpg")
             await ctx.send(file=file)
 
         except Exception as e:

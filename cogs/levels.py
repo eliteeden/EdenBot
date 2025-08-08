@@ -62,19 +62,26 @@ class Levels(commands.Cog):
 
         def create_rounded_rectangle_mask(size, radius, alpha=255):
             factor = 5
-            radius *= factor
+            radius = max(1, radius * factor)  # Ensure radius is positive
             image = Image.new('RGBA', (size[0] * factor, size[1] * factor), (0, 0, 0, 0))
             corner = Image.new('RGBA', (radius, radius), (0, 0, 0, 0))
-            draw_corner = ImageDraw.Draw(corner)
-            draw_corner.pieslice((0, 0, radius * 2, radius * 2), 180, 270, fill=(50, 50, 50, alpha + 55))
+            draw = ImageDraw.Draw(corner)
+
+            # Ensure bounding box is valid
+            bbox = (0, 0, radius * 2, radius * 2)
+            if bbox[2] >= bbox[0] and bbox[3] >= bbox[1]:
+                draw.pieslice(bbox, 180, 270, fill=(50, 50, 50, alpha + 55))
+
             mx, my = image.size
             image.paste(corner, (0, 0), corner)
             image.paste(corner.rotate(90), (0, my - radius), corner.rotate(90))
             image.paste(corner.rotate(180), (mx - radius, my - radius), corner.rotate(180))
             image.paste(corner.rotate(270), (mx - radius, 0), corner.rotate(270))
+
             draw_full = ImageDraw.Draw(image)
             draw_full.rectangle([(radius, 0), (mx - radius, my)], fill=(50, 50, 50, alpha))
             draw_full.rectangle([(0, radius), (mx, my - radius)], fill=(50, 50, 50, alpha))
+
             return image.resize(size, Image.Resampling.LANCZOS)
 
         avatar_bytes = requests.get(avatar_url).content

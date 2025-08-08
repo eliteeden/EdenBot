@@ -215,8 +215,8 @@ class Levels(commands.Cog):
             # Prepare rank card data
             username = member.name
             avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
-            custom_background = "#080244"
-            xp_color = "#956CD3"
+            custom_background = "#000000"
+            xp_color = "#0BAC3B"
 
             # Generate rank card image
             card = RANKCARD()
@@ -233,7 +233,7 @@ class Levels(commands.Cog):
                 formatted_next_level_xp=formatted_level_xp
             )
 
-            # Load the main image
+            # Load the main image (rank card)
             img = Image.open(image_path).convert("RGBA")
 
             # Define border size
@@ -242,23 +242,26 @@ class Levels(commands.Cog):
             # Create canvas size
             canvas_size = (img.width + border_size * 2, img.height + border_size * 2)
 
-            # Load and resize your custom border image
+            # Define custom background color and opacity
+            bg_color = (8, 2, 68)  # "#080244"
+            opacity = 80         # 0 = fully transparent, 255 = fully opaque
+
+            # Create semi-transparent background
+            background = Image.new("RGBA", canvas_size, bg_color + (opacity,))
+
+            # Load and resize custom border image
             custom_border = Image.open("komi.jpg").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
 
-            # Create a blank canvas
-            canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
+            # Paste the border on top of the background
+            background.paste(custom_border, (0, 0), custom_border)
 
-            # Paste the border first (acts as background)
-            canvas.paste(custom_border, (0, 0))
+            # Paste the rank card in the center
+            background.paste(img, (border_size, border_size), img)
 
-            # Paste the rank card on top, centered
-            canvas.paste(img, (border_size, border_size), img)
-
-            # Save the result
+            # Save the final image
             bordered_path = os.path.join(os.getcwd(), "rankcards2.png")
-            canvas.save(bordered_path)
-
+            background.save(bordered_path)
             # Send image
             file = discord.File(bordered_path, filename="rank.jpg")
             await ctx.send(file=file)

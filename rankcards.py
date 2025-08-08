@@ -14,15 +14,17 @@ class RANKCARD():
         next_level_xp,
         custom_background,
         xp_color,
-        formatted_current_xp = None,
-        formatted_next_level_xp = None
+        formatted_current_xp,
+        formatted_next_level_xp
     ):
         # Create backdrop
         img = Image.new('RGB', (934, 282), color=custom_background)
+
+        # Load avatar
         response = requests.get(avatar)
         img_avatar = Image.open(BytesIO(response.content)).convert("RGBA")
 
-        # Create circular avatar mask
+        # Create circular mask
         bigsize = (img_avatar.size[0] * 3, img_avatar.size[1] * 3)
         mask = Image.new('L', bigsize, 0)
         draw = ImageDraw.Draw(mask)
@@ -30,6 +32,7 @@ class RANKCARD():
         mask = mask.resize(img_avatar.size)
         img_avatar.putalpha(mask)
 
+        # Resize and paste avatar
         img_avatar = img_avatar.resize((170, 170))
         img.paste(img_avatar, (50, 50), img_avatar)
 

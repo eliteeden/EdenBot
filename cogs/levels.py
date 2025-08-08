@@ -225,12 +225,12 @@ class Levels(commands.Cog):
                 avatar=avatar_url,
                 level=level,
                 rank=rank,
-                current_xp=raw_xp_in_level,       # for progress bar
-                next_level_xp=raw_level_xp,       # for progress bar
+                current_xp=raw_xp_in_level,
+                next_level_xp=raw_level_xp,
                 custom_background=custom_background,
                 xp_color=xp_color,
-                formatted_current_xp=formatted_xp_in_level,  # for display
-                formatted_next_level_xp=formatted_level_xp   # for display
+                formatted_current_xp=formatted_xp_in_level,
+                formatted_next_level_xp=formatted_level_xp
             )
 
             # Apply gray border
@@ -246,7 +246,7 @@ class Levels(commands.Cog):
 
         except Exception as e:
             await ctx.send(f"⚠️ Error generating rank card: {str(e)}")
-            
+
     @commands.command(name="oldrank", aliases=["trank"])
     async def oldrank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]
         try:

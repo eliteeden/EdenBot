@@ -41,6 +41,61 @@ class Levels(commands.Cog):
         banned_roles = {"Muted"}
         return member.name in banned_names or any(role.name in banned_roles for role in member.roles)
     
+    def create_image(self, user, rank, level, exp, next_exp):
+        W, H = (960, 330)
+        img = Image.open('rankcard.png').convert('RGBA')
+        draw = ImageDraw.Draw(img)
+
+        name = str(user.display_name)
+        avatar_url = user.display_avatar.url
+        progress_ratio = exp / next_exp if next_exp else 0
+        bar_width = int(progress_ratio * 446)
+
+        text = f"Rank: {rank}  Level: {level}"
+        text2 = f"{exp}/{next_exp}"
+
+        font1 = ImageFont.truetype('arial/ARIAL.ttf', 24)
+        font2 = ImageFont.truetype('arial/arialceb.ttf', 17)
+        font3 = ImageFont.truetype('arial/ArialMdm.ttf', 15)
+
+        gradient = Image.open('gradient.png').convert('RGBA').resize((bar_width, 16), Image.Resampling.LANCZOS)
+
+        def create_rounded_rectangle_mask(size, radius, alpha=255):
+            factor = 5
+            radius *= factor
+            image = Image.new('RGBA', (size[0] * factor, size[1] * factor), (0, 0, 0, 0))
+            corner = Image.new('RGBA', (radius, radius), (0, 0, 0, 0))
+            draw_corner = ImageDraw.Draw(corner)
+            draw_corner.pieslice((0, 0, radius * 2, radius * 2), 180, 270, fill=(50, 50, 50, alpha + 55))
+            mx, my = image.size
+            image.paste(corner, (0, 0), corner)
+            image.paste(corner.rotate(90), (0, my - radius), corner.rotate(90))
+            image.paste(corner.rotate(180), (mx - radius, my - radius), corner.rotate(180))
+            image.paste(corner.rotate(270), (mx - radius, 0), corner.rotate(270))
+            draw_full = ImageDraw.Draw(image)
+            draw_full.rectangle([(radius, 0), (mx - radius, my)], fill=(50, 50, 50, alpha))
+            draw_full.rectangle([(0, radius), (mx, my - radius)], fill=(50, 50, 50, alpha))
+            return image.resize(size, Image.Resampling.LANCZOS)
+
+        avatar_bytes = requests.get(avatar_url).content
+        avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert('RGBA').resize((144, 144), Image.Resampling.LANCZOS)
+        avatar_mask = create_rounded_rectangle_mask((144, 144), 75)
+        img.paste(avatar_img, (408, 44), mask=avatar_mask)
+
+        bar_mask = create_rounded_rectangle_mask((bar_width, 16), 8)
+        img.paste(gradient, (247, 267), mask=bar_mask)
+
+        w1 = draw.textbbox((0, 0), name, font=font1)[2]
+        w2 = draw.textbbox((0, 0), text, font=font2)[2]
+        w3 = draw.textbbox((0, 0), text2, font=font3)[2]
+
+        draw.text(((W - w1) / 2, 200), name, fill=(255, 255, 255), font=font1)
+        draw.text(((W - w2) / 2, 232), text, fill=(255, 255, 255), font=font2)
+        draw.text(((W - w3) / 2, 267), text2, fill=(255, 255, 255), font=font3)
+
+        return img
+
+    
     async def assign_level_roles(self, member: discord.Member):
         milestone_roles = {
             10: 1000316894567485471,
@@ -143,7 +198,7 @@ class Levels(commands.Cog):
 
     
     @commands.command(name="rank", aliases=["irank"])
-    async def rank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
+    async def rank_cmd(self, ctx, member: discord.Member = None):
         try:
             member = member or ctx.author
             if self.is_ban(member):
@@ -166,64 +221,16 @@ class Levels(commands.Cog):
             ]
             rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
 
-            # ✅ Clean avatar URL
-            avatar_url = str(member.display_avatar.with_format("png").with_size(1024))
-
-            # ✅ Strip emojis and unsafe characters from username
-            clean_name = re.sub(r"[^\w\s-]", "", member.display_name)
-            username = quote(clean_name)
-
-            # 🌐 Build API URL
-            api_url = (
-                "https://vacefron.nl/api/rankcard?"
-                f"username={username}"
-                f"&avatar={avatar_url}"
-                f"&level={level}"
-                f"&currentxp={xp_in_level}"
-                f"&nextlevelxp={level_xp}"
-                f"&rank={rank}"
+            embed = discord.Embed(
+                title=f"Rank for {member.display_name}",
+                color=discord.Color.dark_gray()
             )
-
-            # 🐛 Debug info
-            await ctx.send(
-                f"🔧 **Debug Info**\n"
-                f"Username: `{clean_name}`\n"
-                f"Avatar URL: `{avatar_url}`\n"
-                f"Level: `{level}`\n"
-                f"XP in Level: `{xp_in_level}`\n"
-                f"XP for Next Level: `{level_xp}`\n"
-                f"Rank: `#{rank}`\n"
-                f"API URL: `{api_url}`"
-            )
-
-            # 📥 Fetch image with headers
-            headers = {
-                "User-Agent": "Mozilla/5.0"
-            }
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-                async with session.get(api_url, headers=headers) as resp:
-                    if resp.status != 200:
-                        await ctx.send(f"❌ API request failed with status code: `{resp.status}`")
-                        embed = discord.Embed(
-                            title="⚠️ Rank Card Error",
-                            description="Could not generate rank card image.",
-                            color=discord.Color.red()
-                        )
-                        await ctx.send(embed=embed)
-                        return
-                    image_bytes = await resp.read()
-
-            file = discord.File(fp=io.BytesIO(image_bytes), filename="rankcard.png")
-
-            await ctx.send(
-                content=(
-                    f"**{member.display_name}'s Rank**\n"
-                    f"Level: {level}\n"
-                    f"Rank: #{rank}\n"
-                    f"XP: {xp_in_level}/{level_xp} (Total: {xp})"
-                ),
-                file=file
-            )
+            with io.BytesIO() as image_binary:
+                image = self.create_image(member, rank, level, xp_in_level, level_xp)
+                image.save(image_binary, 'PNG')
+                image_binary.seek(0)
+                embed.set_image(url='attachment://image.png')
+                await ctx.send(file=discord.File(fp=image_binary, filename='image.png'), embed=embed)
 
         except Exception as e:
             await ctx.send(f"💥 Exception occurred: `{str(e)}`")

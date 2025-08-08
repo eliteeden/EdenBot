@@ -41,7 +41,7 @@ class Levels(commands.Cog):
         return member.name in banned_names or any(role.name in banned_roles for role in member.roles)
     def create_image(self, user, rank, level, exp, next_exp):
         W, H = (960, 330)
-        img = Image.open('rankcard.png').convert('RGBA')
+        img = Image.open('media/rank/rankcard.png').convert('RGBA')
         draw = ImageDraw.Draw(img)
 
         name = str(user.display_name)
@@ -58,7 +58,7 @@ class Levels(commands.Cog):
         font3 = ImageFont.truetype('arial/ArialMdm.ttf', 15)
 
         # Load gradient bar
-        gradient = Image.open('gradient.png').convert('RGBA').resize((bar_width, 16), Image.Resampling.LANCZOS)
+        gradient = Image.open('media/rank/gradient.png').convert('RGBA').resize((bar_width, 16), Image.Resampling.LANCZOS)
 
         # Rounded rectangle mask function
         def create_rounded_rectangle_mask(size, radius, alpha=255):
@@ -166,8 +166,8 @@ class Levels(commands.Cog):
             await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
     #Smoking that mee6 pack
 
-    @commands.command(name="nrank", aliases=["m6rank"])
-    async def newrank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
+    @commands.command(name="rank", aliases=["m6rank"])
+    async def rank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
         try:
             member = member or ctx.author
             if self.is_ban(member):
@@ -288,7 +288,7 @@ class Levels(commands.Cog):
                 await member.banner.with_format("png").save(f"/tmp/avatar.png")
                 custom_border = Image.open(f"/tmp/avatar.png").convert("RGBA")
             else:
-                custom_border = Image.open("komi.jpg").convert("RGBA")
+                custom_border = Image.open("/media/rank/komi.jpg").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
 
             # Composite border over background
@@ -343,8 +343,8 @@ class Levels(commands.Cog):
             await ctx.send(f"⚠️ Error getting rank: {str(e)}")
 
     
-    @commands.command(name="rank", aliases=["irank"])
-    async def rank_cmd(self, ctx, member: discord.Member = None):
+    @commands.command(name="nrank", aliases=["irank"])
+    async def mehrank_cmd(self, ctx, member: discord.Member = None):
         try:
             member = member or ctx.author
             if self.is_ban(member):

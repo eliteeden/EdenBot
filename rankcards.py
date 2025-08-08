@@ -48,7 +48,7 @@ class RANKCARD():
         img.paste(img_avatar, (50, 50), img_avatar)
 
         # Draw progress bar
-        draw = self.drawProgressBar(draw, 260, 180, 575, 40, current_xp / next_level_xp if next_level_xp > 0 else 0, bg="#000000", fg=xp_color)
+        draw = self.drawProgressBar(draw, 260, 180, 575, 40, current_xp / next_level_xp if next_level_xp > 0 else 0, bg="#222020", fg=xp_color)
 
         # Load fonts
         font = ImageFont.truetype("arial/arialceb.ttf", size=50)
@@ -64,7 +64,7 @@ class RANKCARD():
         img = ImageOps.expand(img, border=5, fill='gray')
 
         # Save image
-        output_path = f"{os.getcwd()}/rankcards2.png"
+        output_path = f"{os.getcwd()}/media/rank/rankcards2.png"
         img.save(output_path)
         return output_path
 

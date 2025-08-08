@@ -47,7 +47,7 @@ class RANKCARD():
 
         # Add text
         d.text((260, 100), username, fill=(255, 255, 255), font=font)
-        d.text((740, 130), f"{formatted_current_xp}/{formatted_next_level_xp} XP", fill=(255, 255, 255), font=font2)
+        d.text((650, 100), f"{formatted_current_xp}/{formatted_next_level_xp} XP", fill=(255, 255, 255), font=font2)
         d.text((650, 50), f"LEVEL {level}", fill=xp_color, font=font)
         d.text((260, 50), f"RANK #{rank}", fill=(255, 255, 255), font=font2)
 

@@ -11,7 +11,7 @@ import io
 from rankcards import RANKCARD
 from random import randint
 import json
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 import requests 
 from constants import ROLES
 
@@ -213,10 +213,10 @@ class Levels(commands.Cog):
             formatted_level_xp = format_xp(round_sig(raw_level_xp))
 
             # Prepare rank card data
-            username = member.display_name
+            username = member.name
             avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
             custom_background = "#000000"
-            xp_color = "#FF0000"
+            xp_color = "#956CD3"
 
             # Generate rank card image
             card = RANKCARD()
@@ -234,9 +234,8 @@ class Levels(commands.Cog):
             )
 
             # Apply gray border
-            from PIL import ImageOps, Image
             img = Image.open(image_path)
-            img_with_border = ImageOps.expand(img, border=15, fill='gray')
+            img_with_border = ImageOps.expand(img, border=15, fill='darkgray')
             bordered_path = f"{os.getcwd()}/rankcards2.png"
             img_with_border.save(bordered_path)
 

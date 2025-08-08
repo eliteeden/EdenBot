@@ -305,7 +305,7 @@ class Levels(commands.Cog):
             bordered_path = "/tmp/rank_card.png"
             background.save(bordered_path)
 
-            file = discord.File(bordered_path, filename="rank.png"
+            file = discord.File(bordered_path, filename="rank.png")
             await ctx.send(file=file)
             return
 

@@ -11,7 +11,7 @@ import io
 from rankcards import RANKCARD
 from random import randint
 import json
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 import requests 
 from constants import ROLES
 
@@ -216,7 +216,7 @@ class Levels(commands.Cog):
             username = member.name
             avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
             custom_background = "#000000"
-            xp_color = "#0BAC3B"
+            xp_color = "#AD8E4C"
 
             # Generate rank card image
             card = RANKCARD()
@@ -233,7 +233,7 @@ class Levels(commands.Cog):
                 formatted_next_level_xp=formatted_level_xp
             )
 
-            # Load the main image (rank card)
+            # Load transparent rank card
             img = Image.open(image_path).convert("RGBA")
 
             # Define border size
@@ -242,33 +242,39 @@ class Levels(commands.Cog):
             # Create canvas size
             canvas_size = (img.width + border_size * 2, img.height + border_size * 2)
 
-            # Define custom background color and opacity
+            # Define background color and opacity
             bg_color = (8, 2, 68)  # "#080244"
-            opacity = 80         # 0 = fully transparent, 255 = fully opaque
+            bg_opacity = 80        # Background opacity
+            rank_card_opacity = 100  # Rank card opacity
 
             # Create semi-transparent background
-            background = Image.new("RGBA", canvas_size, bg_color + (opacity,))
+            background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
 
             # Load and resize custom border image
             custom_border = Image.open("komi.jpg").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
 
-            # Paste the border on top of the background
+            # Composite border over background
             background.paste(custom_border, (0, 0), custom_border)
 
-            # Paste the rank card in the center
+            # Adjust rank card opacity
+            r, g, b, a = img.split()
+            a = a.point(lambda p: p * (rank_card_opacity / 255))
+            img = Image.merge("RGBA", (r, g, b, a))
+
+            # Paste rank card with adjusted opacity
             background.paste(img, (border_size, border_size), img)
 
-            # Save the final image
+            # Save final image
             bordered_path = os.path.join(os.getcwd(), "rankcards2.png")
             background.save(bordered_path)
+
             # Send image
             file = discord.File(bordered_path, filename="rank.jpg")
             await ctx.send(file=file)
 
         except Exception as e:
             await ctx.send(f"⚠️ Error generating rank card: {str(e)}")
-
     @commands.command(name="oldrank", aliases=["trank"])
     async def oldrank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]
         try:

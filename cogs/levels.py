@@ -191,11 +191,30 @@ class Levels(commands.Cog):
             ]
             rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
 
+            # Round and format XP
+            def round_sig(x, sig=3):
+                if x == 0:
+                    return 0
+                from math import log10, floor
+                return round(x, sig - int(floor(log10(abs(x)))) - 1)
+
+            def format_xp(x):
+                x = float(x)
+                if x >= 1_000_000:
+                    return f"{x / 1_000_000:.1f}M"
+                elif x >= 1_000:
+                    return f"{x / 1_000:.1f}K"
+                else:
+                    return str(int(x))
+
+            formatted_xp_in_level = format_xp(round_sig(xp_in_level))
+            formatted_level_xp = format_xp(round_sig(level_xp))
+
             # Prepare rank card data
             username = member.display_name
             avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
             custom_background = "#000000"
-            xp_color = "#FF0066"
+            xp_color = "#FF0000"
 
             # Generate rank card image
             card = RANKCARD()
@@ -204,16 +223,16 @@ class Levels(commands.Cog):
                 avatar=avatar_url,
                 level=level,
                 rank=rank,
-                current_xp=xp_in_level,
+                current_xp=formatted_xp_in_level,
                 custom_background=custom_background,
                 xp_color=xp_color,
-                next_level_xp=level_xp
+                next_level_xp=formatted_level_xp
             )
 
-            # Apply gray border to final image
+            # Apply gray border
             from PIL import ImageOps, Image
             img = Image.open(image_path)
-            img_with_border = ImageOps.expand(img, border=5, fill='gray')
+            img_with_border = ImageOps.expand(img, border=15, fill='gray')
             bordered_path = f"{os.getcwd()}/rankcards2.png"
             img_with_border.save(bordered_path)
 
@@ -223,7 +242,6 @@ class Levels(commands.Cog):
 
         except Exception as e:
             await ctx.send(f"⚠️ Error generating rank card: {str(e)}")
-
     @commands.command(name="oldrank", aliases=["trank"])
     async def oldrank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]
         try:

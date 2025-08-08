@@ -274,7 +274,7 @@ class Levels(commands.Cog):
                 custom_border = custom_border.resize(canvas_size)
                 frames = []
                 for frame in ImageSequence.Iterator(custom_border):
-                    frames.append(frame.copy().convert("RGBA").resize(canvas_size))
+                    frames.append(frame.copy().convert("RGB").resize(canvas_size))
                 background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
                 background.info['duration'] = 100  # Set frame duration for GIF
                 background.info['loop'] = 0  # Loop indefinitely
@@ -298,11 +298,11 @@ class Levels(commands.Cog):
             background.paste(img, (border_size, border_size), img)
 
             # Save final image
-            bordered_path = "/tmp/rank_card.jpg"
+            bordered_path = "/tmp/rank_card.png"
             background.save(bordered_path)
 
             # Send image
-            file = discord.File(bordered_path, filename="rank.jpg")
+            file = discord.File(bordered_path, filename="rank.png")
             await ctx.send(file=file)
 
         except Exception as e:

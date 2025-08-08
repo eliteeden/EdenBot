@@ -9,8 +9,9 @@ import io
 from random import randint
 import json
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
-import requests
+import requests 
 from constants import ROLES
+from DiscordLevelingCard.DiscordLevelingCard import RankCard, Settings
 
 
 log = logging.getLogger(__name__)
@@ -102,102 +103,47 @@ class Levels(commands.Cog):
 
     @commands.command(name="rank")
     async def rank_cmd(self, ctx, member: discord.Member = None):
-        try:
-            member = member or ctx.author
-            if self.is_ban(member):
-                return
+        member = member or ctx.author
+        if self.is_ban(member):
+            return
 
-            server_id = str(ctx.guild.id)
-            user_id = str(member.id)
+        server_id = str(ctx.guild.id)
+        user_id = str(member.id)
 
-            xp_key = f"{server_id}:{user_id}:xp"
-            xp = int(self.storage.get(xp_key) or 0)
+        xp_key = f"{server_id}:{user_id}:xp"
+        xp = int(self.storage.get(xp_key) or 0)
 
-            level = self._get_level_from_xp(xp)
-            xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
-            level_xp = self._get_level_xp(level) or 1
+        level = self._get_level_from_xp(xp)
+        xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
+        level_xp = self._get_level_xp(level) or 1
 
-            players = self.storage.get(f"{server_id}:players") or []
-            player_xps = [
-                int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
-                for pid in players
-            ]
-            rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
+        players = self.storage.get(f"{server_id}:players") or []
+        player_xps = [
+            int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
+            for pid in players
+        ]
+        rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
+        # Define card appearance
+        card_settings = Settings(
+            background="dark",         # Can be a color name or image URL
+            text_color="white",
+            bar_color="#66ff66"
+        )
 
-            # --- CARD SETTINGS ---
-            width, height = 600, 180
-            background = Image.new("RGBA", (width, height), (35, 35, 35, 255))
-            draw = ImageDraw.Draw(background)
+        # Create the card object
+        card = RankCard(    
+            settings=card_settings,
+            avatar=member.display_avatar.url,
+            level=level,
+            current_exp=xp_in_level,
+            max_exp=level_xp,
+            username=member.name,
+            rank=rank
+        )
 
-            # Optional: gradient background
-            for y in range(height):
-                gradient_color = (25 + y // 4, 25 + y // 4, 25 + y // 4)
-                draw.line([(0, y), (width, y)], fill=gradient_color)
+        # Generate the image
+        image = await card.card1()  # You can also use card2(), card3(), etc.
 
-            try:
-                font_large = ImageFont.truetype("arial.ttf", 28)
-                font_small = ImageFont.truetype("arial.ttf", 18)
-            except OSError:
-                font_large = ImageFont.load_default()
-                font_small = ImageFont.load_default()
-
-            # --- AVATAR ---
-            avatar_asset = member.display_avatar.with_size(128)
-            avatar_bytes = await avatar_asset.read()
-            avatar = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA").resize((128, 128))
-
-            # Circular mask
-            mask = Image.new("L", avatar.size, 0)
-            mask_draw = ImageDraw.Draw(mask)
-            mask_draw.ellipse((0, 0, avatar.size[0], avatar.size[1]), fill=255)
-            avatar.putalpha(mask)
-
-            # Glow effect
-            glow = avatar.copy().resize((140, 140))
-            glow = glow.filter(ImageFilter.GaussianBlur(6))
-            background.paste(glow, (14, 20), glow)
-
-            # Paste avatar
-            background.paste(avatar, (20, 26), avatar)
-
-            # --- TEXT ---
-            draw.text((170, 40), member.name, font=font_large, fill=(255, 255, 255))
-            draw.text((170, 80), f"Level: {level}", font=font_small, fill=(200, 200, 200))
-            draw.text((270, 80), f"Rank: #{rank}", font=font_small, fill=(200, 200, 200))
-
-            # --- PROGRESS BAR ---
-            bar_x, bar_y = 170, 120
-            bar_width, bar_height = 380, 22
-            progress = xp_in_level / level_xp
-
-            # Background bar
-            draw.rounded_rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], radius=10, fill=(60, 60, 60))
-
-            # Progress fill (light green)
-            draw.rounded_rectangle(
-                [bar_x, bar_y, bar_x + int(bar_width * progress), bar_y + bar_height],
-                radius=10,
-                fill=(102, 255, 102)
-            )
-
-            # XP text inside bar
-            xp_text = f"{xp_in_level} / {level_xp} XP"
-            text_width = draw.textlength(xp_text, font=font_small)
-            draw.text(
-                (bar_x + (bar_width - text_width) // 2, bar_y + 2),
-                xp_text,
-                font=font_small,
-                fill=(0, 0, 0)
-            )
-
-            # --- SEND IMAGE ---
-            with io.BytesIO() as image_binary:
-                background.save(image_binary, "PNG")
-                image_binary.seek(0)
-                await ctx.send(file=discord.File(fp=image_binary, filename="rank.png"))
-
-        except Exception as e:
-            await ctx.send(f"⚠️ Error generating rank image: {str(e)}")
 
 
     @commands.command(name="levels")

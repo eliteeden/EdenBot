@@ -181,9 +181,9 @@ class Levels(commands.Cog):
             xp = int(self.storage.get(xp_key) or 0)
 
             level = self._get_level_from_xp(xp)
-            xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
-            level_xp = self._get_level_xp(level) or 1
-
+            # Ensure numeric conversion
+            xp_in_level = xp - sum(float(self._get_level_xp(i)) for i in range(level))
+            level_xp = float(self._get_level_xp(level) or 1)
             # Get rank
             players = self.storage.get(f"{server_id}:players") or []
             player_xps = [

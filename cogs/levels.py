@@ -103,10 +103,10 @@ class Levels(commands.Cog):
             await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
     #Smoking that mee6 pack
     @commands.command(name="rank")
-    async def rank_cmd(self, ctx, member: discord.Member = None):
+    async def rank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]
         try:
             member = member or ctx.author
-            if self.is_ban(member):  # Your own method to check bans
+            if self.is_ban(member):  # Method to check bans
                 return
 
             server_id = str(ctx.guild.id)

@@ -7,6 +7,7 @@ import asyncio
 import logging
 import os
 import io 
+import aiohttp
 from random import randint
 import json
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
@@ -101,8 +102,10 @@ class Levels(commands.Cog):
         except requests.exceptions.RequestException as e:
             await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
     #Smoking that mee6 pack
-    @commands.command(name="rank")
-    async def rank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]
+
+
+    @commands.command(name="oldrank", aliases=["trank"])
+    async def oldrank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]
         try:
             member = member or ctx.author
             if self.is_ban(member):  # Method to check bans
@@ -136,6 +139,57 @@ class Levels(commands.Cog):
         except Exception as e:
             await ctx.send(f"⚠️ Error getting rank: {str(e)}")
 
+    
+
+    @commands.command(name="rank", aliases=["irank"])
+    async def rank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
+        try:
+            member = member or ctx.author
+            if self.is_ban(member):
+                return
+
+            server_id = str(ctx.guild.id)
+            user_id = str(member.id)
+
+            xp_key = f"{server_id}:{user_id}:xp"
+            xp = int(self.storage.get(xp_key) or 0)
+
+            level = self._get_level_from_xp(xp)
+            xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
+            level_xp = self._get_level_xp(level) or 1
+
+            players = self.storage.get(f"{server_id}:players") or []
+            player_xps = [
+                int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
+                for pid in players
+            ]
+            rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
+
+            # Build the API URL
+            avatar_url = member.display_avatar.url
+            username = member.display_name
+
+            api_url = (
+                f"https://vacefron.nl/api/rankcard?"
+                f"username={username}&avatar={avatar_url}"
+                f"&level={level}&rank={rank}"
+                f"&currentxp={xp_in_level}&nextlevelxp={level_xp}"
+            )
+
+            # Fetch the image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(api_url) as resp:
+                    if resp.status != 200:
+                        await ctx.send("⚠️ Failed to generate rank card.")
+                        return
+                    data = await resp.read()
+
+            # Send the image
+            file = discord.File(io.BytesIO(data), filename="rankcard.png")
+            await ctx.send(file=file)
+
+        except Exception as e:
+            await ctx.send(f"⚠️ Error getting rank: {str(e)}")
 
     @commands.command(name="leaderboard", aliases=["lb"])
     async def leaderboard_cmd(self, ctx):

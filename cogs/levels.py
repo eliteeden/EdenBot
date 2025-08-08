@@ -40,7 +40,6 @@ class Levels(commands.Cog):
         banned_names = {"BadUser"}
         banned_roles = {"Muted"}
         return member.name in banned_names or any(role.name in banned_roles for role in member.roles)
-    
     def create_image(self, user, rank, level, exp, next_exp):
         W, H = (960, 330)
         img = Image.open('rankcard.png').convert('RGBA')
@@ -54,44 +53,46 @@ class Levels(commands.Cog):
         text = f"Rank: {rank}  Level: {level}"
         text2 = f"{exp}/{next_exp}"
 
+        # Load fonts
         font1 = ImageFont.truetype('arial/ARIAL.TTF', 24)
         font2 = ImageFont.truetype('arial/arialceb.ttf', 17)
         font3 = ImageFont.truetype('arial/ArialMdm.ttf', 15)
 
+        # Load gradient bar
         gradient = Image.open('gradient.png').convert('RGBA').resize((bar_width, 16), Image.Resampling.LANCZOS)
 
+        # Rounded rectangle mask function
         def create_rounded_rectangle_mask(size, radius, alpha=255):
-            factor = 5
-            radius = max(1, radius * factor)  # Ensure radius is positive
-            image = Image.new('RGBA', (size[0] * factor, size[1] * factor), (0, 0, 0, 0))
-            corner = Image.new('RGBA', (radius, radius), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(corner)
+            corner_size = radius * 2
+            corner = Image.new('RGBA', (corner_size, corner_size), (0, 0, 0, 0))
+            draw_corner = ImageDraw.Draw(corner)
+            draw_corner.pieslice((0, 0, corner_size, corner_size), 180, 270, fill=(50, 50, 50, alpha + 55))
 
-            # Ensure bounding box is valid
-            bbox = (0, 0, radius * 2, radius * 2)
-            if bbox[2] >= bbox[0] and bbox[3] >= bbox[1]:
-                draw.pieslice(bbox, 180, 270, fill=(50, 50, 50, alpha + 55))
+            mask = Image.new('RGBA', size, (0, 0, 0, 0))
+            mx, my = size
 
-            mx, my = image.size
-            image.paste(corner, (0, 0), corner)
-            image.paste(corner.rotate(90), (0, my - radius), corner.rotate(90))
-            image.paste(corner.rotate(180), (mx - radius, my - radius), corner.rotate(180))
-            image.paste(corner.rotate(270), (mx - radius, 0), corner.rotate(270))
+            mask.paste(corner, (0, 0), corner)
+            mask.paste(corner.rotate(90), (0, my - radius * 2), corner.rotate(90))
+            mask.paste(corner.rotate(180), (mx - radius * 2, my - radius * 2), corner.rotate(180))
+            mask.paste(corner.rotate(270), (mx - radius * 2, 0), corner.rotate(270))
 
-            draw_full = ImageDraw.Draw(image)
+            draw_full = ImageDraw.Draw(mask)
             draw_full.rectangle([(radius, 0), (mx - radius, my)], fill=(50, 50, 50, alpha))
             draw_full.rectangle([(0, radius), (mx, my - radius)], fill=(50, 50, 50, alpha))
 
-            return image.resize(size, Image.Resampling.LANCZOS)
+            return mask
 
+        # 🖼️ Avatar
         avatar_bytes = requests.get(avatar_url).content
         avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert('RGBA').resize((144, 144), Image.Resampling.LANCZOS)
-        avatar_mask = create_rounded_rectangle_mask((144, 144), 75)
+        avatar_mask = create_rounded_rectangle_mask((144, 144), 72)
         img.paste(avatar_img, (408, 44), mask=avatar_mask)
 
+        # 📊 Progress bar
         bar_mask = create_rounded_rectangle_mask((bar_width, 16), 8)
         img.paste(gradient, (247, 267), mask=bar_mask)
 
+        # 📝 Text
         w1 = draw.textbbox((0, 0), name, font=font1)[2]
         w2 = draw.textbbox((0, 0), text, font=font2)[2]
         w3 = draw.textbbox((0, 0), text2, font=font3)[2]
@@ -101,7 +102,6 @@ class Levels(commands.Cog):
         draw.text(((W - w3) / 2, 267), text2, fill=(255, 255, 255), font=font3)
 
         return img
-
     
     async def assign_level_roles(self, member: discord.Member):
         milestone_roles = {

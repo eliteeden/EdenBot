@@ -150,36 +150,7 @@ class InteractionCog(commands.Cog):
     async def xkcd(self, ctx: commands.Context, *, title: str = None):
         """Fetches an xkcd comic by title. If no title is given, returns the latest comic."""
 
-        async with ctx.typing():
-            try:
-                if not title:
-                    # Get latest comic
-                    latest = requests.get("https://xkcd.com/info.0.json").json()
-                    await ctx.send(
-                        f"**xkcd #{latest['num']}: {latest['title']}**\n{latest['alt']}\n{latest['img']}"
-                    )
-                    return
-
-                # Get latest comic number
-                latest_num = requests.get("https://xkcd.com/info.0.json").json()["num"]
-
-                # Search for title match
-                for num in range(1, latest_num + 1):
-                    url = f"https://xkcd.com/{num}/info.0.json"
-                    response = requests.get(url)
-                    if response.status_code != 200:
-                        continue
-                    data = response.json()
-                    if title.lower() in data["title"].lower():
-                        await ctx.send(
-                            f"**xkcd #{data['num']}: {data['title']}**\n{data['alt']}\n{data['img']}"
-                        )
-                        return self.web(ctx, search_msg=data["title"])
-
-                await ctx.send(f"No xkcd comic found with title containing '{title}'.")
-            except Exception as e:
-                await ctx.send(f"Error fetching xkcd comic: {str(e)}")
-    
+        return await self.web(ctx, "site:xkcd.com " + title)
     @commands.command(name='web', aliases=['search', 'google'])
     async def web(self, ctx: commands.Context, *, search_msg: str):
         banned_words = ["milf", 'porn', 'dick', 'pussy', 'femboy', 'milf', 'hentai', '177013', 'r34', 'rule 34', 'nsfw', 'skibidi', 'mpreg', 'sexual', 'lgbt', 'boob', 'creampie', 'goon', 'edging', 'cum', 'slut', 'penis', 'clit', 'breast', 'futa', 'pornhub', 'phallus', 'anus', 'naked', 'nude', 'rule34', 'loli', 'shota', 'gore', 'doggystyle', 'sex position', 'doggy style', 'backshots', 'onlyfans', 'Footjob', 'yiff', 'vagin', 'cliloris', 'pennis', 'nipple', 'areola', 'pubic hair', 'foreskin', 'glans', 'labia', 'scrotum', 'taint', 'thong', 'g-string', 'orgy', 'creamoie']

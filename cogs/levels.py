@@ -1,3 +1,4 @@
+from encodings import aliases
 from typing import Optional
 import discord
 from discord import Member
@@ -137,12 +138,12 @@ class Levels(commands.Cog):
             await ctx.send(f"⚠️ Error getting rank: {str(e)}")
 
 
-
-    @commands.command(name="leaderboard")
-    async def leaderboard_cmd(self, ctx, page: int = 1):
-        """Displays the server's leaderboard"""
+    @commands.command(name="leaderboard", aliases=["lb"])
+    async def leaderboard_cmd(self, ctx):
+        """Displays the server's leaderboard with pagination"""
         guild_id = str(ctx.guild.id)
         players = self.storage.get(f"{guild_id}:players") or []
+
         if not players:
             await ctx.send("No players found in the leaderboard.")
             return
@@ -154,23 +155,35 @@ class Levels(commands.Cog):
         ]
         player_xps.sort(key=lambda x: x[1], reverse=True)
 
-        # Paginate results
-        per_page = 10
-        start = (page - 1) * per_page
-        end = start + per_page
-        paginated_players = player_xps[start:end]
-
-        if not paginated_players:
-            await ctx.send("No more players to display on this page.")
+        # Get PaginatorCog
+        paginator_cog = self.bot.get_cog("PaginatorCog")
+        if not paginator_cog:
+            await ctx.send("PaginatorCog is not loaded.")
             return
 
-        leaderboard_text = "\n".join(
-            f"{i + start + 1}. <@{pid}> - {xp} XP"
-            for i, (pid, xp) in enumerate(paginated_players)
-        )
+        paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore
 
-        await ctx.send(f"**Leaderboard (Page {page})**\n{leaderboard_text}")
-        
+        # Create paginated embeds
+        per_page = 10
+        for i in range(0, len(player_xps), per_page):
+            embed = discord.Embed(
+                title="🏆 Server XP Leaderboard",
+                description=f"Showing ranks {i+1} to {min(i+per_page, len(player_xps))}",
+                color=discord.Color.blurple()
+            )
+
+            for idx, (user_id, xp) in enumerate(player_xps[i:i + per_page]):
+                user = self.bot.get_user(int(user_id))
+                name = user.name if user else f"User {user_id}"
+                embed.add_field(
+                    name=f"{i + idx + 1}. {name}",
+                    value=f"{xp:,} XP",
+                    inline=False
+                )
+
+            paginator.add_page(embed)
+
+        await paginator.send(ctx)
     @commands.command(name="levels")
     async def levels_cmd(self, ctx):
         url = f"http://mee6.xyz/levels/{ctx.guild.id}"

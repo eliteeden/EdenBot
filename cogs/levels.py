@@ -8,7 +8,7 @@ import os
 import io 
 from random import randint
 import json
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 import requests
 from constants import ROLES
 
@@ -126,8 +126,13 @@ class Levels(commands.Cog):
 
             # --- CARD SETTINGS ---
             width, height = 600, 180
-            background = Image.new("RGBA", (width, height), (25, 25, 25, 255))
+            background = Image.new("RGBA", (width, height), (35, 35, 35, 255))
             draw = ImageDraw.Draw(background)
+
+            # Optional: gradient background
+            for y in range(height):
+                gradient_color = (25 + y // 4, 25 + y // 4, 25 + y // 4)
+                draw.line([(0, y), (width, y)], fill=gradient_color)
 
             try:
                 font_large = ImageFont.truetype("arial.ttf", 28)
@@ -145,19 +150,15 @@ class Levels(commands.Cog):
             mask = Image.new("L", avatar.size, 0)
             mask_draw = ImageDraw.Draw(mask)
             mask_draw.ellipse((0, 0, avatar.size[0], avatar.size[1]), fill=255)
-            avatar = ImageOps.fit(avatar, mask.size, centering=(0.5, 0.5))
             avatar.putalpha(mask)
 
-            # Add border
-            border_size = 4
-            border = Image.new("RGBA", (avatar.size[0] + border_size * 2, avatar.size[1] + border_size * 2), (30, 30, 30, 255))
-            border_mask = Image.new("L", border.size, 0)
-            border_draw = ImageDraw.Draw(border_mask)
-            border_draw.ellipse((0, 0, border.size[0], border.size[1]), fill=255)
-            border.putalpha(border_mask)
-            border.paste(avatar, (border_size, border_size), avatar)
+            # Glow effect
+            glow = avatar.copy().resize((140, 140))
+            glow = glow.filter(ImageFilter.GaussianBlur(6))
+            background.paste(glow, (14, 20), glow)
 
-            background.paste(border, (20, (height - border.size[1]) // 2), border)
+            # Paste avatar
+            background.paste(avatar, (20, 26), avatar)
 
             # --- TEXT ---
             draw.text((170, 40), member.name, font=font_large, fill=(255, 255, 255))
@@ -170,17 +171,24 @@ class Levels(commands.Cog):
             progress = xp_in_level / level_xp
 
             # Background bar
-            draw.rounded_rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], radius=10, fill=(50, 50, 50))
-            # Progress fill (darker blue)
+            draw.rounded_rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], radius=10, fill=(60, 60, 60))
+
+            # Progress fill (light green)
             draw.rounded_rectangle(
                 [bar_x, bar_y, bar_x + int(bar_width * progress), bar_y + bar_height],
                 radius=10,
-                fill=(40, 80, 200)
+                fill=(102, 255, 102)
             )
 
-            # XP text
+            # XP text inside bar
             xp_text = f"{xp_in_level} / {level_xp} XP"
-            draw.text((bar_x + bar_width + 10, bar_y + 2), xp_text, font=font_small, fill=(255, 255, 255))
+            text_width = draw.textlength(xp_text, font=font_small)
+            draw.text(
+                (bar_x + (bar_width - text_width) // 2, bar_y + 2),
+                xp_text,
+                font=font_small,
+                fill=(0, 0, 0)
+            )
 
             # --- SEND IMAGE ---
             with io.BytesIO() as image_binary:

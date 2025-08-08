@@ -138,7 +138,39 @@ class Levels(commands.Cog):
 
 
 
+    @commands.command(name="leaderboard")
+    async def leaderboard_cmd(self, ctx, page: int = 1):
+        """Displays the server's leaderboard"""
+        guild_id = str(ctx.guild.id)
+        players = self.storage.get(f"{guild_id}:players") or []
+        if not players:
+            await ctx.send("No players found in the leaderboard.")
+            return
 
+        # Sort players by XP
+        player_xps = [
+            (pid, int(self.storage.get(f"{guild_id}:{pid}:xp") or 0))
+            for pid in players
+        ]
+        player_xps.sort(key=lambda x: x[1], reverse=True)
+
+        # Paginate results
+        per_page = 10
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_players = player_xps[start:end]
+
+        if not paginated_players:
+            await ctx.send("No more players to display on this page.")
+            return
+
+        leaderboard_text = "\n".join(
+            f"{i + start + 1}. <@{pid}> - {xp} XP"
+            for i, (pid, xp) in enumerate(paginated_players)
+        )
+
+        await ctx.send(f"**Leaderboard (Page {page})**\n{leaderboard_text}")
+        
     @commands.command(name="levels")
     async def levels_cmd(self, ctx):
         url = f"http://mee6.xyz/levels/{ctx.guild.id}"
@@ -178,34 +210,41 @@ class Levels(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot:
+        if message.author.bot or not message.guild:
             return
 
         user_id = str(message.author.id)
         server_id = str(message.guild.id)
         now = asyncio.get_event_loop().time()
 
+        # Cooldown check
         if self.cooldowns.get(user_id, 0) > now:
             return
 
         self.cooldowns[user_id] = now + 60  # ⏱️ 60s cooldown per user
 
+        # XP keys
         xp_key = f"{server_id}:{user_id}:xp"
         prev_xp = int(self.storage.get(xp_key) or 0)
-        xp_gain = randint(15, 25)  # slightly higher to match MEE6's pace
-        new_xp = prev_xp + xp_gain
 
+        # 📏 Message length-based XP
+        msg_length = len(message.content)
+        base_xp = randint(15, 25)
+        length_bonus = min(msg_length // 20, 10)  # +1 XP per 20 chars, capped at +10
+        xp_gain = base_xp + length_bonus
+
+        new_xp = prev_xp + xp_gain
         prev_level = self._get_level_from_xp(prev_xp)
         new_level = self._get_level_from_xp(new_xp)
 
+        # Save XP and track user
         self.storage.set(xp_key, new_xp)
         self.storage.add(f"{server_id}:players", user_id)
 
+        # 🎉 Level up
         if new_level > prev_level:
             await message.channel.send(f"{message.author.mention} leveled up to **Level {new_level}**! 🚀")
             await self.assign_level_roles(message.author)
-
-
     @commands.command(name="alllevels")
     async def alllevels(self, ctx):
         """DMs the author all stored level data in a TXT file"""

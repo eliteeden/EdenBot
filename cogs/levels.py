@@ -12,7 +12,6 @@ import json
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 import requests 
 from constants import ROLES
-import DiscordLevelingCard.DiscordLevelingCard as DLC
 
 
 log = logging.getLogger(__name__)

@@ -278,9 +278,6 @@ class Levels(commands.Cog):
                 member: User = (await self.bot.fetch_user(member.id))
             except NotFound:
                 member = self.bot.get_user(member.id) or member
-            
-            # Use a special banner image for members with the specified role
-            custom_border = Image.open("media/rank/special_banner.png").convert("RGBA")
             if member.banner and member.banner.is_animated():
                 await member.banner.with_format("gif").save(f"/tmp/avatar.gif")
                 custom_border = Image.open(f"/tmp/avatar.gif").convert("RGBA")

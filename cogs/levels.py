@@ -582,7 +582,7 @@ class DummyStorage:
         with open(filepath, "w") as f:
             json.dump(json_ready, f, indent=4)
 
-#TODO: learn how to merge commits
+#TODO: Learn how to merge commits
 # 🔧 Cog setup function
 async def setup(bot: commands.Bot):
     storage = DummyStorage()

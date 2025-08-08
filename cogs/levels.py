@@ -126,7 +126,7 @@ class Levels(commands.Cog):
         # Define card appearance
 
         card_settings = DLC.Settings(
-            background="https://i.imgur.com/3fJ1P4Q.png",  # dark gray
+            background="files/Screenshot_20250808_060727_Instagram.jpg",  # dark gray
             text_color="white",
             bar_color="#66ff66"
         )

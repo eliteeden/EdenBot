@@ -7,6 +7,7 @@ import asyncio
 import logging
 import os
 import io 
+import re
 import aiohttp
 from urllib.parse import quote
 from random import randint
@@ -165,9 +166,14 @@ class Levels(commands.Cog):
             ]
             rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
 
-            # 🌐 Build API URL safely
-            avatar_url = member.display_avatar.url
-            username = quote(member.display_name)
+            # ✅ Clean avatar URL
+            avatar_url = str(member.display_avatar.with_format("png").with_size(1024))
+
+            # ✅ Strip emojis and unsafe characters from username
+            clean_name = re.sub(r"[^\w\s-]", "", member.display_name)
+            username = quote(clean_name)
+
+            # 🌐 Build API URL
             api_url = (
                 "https://vacefron.nl/api/rankcard?"
                 f"username={username}"
@@ -178,10 +184,10 @@ class Levels(commands.Cog):
                 f"&rank={rank}"
             )
 
-            # 🐛 Send debug info to Discord
+            # 🐛 Debug info
             await ctx.send(
                 f"🔧 **Debug Info**\n"
-                f"Username: `{member.display_name}`\n"
+                f"Username: `{clean_name}`\n"
                 f"Avatar URL: `{avatar_url}`\n"
                 f"Level: `{level}`\n"
                 f"XP in Level: `{xp_in_level}`\n"
@@ -190,9 +196,12 @@ class Levels(commands.Cog):
                 f"API URL: `{api_url}`"
             )
 
-            # 📥 Fetch image from API with timeout
+            # 📥 Fetch image with headers
+            headers = {
+                "User-Agent": "Mozilla/5.0"
+            }
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-                async with session.get(api_url) as resp:
+                async with session.get(api_url, headers=headers) as resp:
                     if resp.status != 200:
                         await ctx.send(f"❌ API request failed with status code: `{resp.status}`")
                         embed = discord.Embed(
@@ -218,7 +227,6 @@ class Levels(commands.Cog):
 
         except Exception as e:
             await ctx.send(f"💥 Exception occurred: `{str(e)}`")
-
 
 
     @commands.command(name="leaderboard", aliases=["lb"])

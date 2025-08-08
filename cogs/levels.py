@@ -11,7 +11,7 @@ import json
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 import requests 
 from constants import ROLES
-from DiscordLevelingCard.DiscordLevelingCard import RankCard, Settings
+import DiscordLevelingCard.DiscordLevelingCard as DLC
 
 
 log = logging.getLogger(__name__)
@@ -124,14 +124,14 @@ class Levels(commands.Cog):
         ]
         rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
         # Define card appearance
-        card_settings = Settings(
+        card_settings = DLC.Settings(
             background="dark",         # Can be a color name or image URL
             text_color="white",
             bar_color="#66ff66"
         )
 
         # Create the card object
-        card = RankCard(    
+        card = DLC.RankCard(    
             settings=card_settings,
             avatar=member.display_avatar.url,
             level=level,

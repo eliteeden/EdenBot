@@ -254,7 +254,7 @@ class Levels(commands.Cog):
         
         # Load rank card image (with semi-transparent background)
         img = Image.open(image_path).convert("RGBA")
-        
+        # aaa
         # Define border size
         border_size = 20
         

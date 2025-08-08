@@ -288,7 +288,7 @@ class Levels(commands.Cog):
                 await member.banner.with_format("png").save(f"/tmp/avatar.png")
                 custom_border = Image.open(f"/tmp/avatar.png").convert("RGBA")
             else:
-                custom_border = Image.open("/media/rank/komi.jpg").convert("RGBA")
+                custom_border = Image.open("media/rank/komi.jpg").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
 
             # Composite border over background

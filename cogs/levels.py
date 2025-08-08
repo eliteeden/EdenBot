@@ -263,7 +263,7 @@ class LevelsCog(commands.Cog):
         elif level >= 75:
             xp_color = "#FF003C"  # Red
         elif level >= 50:
-            xp_color = "#800080"  # Purple
+            xp_color = "#9417CA"  # Purple
         elif level >= 30:
             xp_color = "#30B924"  # Green
         elif level >= 20:

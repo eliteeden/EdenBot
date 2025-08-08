@@ -36,14 +36,20 @@ class RANKCARD():
         font = ImageFont.truetype(font=f"arial/arialceb.ttf", size=50)
         font2 = ImageFont.truetype(font=f"arial/ArialCE.ttf", size=25)
 
-        # add text
-        d.text((260, 100),username,(255,255,255), font=font)
-        d.text((740, 130),f"{current_xp}/{next_level_xp} XP",(255,255,255), font=font2)
-        d.text((650, 50),f"LEVEL {level}",xp_color, font=font)
-        d.text((260, 50),f"RANK #{rank}",(255,255,255), font=font2)
+        # Round XP values
+        rounded_current_xp = format(current_xp, '.3g')
+        rounded_next_level_xp = format(next_level_xp, '.3g')
 
+        # Add text
+        d.text((260, 100), username, (255,255,255), font=font)
+        d.text((740, 130), f"{rounded_current_xp}/{rounded_next_level_xp} XP", (255,255,255), font=font2)
+        d.text((650, 50), f"LEVEL {level}", xp_color, font=font)
+        d.text((260, 50), f"RANK #{rank}", (255,255,255), font=font2)
 
-        # save image
+        # Add gray border
+        img = ImageOps.expand(img, border=5, fill='gray')
+
+        # Save image
         img.save(f"{os.getcwd()}/rankcards2.png")
         return f"{os.getcwd()}/rankcards2.png"
     

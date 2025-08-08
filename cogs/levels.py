@@ -181,9 +181,9 @@ class Levels(commands.Cog):
             xp = int(self.storage.get(xp_key) or 0)
 
             level = self._get_level_from_xp(xp)
-            # Ensure numeric conversion
             xp_in_level = xp - sum(float(self._get_level_xp(i)) for i in range(level))
             level_xp = float(self._get_level_xp(level) or 1)
+
             # Get rank
             players = self.storage.get(f"{server_id}:players") or []
             player_xps = [
@@ -207,8 +207,10 @@ class Levels(commands.Cog):
                 else:
                     return str(int(x))
 
-            formatted_xp_in_level = format_xp(round_sig(xp_in_level))
-            formatted_level_xp = format_xp(round_sig(level_xp))
+            raw_xp_in_level = float(xp_in_level)
+            raw_level_xp = float(level_xp)
+            formatted_xp_in_level = format_xp(round_sig(raw_xp_in_level))
+            formatted_level_xp = format_xp(round_sig(raw_level_xp))
 
             # Prepare rank card data
             username = member.display_name
@@ -223,10 +225,12 @@ class Levels(commands.Cog):
                 avatar=avatar_url,
                 level=level,
                 rank=rank,
-                current_xp=formatted_xp_in_level,
+                current_xp=raw_xp_in_level,       # for progress bar
+                next_level_xp=raw_level_xp,       # for progress bar
                 custom_background=custom_background,
                 xp_color=xp_color,
-                next_level_xp=formatted_level_xp
+                formatted_current_xp=formatted_xp_in_level,  # for display
+                formatted_next_level_xp=formatted_level_xp   # for display
             )
 
             # Apply gray border
@@ -242,6 +246,7 @@ class Levels(commands.Cog):
 
         except Exception as e:
             await ctx.send(f"⚠️ Error generating rank card: {str(e)}")
+            
     @commands.command(name="oldrank", aliases=["trank"])
     async def oldrank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]
         try:

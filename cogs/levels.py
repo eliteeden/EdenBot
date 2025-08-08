@@ -233,11 +233,31 @@ class Levels(commands.Cog):
                 formatted_next_level_xp=formatted_level_xp
             )
 
-            # Apply gray border
-            img = Image.open(image_path)
-            img_with_border = ImageOps.expand(img, border=15, fill='darkgray')
-            bordered_path = f"{os.getcwd()}/rankcards2.png"
-            img_with_border.save(bordered_path)
+            # Load the main image
+            img = Image.open(image_path).convert("RGBA")
+
+            # Define border size
+            border_size = 20
+
+            # Create canvas size
+            canvas_size = (img.width + border_size * 2, img.height + border_size * 2)
+
+            # Load and resize your custom border image
+            custom_border = Image.open("komi.jpg").convert("RGBA")
+            custom_border = custom_border.resize(canvas_size)
+
+            # Create a blank canvas
+            canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
+
+            # Paste the main image in the center
+            canvas.paste(img, (border_size, border_size), img)
+
+            # Overlay the custom border
+            final_img = Image.alpha_composite(canvas, custom_border)
+
+            # Save the result
+            bordered_path = os.path.join(os.getcwd(), "rankcards2.png")
+            final_img.save(bordered_path)
 
             # Send image
             file = discord.File(bordered_path, filename="rank.jpg")

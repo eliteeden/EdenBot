@@ -274,31 +274,36 @@ class Levels(commands.Cog):
         # Create semi-transparent outer background
         background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
 
-        # Check if member has an animated banner
-        # Check if member has a specified role (e.g., "SpecialBanner")
-        specified_role_id = 997068135112921170
-        has_specified_role = any(role.id == specified_role_id for role in getattr(member, "roles", []))
+        # 🎯 List of role IDs that qualify for special banners
+        special_role_ids = [997068135112921170, 995294676385009664, 987654321098765432]  # Add more as needed
 
+        # ✅ Check if member has any of the specified roles
+        has_specified_role = any(role.id in special_role_ids for role in getattr(member, "roles", []))
+
+        # 🎨 Prepare custom border
         if has_specified_role:
-            # Use a special banner image for members with the specified role
+            # Default special banner
             custom_border = Image.open("media/rank/special_banner.png").convert("RGBA")
-            if member.banner and member.banner.is_animated():
-                await member.banner.with_format("gif").save(f"/tmp/avatar.gif")
-                custom_border = Image.open(f"/tmp/avatar.gif").convert("RGBA")
-                custom_border = custom_border.resize(canvas_size)
 
-                # Extract first frame from animated banner
-                first_frame = next(ImageSequence.Iterator(custom_border)).convert("RGBA").resize(canvas_size)
+            if member.banner:
+                if member.banner.is_animated():
+                    await member.banner.with_format("gif").save("/tmp/avatar.gif")
+                    gif = Image.open("/tmp/avatar.gif").convert("RGBA")
 
-                # Composite the frame onto the background
-                first_frame.save("/tmp/avatar.png")
-                custom_border = first_frame.copy().convert("RGBA")
-            elif member.banner:
-                await member.banner.with_format("png").save(f"/tmp/avatar.png")
-                custom_border = Image.open(f"/tmp/avatar.png").convert("RGBA")
+                    # Extract first frame and resize
+                    first_frame = next(ImageSequence.Iterator(gif)).convert("RGBA").resize(canvas_size)
+
+                    # Save and use as custom border
+                    first_frame.save("/tmp/avatar.png")
+                    custom_border = first_frame.copy()
+                else:
+                    await member.banner.with_format("png").save("/tmp/avatar.png")
+                    custom_border = Image.open("/tmp/avatar.png").convert("RGBA")
         else:
-            await ctx.send("debug: no banner on user")
+            # await ctx.send("debug: no banner or no special role on user")
             custom_border = Image.open("media/rank/komi.jpg").convert("RGBA")
+
+        # ✅ Final resize to match canvas
         custom_border = custom_border.resize(canvas_size)
         
         # Composite border over background

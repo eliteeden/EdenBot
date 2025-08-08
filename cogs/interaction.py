@@ -147,7 +147,7 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name="xkcd", aliases=["comic"])
     @commands.has_any_role("Fden Bot Perms", "happy", 1118650807785619586, ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
-    async def xkcd(self, ctx: commands.Context, *, title: str = None):
+    async def xkcd(self, ctx: commands.Context, *, title: str = ""):
         """Fetches an xkcd comic by title. If no title is given, returns the latest comic."""
 
         return await self.web(ctx, search_msg="site:xkcd.com " + title)

@@ -141,6 +141,7 @@ class Levels(commands.Cog):
 
     
 
+
     @commands.command(name="rank", aliases=["irank"])
     async def rank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
         try:
@@ -165,32 +166,39 @@ class Levels(commands.Cog):
             ]
             rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
 
-            # Build the API URL
-            avatar_url = member.display_avatar.url
-            username = member.display_name
-
+            # 🌐 Build API URL
             api_url = (
-                f"https://vacefron.nl/api/rankcard?"
-                f"username={username}&avatar={avatar_url}"
-                f"&level={level}&rank={rank}"
-                f"&currentxp={xp_in_level}&nextlevelxp={level_xp}"
+                "https://vacefron.nl/api/rankcard?"
+                f"username={member.name}"
+                f"&avatar={member.display_avatar.url}"
+                f"&level={level}"
+                f"&currentxp={xp_in_level}"
+                f"&nextlevelxp={level_xp}"
+                f"&rank={rank}"
             )
 
-            # Fetch the image
+            # 📥 Fetch image from API
             async with aiohttp.ClientSession() as session:
                 async with session.get(api_url) as resp:
                     if resp.status != 200:
-                        await ctx.send("⚠️ Failed to generate rank card.")
+                        await ctx.send("Failed to generate rank card.")
                         return
-                    data = await resp.read()
+                    image_bytes = await resp.read()
 
-            # Send the image
-            file = discord.File(io.BytesIO(data), filename="rankcard.png")
-            await ctx.send(file=file)
+            file = discord.File(fp=io.BytesIO(image_bytes), filename="rankcard.png")
+
+            await ctx.send(
+                content=(
+                    f"**{member.display_name}'s Rank**\n"
+                    f"Level: {level}\n"
+                    f"Rank: #{rank}\n"
+                    f"XP: {xp_in_level}/{level_xp} (Total: {xp})"
+                ),
+                file=file
+            )
 
         except Exception as e:
             await ctx.send(f"⚠️ Error getting rank: {str(e)}")
-
     @commands.command(name="leaderboard", aliases=["lb"])
     async def leaderboard_cmd(self, ctx):
         """Displays the server's leaderboard with pagination"""

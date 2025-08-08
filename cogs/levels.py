@@ -7,12 +7,10 @@ import asyncio
 import logging
 import os
 import io 
-import re
-import aiohttp
-from urllib.parse import quote
+from rankcards import RANKCARD
 from random import randint
 import json
-from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
+from PIL import Image, ImageDraw, ImageFont
 import requests 
 from constants import ROLES
 
@@ -167,6 +165,58 @@ class Levels(commands.Cog):
             await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
     #Smoking that mee6 pack
 
+
+    @commands.command(name="nrank", aliases=["m6rank"])
+    async def newrank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
+        try:
+            member = member or ctx.author
+            if self.is_ban(member):  # Method to check bans
+                return
+
+            server_id = str(ctx.guild.id)
+            user_id = str(member.id)
+
+            # Get XP and level
+            xp_key = f"{server_id}:{user_id}:xp"
+            xp = int(self.storage.get(xp_key) or 0)
+
+            level = self._get_level_from_xp(xp)
+            xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
+            level_xp = self._get_level_xp(level) or 1  # Avoid division by zero
+
+            # Get rank
+            players = self.storage.get(f"{server_id}:players") or []
+            player_xps = [
+                int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
+                for pid in players
+            ]
+            rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
+
+            # Prepare rank card data
+            username = member.display_name
+            avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+            custom_background = "#1E1E2F"  # You can randomize or customize this
+            xp_color = "#00FFAA"  # Aqua green
+
+            # Generate rank card image
+            card = RANKCARD()
+            image_path = card.rank_card(
+                username=username,
+                avatar=avatar_url,
+                level=level,
+                rank=rank,
+                current_xp=xp_in_level,
+                custom_background=custom_background,
+                xp_color=xp_color,
+                next_level_xp=level_xp
+            )
+
+            # Send image
+            file = discord.File(image_path, filename="rank.jpg")
+            await ctx.send(file=file)
+
+        except Exception as e:
+            await ctx.send(f"⚠️ Error generating rank card: {str(e)}")
 
     @commands.command(name="oldrank", aliases=["trank"])
     async def oldrank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]

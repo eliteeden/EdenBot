@@ -283,35 +283,12 @@ class Levels(commands.Cog):
             first_frame = next(ImageSequence.Iterator(custom_border)).convert("RGBA").resize(canvas_size)
 
             # Composite the frame onto the background
-            composed = background.copy()
-            composed.paste(first_frame, (0, 0), first_frame)  # Use alpha mask for transparency
-
-            # Save the final rank card
-            still_path = "/tmp/rank_card.png"
-            composed.save(still_path)
-
-            custom_border = Image.open(f"/tmp/avatar.png").convert("RGBA")
-            # Send the still image
-
-            custom_border = custom_border.resize(canvas_size)
-        
-            # Composite border over background
-            background.paste(custom_border, (0, 0), custom_border)
-            
-            # Paste rank card in center (no extra opacity adjustment needed)
-            background.paste(img, (border_size, border_size), img)
-
-            # Save final image
-            bordered_path = "/tmp/rank_card.png"
-            background.save(bordered_path)
-
-            file = discord.File(bordered_path, filename="rank.png")
-            await ctx.send(file=file)
-            return
+            first_frame.save("/tmp/avatar.png")
+            custom_border = first_frame.copy().convert("RGBA")
 
         
         # Load and resize custom border image
-        if member.banner:
+        elif member.banner:
             await member.banner.with_format("png").save(f"/tmp/avatar.png")
             custom_border = Image.open(f"/tmp/avatar.png").convert("RGBA")
         else:

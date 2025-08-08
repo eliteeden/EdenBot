@@ -116,6 +116,7 @@ class Levels(commands.Cog):
         user_id = str(member.id)
         xp = int(self.storage.get(f"{guild_id}:{user_id}:xp") or 0)
         level = self._get_level_from_xp(xp)
+        # aaaa
 
         for milestone, role_id in milestone_roles.items():
             role = member.guild.get_role(role_id)

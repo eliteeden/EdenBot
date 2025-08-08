@@ -118,8 +118,8 @@ class Levels(commands.Cog):
         user_id = str(member.id)
         xp = int(self.storage.get(f"{guild_id}:{user_id}:xp") or 0)
         level = self._get_level_from_xp(xp)
-        
         # aaaa
+
         for milestone, role_id in milestone_roles.items():
             role = member.guild.get_role(role_id)
             if role and level >= milestone and role not in member.roles:
@@ -254,7 +254,7 @@ class Levels(commands.Cog):
         
         # Load rank card image (with semi-transparent background)
         img = Image.open(image_path).convert("RGBA")
-        # aaa
+        
         # Define border size
         border_size = 20
         
@@ -272,28 +272,38 @@ class Levels(commands.Cog):
             member = self.bot.get_user(member.id) or member
         
         # Create semi-transparent outer background
+        background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
+
         if member.banner and member.banner.is_animated():
             await member.banner.with_format("gif").save(f"/tmp/avatar.gif")
             custom_border = Image.open(f"/tmp/avatar.gif").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
-            frames: list[Image.Image] = []
-            for frame in ImageSequence.Iterator(custom_border):
-                frames.append(frame.copy().convert("RGB").resize(canvas_size))
-            background = frames[1]
-            background.info['duration'] = 100  # Set frame duration for GIF
-            background.info['loop'] = 0  # Loop indefinitely
-            background.save("/tmp/rank_card.gif", save_all=True, append_images=frames[1:])
-            file = discord.File(f"/tmp/rank_card.gif", filename="rank.gif")
-            
+
+            # Extract first frame from animated banner
+            first_frame = next(ImageSequence.Iterator(custom_border)).convert("RGBA").resize(canvas_size)
+
+            # Composite the frame onto the background
+            composed = background.copy()
+            composed.paste(first_frame, (0, 0), first_frame)  # Use alpha mask for transparency
+
+            # Save the final rank card
+            still_path = "/tmp/rank_card.png"
+            composed.save(still_path)
+
+            custom_border = Image.open(f"/tmp/avatar.png").convert("RGBA")
+            # Send the still image
+
+            custom_border = custom_border.resize(canvas_size)
+        
             # Composite border over background
             background.paste(custom_border, (0, 0), custom_border)
-
+            
             # Paste rank card in center (no extra opacity adjustment needed)
             background.paste(img, (border_size, border_size), img)
-            await ctx.send(file=file)
+            
             return
+
         
-        background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
         # Load and resize custom border image
         if member.banner:
             await member.banner.with_format("png").save(f"/tmp/avatar.png")

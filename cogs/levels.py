@@ -118,7 +118,8 @@ class Levels(commands.Cog):
         user_id = str(member.id)
         xp = int(self.storage.get(f"{guild_id}:{user_id}:xp") or 0)
         level = self._get_level_from_xp(xp)
-
+        
+        # aaaa
         for milestone, role_id in milestone_roles.items():
             role = member.guild.get_role(role_id)
             if role and level >= milestone and role not in member.roles:
@@ -233,7 +234,7 @@ class Levels(commands.Cog):
             xp_color = "#00FFFF"  # Cyan
         else:
             xp_color = "#070DB8"  # Default blue
-        background_opacity = 100  # 👈 Only affects the rank card's background
+        background_opacity = 130  # 👈 Only affects the rank card's background
         
         # Generate rank card image
         card = RANKCARD()

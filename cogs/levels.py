@@ -20,11 +20,43 @@ from constants import ROLES
 
 log = logging.getLogger(__name__)
 
-class Levels(commands.Cog):
-    def __init__(self, bot: commands.Bot, storage):
+class LevelsCog(commands.Cog):
+    class DummyStorage:
+        def __init__(self):
+            self.db = {}
+
+        def get(self, key):
+            return self.db.get(key)
+
+        def set(self, key, value):
+            self.db[key] = value
+
+        def add(self, key, value):
+            self.db.setdefault(key, set()).add(value)
+
+        def load_if_empty(self, filepath="levels_data.json"):
+            if not self.db and os.path.exists(filepath):
+                log.info("✅ Found cached data. Loading from file...")
+                with open(filepath, "r") as f:
+                    data = json.load(f)
+                for key, value in data.items():
+                    self.db[key] = set(value) if isinstance(value, list) else value
+            else:
+                log.info("📦 Using in-memory data (no reload).")
+
+        def export_to_json(self, filepath="levels_data.json"):
+            json_ready = {k: list(v) if isinstance(v, set) else v for k, v in self.db.items()}
+            with open(filepath, "w") as f:
+                json.dump(json_ready, f, indent=4)
+            log.info("💾 Data exported to JSON.")
+
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.storage = storage
+        self.storage = self.DummyStorage()
         self.cooldowns = {}
+
+        # Load data once at startup
+        self.storage.load_if_empty()
 
     def _get_level_xp(self, level: int) -> int:
         # XP needed to reach the *next* level
@@ -573,4 +605,4 @@ async def setup(bot: commands.Bot):
     # Only load from file if memory is empty
     storage.load_if_empty()
 
-    await bot.add_cog(Levels(bot, storage))
+    await bot.add_cog(LevelsCog(bot))

@@ -6,6 +6,7 @@ from discord.ext import commands
 import asyncio
 import logging
 import os
+from math import log10, floor
 import io 
 from rankcards import RANKCARD
 from random import randint
@@ -195,7 +196,6 @@ class Levels(commands.Cog):
             def round_sig(x, sig=3):
                 if x == 0:
                     return 0
-                from math import log10, floor
                 return round(x, sig - int(floor(log10(abs(x)))) - 1)
 
             def format_xp(x):

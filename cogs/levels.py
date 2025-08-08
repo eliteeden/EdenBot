@@ -1,3 +1,4 @@
+from typing import Optional
 import discord
 from discord.ext import commands
 import asyncio
@@ -101,62 +102,59 @@ class Levels(commands.Cog):
 
 
     @commands.command(name="rank")
-    async def rank_cmd(self, ctx, member: discord.Member = None):
-        try:
-            member = member or ctx.author
-            if self.is_ban(member):
-                return
+    async def rank_cmd(self, ctx, member: Optional[discord.Member] = None):
+        member = member or ctx.author
+        if self.is_ban(member):
+            return
 
-            user_id = str(member.id)
-            server_id = str(ctx.guild.id)
-            xp_key = f"{server_id}:{user_id}:xp"
-            xp = int(self.storage.get(xp_key) or 0)
-            level = self._get_level_from_xp(xp)
-            xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
-            level_xp = self._get_level_xp(level)
-            players = self.storage.get(f"{server_id}:players") or set()
-            player_xps = [
-                int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
-                for pid in players
-            ]
-            rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
+        user_id = str(member.id)
+        server_id = str(ctx.guild.id)
+        xp_key = f"{server_id}:{user_id}:xp"
+        xp = int(self.storage.get(xp_key) or 0)
+        level = self._get_level_from_xp(xp)
+        xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
+        level_xp = self._get_level_xp(level)
+        players = self.storage.get(f"{server_id}:players") or set()
+        player_xps = [
+            int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
+            for pid in players
+        ]
+        rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
 
-            # Create image
-            width, height = 600, 150
-            background = Image.new("RGBA", (width, height), (30, 30, 30, 255))
-            draw = ImageDraw.Draw(background)
+        # Create image
+        width, height = 600, 150
+        background = Image.new("RGBA", (width, height), (30, 30, 30, 255))
+        draw = ImageDraw.Draw(background)
 
-            # Fonts
-            font_large = ImageFont.truetype("arial.ttf", 24)
-            font_small = ImageFont.truetype("arial.ttf", 18)
+        # Fonts
+        font_large = ImageFont.truetype("arial.ttf", 24)
+        font_small = ImageFont.truetype("arial.ttf", 18)
 
-            # Avatar
-            avatar_asset = member.display_avatar.replace(size=128)
-            avatar_bytes = await avatar_asset.read()
-            avatar = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA").resize((100, 100))
-            background.paste(avatar, (20, 25), avatar)
+        # Avatar
+        avatar_asset = member.display_avatar.replace(size=128)
+        avatar_bytes = await avatar_asset.read()
+        avatar = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA").resize((100, 100))
+        background.paste(avatar, (20, 25), avatar)
 
-            # Username and level
-            draw.text((140, 30), f"{member.name}", font=font_large, fill=(255, 255, 255))
-            draw.text((140, 65), f"Level: {level}", font=font_small, fill=(200, 200, 200))
-            draw.text((140, 90), f"Rank: #{rank}", font=font_small, fill=(200, 200, 200))
+        # Username and level
+        draw.text((140, 30), f"{member.name}", font=font_large, fill=(255, 255, 255))
+        draw.text((140, 65), f"Level: {level}", font=font_small, fill=(200, 200, 200))
+        draw.text((140, 90), f"Rank: #{rank}", font=font_small, fill=(200, 200, 200))
 
-            # Progress bar
-            bar_x, bar_y = 140, 120
-            bar_width, bar_height = 400, 20
-            progress = xp_in_level / level_xp if level_xp else 0
-            draw.rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], fill=(50, 50, 50))
-            draw.rectangle([bar_x, bar_y, bar_x + int(bar_width * progress), bar_y + bar_height], fill=(102, 255, 102))  # light green
+        # Progress bar
+        bar_x, bar_y = 140, 120
+        bar_width, bar_height = 400, 20
+        progress = xp_in_level / level_xp if level_xp else 0
+        draw.rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], fill=(50, 50, 50))
+        draw.rectangle([bar_x, bar_y, bar_x + int(bar_width * progress), bar_y + bar_height], fill=(102, 255, 102))  # light green
 
-            draw.text((bar_x + bar_width + 10, bar_y), f"{xp_in_level}/{level_xp}", font=font_small, fill=(255, 255, 255))
+        draw.text((bar_x + bar_width + 10, bar_y), f"{xp_in_level}/{level_xp}", font=font_small, fill=(255, 255, 255))
 
-            # Send image
-            with io.BytesIO() as image_binary:
-                background.save(image_binary, "PNG")
-                image_binary.seek(0)
-                await ctx.send(file=discord.File(fp=image_binary, filename="rank.png"))
-        except Exception as e:
-            await ctx.send(f"⚠️ Error generating rank image: {str(e)}")
+        # Send image
+        with io.BytesIO() as image_binary:
+            background.save(image_binary, "PNG")
+            image_binary.seek(0)
+            await ctx.send(file=discord.File(fp=image_binary, filename="rank.png"))
 
     @commands.command(name="levels")
     async def levels_cmd(self, ctx):

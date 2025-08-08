@@ -243,21 +243,21 @@ class Levels(commands.Cog):
             canvas_size = (img.width + border_size * 2, img.height + border_size * 2)
 
             # Load and resize your custom border image
-            custom_border = Image.open("rankcard.png").convert("RGBA")
+            custom_border = Image.open("komi.jpg").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
 
             # Create a blank canvas
             canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
 
-            # Paste the main image in the center
-            canvas.paste(img, (border_size, border_size), img)
+            # Paste the border first (acts as background)
+            canvas.paste(custom_border, (0, 0))
 
-            # Overlay the custom border
-            final_img = Image.alpha_composite(canvas, custom_border)
+            # Paste the rank card on top, centered
+            canvas.paste(img, (border_size, border_size), img)
 
             # Save the result
             bordered_path = os.path.join(os.getcwd(), "rankcards2.png")
-            final_img.save(bordered_path)
+            canvas.save(bordered_path)
 
             # Send image
             file = discord.File(bordered_path, filename="rank.jpg")

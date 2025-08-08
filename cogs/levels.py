@@ -217,6 +217,7 @@ class Levels(commands.Cog):
             avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
             custom_background = "#000000"
             xp_color = "#AD8E4C"
+            background_opacity = 100  # 👈 Only affects the rank card's background
 
             # Generate rank card image
             card = RANKCARD()
@@ -230,10 +231,11 @@ class Levels(commands.Cog):
                 custom_background=custom_background,
                 xp_color=xp_color,
                 formatted_current_xp=formatted_xp_in_level,
-                formatted_next_level_xp=formatted_level_xp
+                formatted_next_level_xp=formatted_level_xp,
+                background_opacity=background_opacity  # 👈 Pass to card
             )
 
-            # Load transparent rank card
+            # Load rank card image (with semi-transparent background)
             img = Image.open(image_path).convert("RGBA")
 
             # Define border size
@@ -242,12 +244,11 @@ class Levels(commands.Cog):
             # Create canvas size
             canvas_size = (img.width + border_size * 2, img.height + border_size * 2)
 
-            # Define background color and opacity
+            # Define outer background color and opacity
             bg_color = (8, 2, 68)  # "#080244"
-            bg_opacity = 80        # Background opacity
-            rank_card_opacity = 100  # Rank card opacity
+            bg_opacity = 80
 
-            # Create semi-transparent background
+            # Create semi-transparent outer background
             background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
 
             # Load and resize custom border image
@@ -257,12 +258,7 @@ class Levels(commands.Cog):
             # Composite border over background
             background.paste(custom_border, (0, 0), custom_border)
 
-            # Adjust rank card opacity
-            r, g, b, a = img.split()
-            a = a.point(lambda p: p * (rank_card_opacity / 255))
-            img = Image.merge("RGBA", (r, g, b, a))
-
-            # Paste rank card with adjusted opacity
+            # Paste rank card in center (no extra opacity adjustment needed)
             background.paste(img, (border_size, border_size), img)
 
             # Save final image

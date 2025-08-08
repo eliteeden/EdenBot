@@ -15,10 +15,21 @@ class RANKCARD():
         custom_background,
         xp_color,
         formatted_current_xp,
-        formatted_next_level_xp
+        formatted_next_level_xp,
+        background_opacity=130  # 👈 New parameter
     ):
-        # Create backdrop
-        img = Image.new('RGB', (934, 282), color=custom_background)
+        # Convert hex to RGB
+        bg_rgb = tuple(int(custom_background[i:i+2], 16) for i in (1, 3, 5))
+
+        # Create transparent canvas
+        img = Image.new('RGBA', (934, 282), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        # Draw semi-transparent background
+        draw.rectangle(
+            [(0, 0), (934, 282)],
+            fill=bg_rgb + (background_opacity,)
+        )
 
         # Load avatar
         response = requests.get(avatar)
@@ -27,8 +38,8 @@ class RANKCARD():
         # Create circular mask
         bigsize = (img_avatar.size[0] * 3, img_avatar.size[1] * 3)
         mask = Image.new('L', bigsize, 0)
-        draw = ImageDraw.Draw(mask)
-        draw.ellipse((0, 0) + bigsize, fill=255)
+        draw_mask = ImageDraw.Draw(mask)
+        draw_mask.ellipse((0, 0) + bigsize, fill=255)
         mask = mask.resize(img_avatar.size)
         img_avatar.putalpha(mask)
 
@@ -37,19 +48,17 @@ class RANKCARD():
         img.paste(img_avatar, (50, 50), img_avatar)
 
         # Draw progress bar
-        d = ImageDraw.Draw(img)
-        progress = current_xp / next_level_xp if next_level_xp > 0 else 0
-        d = self.drawProgressBar(d, 260, 180, 575, 40, progress, bg="#000000", fg=xp_color)
+        draw = self.drawProgressBar(draw, 260, 180, 575, 40, current_xp / next_level_xp if next_level_xp > 0 else 0, bg="#000000", fg=xp_color)
 
         # Load fonts
         font = ImageFont.truetype("arial/arialceb.ttf", size=50)
         font2 = ImageFont.truetype("arial/ArialCE.ttf", size=25)
 
         # Add text
-        d.text((260, 100), username, fill=(255, 255, 255), font=font)
-        d.text((650, 100), f"{formatted_current_xp}/{formatted_next_level_xp} XP", fill=(255, 255, 255), font=font2)
-        d.text((650, 50), f"LEVEL {level}", fill=xp_color, font=font)
-        d.text((260, 50), f"RANK #{rank}", fill=(255, 255, 255), font=font2)
+        draw.text((260, 100), username, fill=(255, 255, 255), font=font)
+        draw.text((650, 100), f"{formatted_current_xp}/{formatted_next_level_xp} XP", fill=(255, 255, 255), font=font2)
+        draw.text((650, 50), f"LEVEL {level}", fill=xp_color, font=font)
+        draw.text((260, 50), f"RANK #{rank}", fill=(255, 255, 255), font=font2)
 
         # Add gray border
         img = ImageOps.expand(img, border=5, fill='gray')

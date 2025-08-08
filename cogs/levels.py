@@ -42,6 +42,7 @@ class Levels(commands.Cog):
         banned_roles = {"Muted"}
         return member.name in banned_names or any(role.name in banned_roles for role in member.roles)
     def create_image(self, user, rank, level, exp, next_exp):
+
         W, H = (960, 330)
         img = Image.open('media/rank/rankcard.png').convert('RGBA')
         draw = ImageDraw.Draw(img)
@@ -104,6 +105,11 @@ class Levels(commands.Cog):
 
         return img
     
+    async def cog_unload(self):
+        # 🧹 Automatically export data when cog is unloaded
+        self.storage.export_to_json()
+        print("🧼 Levels data auto-exported on shutdown.")
+
     async def assign_level_roles(self, member: discord.Member):
         milestone_roles = {
             10: 1000316894567485471,
@@ -269,8 +275,8 @@ class Levels(commands.Cog):
         background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
         # Check if member has an animated banner
         # Check if member has a specified role (e.g., "SpecialBanner")
-        specified_role_id = 997068135112921170
-        has_specified_role = any(role.id == specified_role_id for role in getattr(member, "roles", []))
+        specified_role_id = [997068135112921170, 995294676385009664]
+        has_specified_role = any(role.id in specified_role_id for role in getattr(member, "roles", []))
 
         if has_specified_role:
             # We need this for the banner for some reason
@@ -530,8 +536,6 @@ class Levels(commands.Cog):
         except discord.Forbidden:
             await ctx.send("⚠️ I couldn't DM you. Check your privacy settings.")
 
-
-# 💾 Dummy storage with JSON export
 class DummyStorage:
     def __init__(self):
         self.db = {}
@@ -545,35 +549,28 @@ class DummyStorage:
     def add(self, key, value):
         self.db.setdefault(key, set()).add(value)
 
-    def load_or_fetch_data(self):
-        filepath = "levels_data.json"
-
-        if os.path.exists(filepath):
+    def load_if_empty(self, filepath="levels_data.json"):
+        """Only load from file if memory is empty."""
+        if not self.db and os.path.exists(filepath):
             print("✅ Found cached data. Loading from file...")
             with open(filepath, "r") as f:
                 data = json.load(f)
-            return data
+            for key, value in data.items():
+                self.db[key] = set(value) if isinstance(value, list) else value
         else:
-            return
-
+            print("📦 Using in-memory data (no reload).")
 
     def export_to_json(self, filepath="levels_data.json"):
         json_ready = {k: list(v) if isinstance(v, set) else v for k, v in self.db.items()}
         with open(filepath, "w") as f:
             json.dump(json_ready, f, indent=4)
+        print("💾 Data exported to JSON.")
 
-#TODO: Learn how to merge commits
 # 🔧 Cog setup function
 async def setup(bot: commands.Bot):
     storage = DummyStorage()
 
-    # Load previously exported data (if it exists)
-    cached_data = storage.load_or_fetch_data()
-    if cached_data:
-        for key, value in cached_data.items():
-            if isinstance(value, list):
-                storage.db[key] = set(value)
-            else:
-                storage.db[key] = value
+    # Only load from file if memory is empty
+    storage.load_if_empty()
 
     await bot.add_cog(Levels(bot, storage))

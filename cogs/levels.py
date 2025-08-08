@@ -2,6 +2,8 @@ from encodings import aliases
 from typing import Optional
 import discord
 from discord import Member
+from discord import User
+from discord import NotFound
 from discord.ext import commands
 import asyncio
 import logging
@@ -11,7 +13,7 @@ import io
 from rankcards import RANKCARD
 from random import randint
 import json
-from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance, ImageSequence
 import requests 
 from constants import ROLES
 
@@ -168,127 +170,147 @@ class Levels(commands.Cog):
     #Smoking that mee6 pack
 
     @commands.command(name="rank", aliases=["m6rank"])
-    async def rank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
-        try:
-            member = member or ctx.author
-            if self.is_ban(member):
-                return
+    async def rank_cmd(self, ctx: commands.Context, member: Optional[Member] = None):  # pyright: ignore
+        
+        member: Member | User = member or ctx.author # type: ignore
+        if self.is_ban(member): # type: ignore
+            return
+        
+        server_id = str(ctx.guild.id)
+        user_id = str(member.id)
+        
+        # Get XP and level
+        xp_key = f"{server_id}:{user_id}:xp"
+        xp = int(self.storage.get(xp_key) or 0)
+        level = self._get_level_from_xp(xp)
+        xp_in_level = xp - sum(float(self._get_level_xp(i)) for i in range(level))
+        level_xp = float(self._get_level_xp(level) or 1)
+        
+        # Get rank
+        players = self.storage.get(f"{server_id}:players") or []
+        player_xps = [
+            int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
+            for pid in players
+        ]
 
-            server_id = str(ctx.guild.id)
-            user_id = str(member.id)
-
-            # Get XP and level
-            xp_key = f"{server_id}:{user_id}:xp"
-            xp = int(self.storage.get(xp_key) or 0)
-
-            level = self._get_level_from_xp(xp)
-            xp_in_level = xp - sum(float(self._get_level_xp(i)) for i in range(level))
-            level_xp = float(self._get_level_xp(level) or 1)
-
-            # Get rank
-            players = self.storage.get(f"{server_id}:players") or []
-            player_xps = [
-                int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
-                for pid in players
-            ]
-            rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
-
-            # Round and format XP
-            def round_sig(x, sig=3):
-                if x == 0:
-                    return 0
-                return round(x, sig - int(floor(log10(abs(x)))) - 1)
-
-            def format_xp(x):
-                x = float(x)
-                if x >= 1_000_000:
-                    return f"{x / 1_000_000:.1f}M"
-                elif x >= 1_000:
-                    return f"{x / 1_000:.1f}K"
-                else:
-                    return str(int(x))
-
-            raw_xp_in_level = float(xp_in_level)
-            raw_level_xp = float(level_xp)
-            formatted_xp_in_level = format_xp(round_sig(raw_xp_in_level))
-            formatted_level_xp = format_xp(round_sig(raw_level_xp))
-
-            # Prepare rank card data
-            username = member.name
-            avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
-            custom_background = "#000000"
-
-                        
-            # 🎨 Assign XP color based on level milestone
-            if level >= 100:
-                xp_color = "#FFD700"  # Gold
-            elif level >= 75:
-                xp_color = "#FF003C"  # Red
-            elif level >= 50:
-                xp_color = "#800080"  # Purple
-            elif level >= 30:
-                xp_color = "#30B924"  # Green
-            elif level >= 20:
-                xp_color = "#40E0B0"  # Turquoise
-            elif level >= 10:
-                xp_color = "#00FFFF"  # Cyan
+        rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
+        
+        # Round and format XP
+        def round_sig(x, sig=3):
+            if x == 0:
+                return 0
+            return round(x, sig - int(floor(log10(abs(x)))) - 1)
+        def format_xp(x):
+            x = float(x)
+            if x >= 1_000_000:
+                return f"{x / 1_000_000:.1f}M"
+            elif x >= 1_000:
+                return f"{x / 1_000:.1f}K"
             else:
-                xp_color = "#070DB8"  # Default blue
-
-            background_opacity = 100  # 👈 Only affects the rank card's background
-
-            # Generate rank card image
-            card = RANKCARD()
-            image_path = card.rank_card(
-                username=username,
-                avatar=avatar_url,
-                level=level,
-                rank=rank,
-                current_xp=raw_xp_in_level,
-                next_level_xp=raw_level_xp,
-                custom_background=custom_background,
-                xp_color=xp_color,
-                formatted_current_xp=formatted_xp_in_level,
-                formatted_next_level_xp=formatted_level_xp,
-                background_opacity=background_opacity  # 👈 Pass to card
-            )
-
-            # Load rank card image (with semi-transparent background)
-            img = Image.open(image_path).convert("RGBA")
-
-            # Define border size
-            border_size = 20
-
-            # Create canvas size
-            canvas_size = (img.width + border_size * 2, img.height + border_size * 2)
-
-            # Define outer background color and opacity
-            bg_color = (8, 2, 68)  # "#080244"
-            bg_opacity = 80
-
-            # Create semi-transparent outer background
-            background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
-
-            # Load and resize custom border image
-            custom_border = Image.open("media/rank/komi.jpg").convert("RGBA")
+                return str(int(x))
+        
+        raw_xp_in_level = float(xp_in_level)
+        raw_level_xp = float(level_xp)
+        formatted_xp_in_level = format_xp(round_sig(raw_xp_in_level))
+        formatted_level_xp = format_xp(round_sig(raw_level_xp))
+        
+        # Prepare rank card data
+        username = member.name
+        avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+        custom_background = "#000000"
+        
+        # 🎨 Assign XP color based on level milestone
+        if level >= 100:
+            xp_color = "#FFD700"  # Gold
+        elif level >= 75:
+            xp_color = "#FF003C"  # Red
+        elif level >= 50:
+            xp_color = "#800080"  # Purple
+        elif level >= 30:
+            xp_color = "#30B924"  # Green
+        elif level >= 20:
+            xp_color = "#40E0B0"  # Turquoise
+        elif level >= 10:
+            xp_color = "#00FFFF"  # Cyan
+        else:
+            xp_color = "#070DB8"  # Default blue
+        background_opacity = 100  # 👈 Only affects the rank card's background
+        
+        # Generate rank card image
+        card = RANKCARD()
+        image_path = card.rank_card(
+            username=username,
+            avatar=avatar_url,
+            level=level,
+            rank=rank,
+            current_xp=raw_xp_in_level,
+            next_level_xp=raw_level_xp,
+            custom_background=custom_background,
+            xp_color=xp_color,
+            formatted_current_xp=formatted_xp_in_level,
+            formatted_next_level_xp=formatted_level_xp,
+            background_opacity=background_opacity  # 👈 Pass to card
+        )
+        
+        # Load rank card image (with semi-transparent background)
+        img = Image.open(image_path).convert("RGBA")
+        
+        # Define border size
+        border_size = 20
+        
+        # Create canvas size
+        canvas_size = (img.width + border_size * 2, img.height + border_size * 2)
+        
+        # Define outer background color and opacity
+        bg_color = (8, 2, 68)  # "#080244"
+        bg_opacity = 80
+        
+        # We need this for the banner for some reason
+        try:
+            member: User = (await self.bot.fetch_user(member.id))
+        except NotFound:
+            member = self.bot.get_user(member.id) or member
+        
+        # Create semi-transparent outer background
+        background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
+        if member.banner and member.banner.is_animated():
+            await member.banner.with_format("gif").save(f"/tmp/avatar.gif")
+            custom_border = Image.open(f"/tmp/avatar.gif").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
-
-            # Composite border over background
-            background.paste(custom_border, (0, 0), custom_border)
-
-            # Paste rank card in center (no extra opacity adjustment needed)
-            background.paste(img, (border_size, border_size), img)
-
-            # Save final image
-            bordered_path = os.path.join(os.getcwd(), "media/rank/rankcard2.png")
-            background.save(bordered_path)
-
-            # Send image
-            file = discord.File(bordered_path, filename="rank.jpg")
+            frames = []
+            for frame in ImageSequence.Iterator(custom_border):
+                frames.append(frame.copy().convert("RGB").resize(canvas_size))
+            background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
+            background.info['duration'] = 100  # Set frame duration for GIF
+            background.info['loop'] = 0  # Loop indefinitely
+            background.save("/tmp/rank_card.gif", save_all=True, append_images=frames, duration=100, loop=0)
+            file = discord.File(f"/tmp/rank_card.gif", filename="rank.gif")
             await ctx.send(file=file)
-
-        except Exception as e:
-            await ctx.send(f"⚠️ Error generating rank card: {str(e)}")
+            return
+        
+        # Load and resize custom border image
+        if member.banner:
+            await member.banner.with_format("png").save(f"/tmp/avatar.png")
+            custom_border = Image.open(f"/tmp/avatar.png").convert("RGBA")
+        else:
+            await ctx.send("debug: no banner on user")
+            custom_border = Image.open("media/rank/komi.jpg").convert("RGBA")
+        custom_border = custom_border.resize(canvas_size)
+        
+        # Composite border over background
+        background.paste(custom_border, (0, 0), custom_border)
+        
+        # Paste rank card in center (no extra opacity adjustment needed)
+        background.paste(img, (border_size, border_size), img)
+        
+        # Save final image
+        bordered_path = "/tmp/rank_card.png"
+        background.save(bordered_path)
+        
+        # Send image
+        file = discord.File(bordered_path, filename="rank.png")
+        await ctx.send(file=file)
+        
     @commands.command(name="oldrank", aliases=["trank"])
     async def oldrank_cmd(self, ctx, member: discord.Member = None): # pyright: ignore[reportArgumentType]
         try:

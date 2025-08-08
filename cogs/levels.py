@@ -124,8 +124,9 @@ class Levels(commands.Cog):
         ]
         rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
         # Define card appearance
+
         card_settings = DLC.Settings(
-            background="dark",         # Can be a color name or image URL
+            background_color="#1a1a1a",  # dark gray
             text_color="white",
             bar_color="#66ff66"
         )

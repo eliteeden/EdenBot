@@ -14,8 +14,8 @@ class RANKCARD():
         next_level_xp,
         custom_background,
         xp_color,
-        formatted_current_xp,
-        formatted_next_level_xp
+        formatted_current_xp = None,
+        formatted_next_level_xp = None
     ):
         # Create backdrop
         img = Image.new('RGB', (934, 282), color=custom_background)

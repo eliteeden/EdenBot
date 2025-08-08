@@ -101,7 +101,7 @@ class Levels(commands.Cog):
             await ctx.send(f"✅ Imported {len(all_players)} players from MEE6.")
         except requests.exceptions.RequestException as e:
             await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
-
+    #Smoking that mee6 pack
     @commands.command(name="rank")
     async def rank_cmd(self, ctx, member: discord.Member = None):
         try:

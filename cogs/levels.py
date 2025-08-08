@@ -232,7 +232,7 @@ class Levels(commands.Cog):
             elif level >= 10:
                 xp_color = "#00FFFF"  # Cyan
             else:
-                xp_color = "#070DB8"  # Default bronze-like
+                xp_color = "#070DB8"  # Default blue
 
             background_opacity = 100  # 👈 Only affects the rank card's background
 

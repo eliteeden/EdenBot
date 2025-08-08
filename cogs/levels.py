@@ -103,47 +103,39 @@ class Levels(commands.Cog):
 
     @commands.command(name="rank")
     async def rank_cmd(self, ctx, member: discord.Member = None):
-        member = member or ctx.author
-        if self.is_ban(member):
-            return
+        try:
+            member = member or ctx.author
+            if self.is_ban(member):  # Your own method to check bans
+                return
 
-        server_id = str(ctx.guild.id)
-        user_id = str(member.id)
+            server_id = str(ctx.guild.id)
+            user_id = str(member.id)
 
-        xp_key = f"{server_id}:{user_id}:xp"
-        xp = int(self.storage.get(xp_key) or 0)
+            xp_key = f"{server_id}:{user_id}:xp"
+            xp = int(self.storage.get(xp_key) or 0)
 
-        level = self._get_level_from_xp(xp)
-        xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
-        level_xp = self._get_level_xp(level) or 1
+            level = self._get_level_from_xp(xp)
+            xp_in_level = xp - sum(self._get_level_xp(i) for i in range(level))
+            level_xp = self._get_level_xp(level) or 1  # Avoid division by zero
 
-        players = self.storage.get(f"{server_id}:players") or []
-        player_xps = [
-            int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
-            for pid in players
-        ]
-        rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
-        # Define card appearance
+            players = self.storage.get(f"{server_id}:players") or []
+            player_xps = [
+                int(self.storage.get(f"{server_id}:{pid}:xp") or 0)
+                for pid in players
+            ]
+            rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
 
-        card_settings = DLC.Settings(
-            background="files/Screenshot_20250808_060727_Instagram.jpg",  # dark gray
-            text_color="white",
-            bar_color="#66ff66"
-        )
+            # Send text-based rank info
+            await ctx.send(
+                f"**{member.display_name}'s Rank**\n"
+                f"Level: {level}\n"
+                f"Rank: #{rank}\n"
+                f"XP: {xp_in_level}/{level_xp} (Total: {xp})"
+            )
 
-        # Create the card object
-        card = DLC.RankCard(    
-            settings=card_settings,
-            avatar=member.display_avatar.url,
-            level=level,
-            current_exp=xp_in_level,
-            max_exp=level_xp,
-            username=member.name,
-            rank=rank
-        )
+        except Exception as e:
+            await ctx.send(f"⚠️ Error getting rank: {str(e)}")
 
-        # Generate the image
-        image = await card.card1()  # You can also use card2(), card3(), etc.
 
 
 

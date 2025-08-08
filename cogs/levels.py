@@ -300,7 +300,13 @@ class Levels(commands.Cog):
             
             # Paste rank card in center (no extra opacity adjustment needed)
             background.paste(img, (border_size, border_size), img)
-            
+
+            # Save final image
+            bordered_path = "/tmp/rank_card.png"
+            background.save(bordered_path)
+
+            file = discord.File(bordered_path, filename="rank.png"
+            await ctx.send(file=file)
             return
 
         

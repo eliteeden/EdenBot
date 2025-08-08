@@ -54,7 +54,7 @@ class Levels(commands.Cog):
         text = f"Rank: {rank}  Level: {level}"
         text2 = f"{exp}/{next_exp}"
 
-        font1 = ImageFont.truetype('arial/ARIAL.ttf', 24)
+        font1 = ImageFont.truetype('arial/ARIAL.TTF', 24)
         font2 = ImageFont.truetype('arial/arialceb.ttf', 17)
         font3 = ImageFont.truetype('arial/ArialMdm.ttf', 15)
 

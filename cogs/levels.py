@@ -273,21 +273,27 @@ class Levels(commands.Cog):
         
         # Create semi-transparent outer background
         background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
+
         if member.banner and member.banner.is_animated():
             await member.banner.with_format("gif").save(f"/tmp/avatar.gif")
             custom_border = Image.open(f"/tmp/avatar.gif").convert("RGBA")
             custom_border = custom_border.resize(canvas_size)
+
+            # Extract frames from animated banner
             frames = []
             for frame in ImageSequence.Iterator(custom_border):
                 frames.append(frame.copy().convert("RGB").resize(canvas_size))
-            background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))
-            background.info['duration'] = 100  # Set frame duration for GIF
-            background.info['loop'] = 0  # Loop indefinitely
-            background.save("/tmp/rank_card.gif", save_all=True, append_images=frames, duration=100, loop=0)
-            file = discord.File(f"/tmp/rank_card.gif", filename="rank.gif")
+
+            # Instead of saving as animated GIF, use first frame as still image
+            still_frame = frames[0]
+            still_path = "/tmp/rank_card.png"
+            still_frame.save(still_path)
+
+            # Send the still image
+            file = discord.File(still_path, filename="rank.png")
             await ctx.send(file=file)
             return
-        
+
         # Load and resize custom border image
         if member.banner:
             await member.banner.with_format("png").save(f"/tmp/avatar.png")

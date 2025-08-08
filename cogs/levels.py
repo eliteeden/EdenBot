@@ -8,6 +8,7 @@ import logging
 import os
 import io 
 import aiohttp
+from urllib.parse import quote
 from random import randint
 import json
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
@@ -141,7 +142,6 @@ class Levels(commands.Cog):
 
     
 
-
     @commands.command(name="rank", aliases=["irank"])
     async def rank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
         try:
@@ -166,10 +166,10 @@ class Levels(commands.Cog):
             ]
             rank = 1 + sum(1 for other_xp in player_xps if other_xp > xp)
 
-            # 🌐 Build API URL
+            # 🌐 Build API URL safely
             api_url = (
                 "https://vacefron.nl/api/rankcard?"
-                f"username={member.name}"
+                f"username={quote(member.name)}"
                 f"&avatar={member.display_avatar.url}"
                 f"&level={level}"
                 f"&currentxp={xp_in_level}"
@@ -177,11 +177,16 @@ class Levels(commands.Cog):
                 f"&rank={rank}"
             )
 
-            # 📥 Fetch image from API
-            async with aiohttp.ClientSession() as session:
+            # 📥 Fetch image from API with timeout
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
                 async with session.get(api_url) as resp:
                     if resp.status != 200:
-                        await ctx.send("Failed to generate rank card.")
+                        embed = discord.Embed(
+                            title="⚠️ Rank Card Error",
+                            description="Could not generate rank card image.",
+                            color=discord.Color.red()
+                        )
+                        await ctx.send(embed=embed)
                         return
                     image_bytes = await resp.read()
 
@@ -199,6 +204,8 @@ class Levels(commands.Cog):
 
         except Exception as e:
             await ctx.send(f"⚠️ Error getting rank: {str(e)}")
+
+
     @commands.command(name="leaderboard", aliases=["lb"])
     async def leaderboard_cmd(self, ctx):
         """Displays the server's leaderboard with pagination"""

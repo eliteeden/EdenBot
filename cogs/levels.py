@@ -2,6 +2,8 @@ from encodings import aliases
 from typing import Optional
 import discord
 from discord import Member
+from discord import User
+from discord import NotFound
 from discord.ext import commands
 import asyncio
 import logging
@@ -167,11 +169,11 @@ class Levels(commands.Cog):
     #Smoking that mee6 pack
 
     @commands.command(name="rank", aliases=["m6rank"])
-    async def rank_cmd(self, ctx, member: discord.Member = None):  # pyright: ignore[reportArgumentType]
+    async def rank_cmd(self, ctx: commands.Context, member: Optional[Member] = None):  # pyright: ignore
         try:
-            member = member or ctx.author
-            if self.is_ban(member):
+            if self.is_ban(member): # type: ignore
                 return
+            member: Member | User = member or ctx.author # type: ignore
 
             server_id = str(ctx.guild.id)
             user_id = str(member.id)
@@ -264,6 +266,12 @@ class Levels(commands.Cog):
             # Define outer background color and opacity
             bg_color = (8, 2, 68)  # "#080244"
             bg_opacity = 80
+
+            # We need this for the banner for some reason
+            try:
+                member: User = (await self.bot.fetch_user(member.id))
+            except NotFound:
+                member = self.bot.get_user(member.id) or member
 
             # Create semi-transparent outer background
             background = Image.new("RGBA", canvas_size, bg_color + (bg_opacity,))

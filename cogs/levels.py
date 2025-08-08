@@ -236,9 +236,9 @@ class Levels(commands.Cog):
                 image = self.create_image(member, rank, level, xp_in_level, level_xp)
                 image.save(image_binary, 'PNG')
                 image_binary.seek(0)
-                embed.set_image(url='attachment://image.png')
+                # embed.set_image(url='attachment://image.png')
                 # await ctx.send(file=discord.File(fp=image_binary, filename='image.png'), embed=embed)
-                await ctx.send(image)
+                await ctx.send('attachment://image.png')
 
         except Exception as e:
             await ctx.send(f"💥 Exception occurred: `{str(e)}`")

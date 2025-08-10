@@ -152,33 +152,15 @@ class InteractionCog(commands.Cog):
 
         async with ctx.typing():
             try:
-                if not title:
-                    # Get latest comic
-                    latest = requests.get("https://xkcd.com/info.0.json").json()
-                    await ctx.send(
-                        f"**xkcd #{latest['num']}: {latest['title']}**\n{latest['alt']}\n{latest['img']}"
-                    )
-                    return
-
-                # Get latest comic number
-                latest_num = requests.get("https://xkcd.com/info.0.json").json()["num"]
-
-                # Search for title match
-                for num in range(1, latest_num + 1):
-                    url = f"https://xkcd.com/{num}/info.0.json"
-                    response = requests.get(url)
-                    if response.status_code != 200:
-                        continue
-                    data = response.json()
-                    if title.lower() in data["title"].lower():
-                        await ctx.send(
-                            f"**xkcd #{data['num']}: {data['title']}**\n{data['alt']}\n{data['img']}"
-                        )
-                        return self.web(ctx, search_msg=data["title"])
-
-                await ctx.send(f"No xkcd comic found with title containing '{title}'.")
+                # Try to interpret the input as a comic number
+                num = int(title)
+                return await ctx.send(f"https://xkcd.com/{num}")
+            except ValueError:
+                # If it's not a number, treat it as a title and search
+                search_query = f"xkcd {title}" if title else "xkcd"
+                return await self.web(ctx, search_msg=search_query)
             except Exception as e:
-                await ctx.send(f"Error fetching xkcd comic: {str(e)}")
+                await ctx.send(f"⚠️ Error fetching xkcd comic: {str(e)}")
     
     @commands.command(name='web', aliases=['search', 'google'])
     async def web(self, ctx: commands.Context, *, search_msg: str):

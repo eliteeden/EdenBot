@@ -29,13 +29,14 @@ class RolesCog(commands.Cog):
             new_role = await guild.create_role(name=name, color=color, reason=f"Created by {ctx.author}")
 
             # Move the role to the desired position
-            await new_role.edit(position=new_position)
+            await new_role.set_position(new_position)
 
             await ctx.send(f"✅ Created role **{new_role.name}** above **{above_role.name}**.")
         except discord.Forbidden:
             await ctx.send("I don't have permission to manage roles or move that role.")
         except discord.HTTPException as e:
             await ctx.send(f"Failed to create or move role: {e}")
+
 
     @commands.command(name="delete_roles", aliases=["deleteroles", "delroles", 'delrole'])
     @commands.guild_only()

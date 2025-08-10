@@ -1,9 +1,6 @@
-from encodings import aliases
 from typing import Optional
 import discord
-from discord import Member
-from discord import User
-from discord import NotFound
+from discord import Member, User, NotFound
 from discord.ext import commands
 import asyncio
 import logging
@@ -568,39 +565,9 @@ class LevelsCog(commands.Cog):
         except discord.Forbidden:
             await ctx.send("⚠️ I couldn't DM you. Check your privacy settings.")
 
-class DummyStorage:
-    def __init__(self):
-        self.db = {}
-
-    def get(self, key):
-        return self.db.get(key)
-
-    def set(self, key, value):
-        self.db[key] = value
-
-    def add(self, key, value):
-        self.db.setdefault(key, set()).add(value)
-
-    def load_if_empty(self, filepath="levels_data.json"):
-        """Only load from file if memory is empty."""
-        if not self.db and os.path.exists(filepath):
-            print("✅ Found cached data. Loading from file...")
-            with open(filepath, "r") as f:
-                data = json.load(f)
-            for key, value in data.items():
-                self.db[key] = set(value) if isinstance(value, list) else value
-        else:
-            print("📦 Using in-memory data (no reload).")
-
-    def export_to_json(self, filepath="levels_data.json"):
-        json_ready = {k: list(v) if isinstance(v, set) else v for k, v in self.db.items()}
-        with open(filepath, "w") as f:
-            json.dump(json_ready, f, indent=4)
-        print("💾 Data exported to JSON.")
-
 # 🔧 Cog setup function
 async def setup(bot: commands.Bot):
-    storage = DummyStorage()
+    storage = LevelsCog.DummyStorage()
 
     # Only load from file if memory is empty
     storage.load_if_empty()

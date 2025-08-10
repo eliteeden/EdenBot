@@ -147,8 +147,13 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name="xkcd", aliases=["comic"])
     @commands.has_any_role("Fden Bot Perms", "happy", 1118650807785619586, ROLES.SERVER_BOOSTER, ROLES.MODERATOR)
+<<<<<<< HEAD
     async def xkcd(self, ctx: commands.Context, *, title: str = None):
         """Fetches an xkcd comic by number or title. If no input is given, returns the latest comic."""
+=======
+    async def xkcd(self, ctx: commands.Context, *, title: str = ""):
+        """Fetches an xkcd comic by title. If no title is given, returns the latest comic."""
+>>>>>>> 7dca3e575882c776d18b25f8198cff1d1df17597
 
         async with ctx.typing():
             try:

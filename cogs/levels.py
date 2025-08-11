@@ -269,7 +269,7 @@ class LevelsCog(commands.Cog):
             xp_color = "#00FFFF"  # Cyan
         else:
             xp_color = "#070DB8"  # Default blue
-        background_opacity = 130  # 👈 Only affects the rank card's background
+        background_opacity = 90  # 👈 Only affects the rank card's background
         
         # Generate rank card image
         card = RANKCARD()
@@ -291,7 +291,7 @@ class LevelsCog(commands.Cog):
         img = Image.open(image_path).convert("RGBA")
         
         # Define border size
-        border_size = 20
+        border_size = 12
         
         # Create canvas size
         canvas_size = (img.width + border_size * 2, img.height + border_size * 2)

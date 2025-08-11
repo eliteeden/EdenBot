@@ -30,7 +30,7 @@ class RolesCog(commands.Cog):
             new_role = await guild.create_role(name=name, color=color, reason=f"Created by {ctx.author}")
 
             # Move the role to the desired position
-            await ctx.guild.edit_role_positions(position={new_role:new_position})
+            await ctx.guild.edit_role_positions(positions={new_role:new_position})
 
             await ctx.send(f"✅ Created role **{new_role.name}** above **{above_role.name}**.")
         except discord.Forbidden:

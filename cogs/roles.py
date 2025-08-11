@@ -1,4 +1,4 @@
-
+from turtle import position
 import discord
 from discord.ext import commands
 import re
@@ -30,7 +30,7 @@ class RolesCog(commands.Cog):
             new_role = await guild.create_role(name=name, color=color, reason=f"Created by {ctx.author}")
 
             # Move the role to the desired position
-            await new_role.edit(position=new_position)
+            await ctx.guild.edit_role_positions(position={new_role:new_position})
 
             await ctx.send(f"✅ Created role **{new_role.name}** above **{above_role.name}**.")
         except discord.Forbidden:

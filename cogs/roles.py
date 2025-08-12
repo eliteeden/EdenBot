@@ -3,6 +3,8 @@ import discord
 from discord.ext import commands
 import re
 
+from constants import ROLES
+
 class RolesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -37,6 +39,79 @@ class RolesCog(commands.Cog):
             await ctx.send("I don't have permission to manage roles or move that role.")
         except discord.HTTPException as e:
             await ctx.send(f"Failed to create or move role: {e}")
+
+    @commands.command(name="reorderrole", aliases=["reorder", "moverole", 'raiserole'])
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def reorderrole(self, ctx, role: discord.Role, second_role: discord.Role):
+        """
+        Reorder a role to be above another role.
+        Usage:
+          - !reorderrole @Role1 @Role2
+        """
+        guild = ctx.guild
+        me = guild.me
+
+        if role.id == guild.id:
+            return await ctx.send("You cannot reorder the @everyone role.")
+        if second_role.id == guild.id:
+            return await ctx.send("You cannot reorder the @everyone role.")
+
+        if role.managed or second_role.managed:
+            return await ctx.send("Managed roles cannot be reordered.")
+
+        if role.position >= me.top_role.position or second_role.position >= me.top_role.position:
+            return await ctx.send("I cannot reorder roles that are above or equal to my top role.")
+
+        try:
+            # Reorder the roles
+            await guild.edit_role_positions(positions={role: second_role.position + 1})
+            await ctx.send(f"✅ Moved **{role.name}** above **{second_role.name}**.")
+        except discord.Forbidden:
+            await ctx.send("I don't have permission to manage roles.")
+        except discord.HTTPException as e:
+            await ctx.send(f"Failed to reorder roles: {e}") 
+
+    @commands.command(name="add_role", aliases=["addrole", "giverole"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    async def add_role(self, ctx, member: discord.Member, role: discord.Role):
+        """
+        Add a role to a member.
+        Usage:
+          - !add_role @Member @Role
+        """
+        if role in member.roles:
+            await ctx.send(f"{member.mention} already has the role {role.name}.")   
+
+        else:
+            try:
+                await member.add_roles(role, reason=f"Role added by {ctx.author} ({ctx.author.id})")
+                await ctx.send(f"✅ Added role **{role.name}** to {member.mention}.")
+            except discord.Forbidden:
+                await ctx.send("I don't have permission to add that role.")
+            except discord.HTTPException as e:
+                await ctx.send(f"Failed to add role: {e}")    
+
+    @commands.command(name="remove_role", aliases=["removerole","unassign"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    async def remove_role(self, ctx, member: discord.Member, role: discord.Role):
+        """
+        Remove a role from a member.
+        Usage:
+          - !remove_role @Member @Role
+        """
+        if role not in member.roles:
+            await ctx.send(f"{member.mention} does not have the role {role.name}.")
+        else:
+            try:
+                await member.remove_roles(role, reason=f"Role removed by {ctx.author} ({ctx.author.id})")
+                await ctx.send(f"✅ Removed role **{role.name}** from {member.mention}.")
+            except discord.Forbidden:
+                await ctx.send("I don't have permission to remove that role.")
+            except discord.HTTPException as e:
+                await ctx.send(f"Failed to remove role: {e}")
+       
 
 
     @commands.command(name="delete_roles", aliases=["deleteroles", "delroles", 'delrole'])

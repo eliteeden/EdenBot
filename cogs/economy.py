@@ -455,14 +455,14 @@ class EconomyCog(commands.Cog):
 
 
     @commands.command(name="daily")
-    @commands.cooldown(1, 8, commands.BucketType.user)  # 3-second cooldown for testing
+    @commands.cooldown(1, 86400, commands.BucketType.user)  # 3-second cooldown for testing
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards."""
         user = ctx.author
         user_id = str(user.id)
         base_earn = 5_000
         bonus_per_streak = 1_000
-        streak_window = 16  # seconds
+        streak_window = 172800  # seconds
 
         # Load streaks and last claim dates
         streaks = self.load_streaks()

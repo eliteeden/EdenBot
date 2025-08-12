@@ -468,17 +468,25 @@ class EconomyCog(commands.Cog):
         raw_data = streaks.get(user_id, {"streak": 0, "last_claim": None})
         user_data = {"streak": raw_data, "last_claim": None} if isinstance(raw_data, int) else raw_data
 
-        today = datetime.utcnow().date()
+        today = datetime.now().date()
 
         # Check if the streak should continue or reset
         if user_data["last_claim"] is not None:
-            last_claim_date = datetime.strptime(user_data["last_claim"], "%Y-%m-%d").date()
-            if today - last_claim_date == timedelta(days=1):
+            last_claim_time = datetime.fromisoformat(user_data["last_claim"])
+            now = datetime.now()
+            delta = now - last_claim_time
+
+            if delta.total_seconds() <= 8:
                 user_data["streak"] += 1
-            elif today - last_claim_date > timedelta(days=1):
+            else:
                 user_data["streak"] = 1
         else:
             user_data["streak"] = 1
+
+        # Update last claim timestamp
+        user_data["last_claim"] = datetime.now().isoformat()
+
+
 
         # Calculate earnings
         streak = user_data["streak"]
@@ -488,7 +496,7 @@ class EconomyCog(commands.Cog):
         self.add(user, total_earn)
 
         # Save updated streak info
-        user_data["last_claim"] = today.strftime("%Y-%m-%d")
+        user_data["last_claim"] = datetime.now().isoformat()
         streaks[user_id] = user_data
         self.save_streaks(streaks)
 

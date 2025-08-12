@@ -455,7 +455,7 @@ class EconomyCog(commands.Cog):
 
 
     @commands.command(name="daily")
-    @commands.cooldown(1, 3, commands.BucketType.user)  # 3-second cooldown for testing
+    @commands.cooldown(1, 8, commands.BucketType.user)  # 3-second cooldown for testing
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards."""
         user = ctx.author

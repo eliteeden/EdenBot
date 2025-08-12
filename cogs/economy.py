@@ -476,7 +476,7 @@ class EconomyCog(commands.Cog):
             now = datetime.now()
             delta = now - last_claim_time
 
-            if delta.total_seconds() <= 8:
+            if delta.total_seconds() <= 3:
                 user_data["streak"] += 1
             else:
                 user_data["streak"] = 1

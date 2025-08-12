@@ -462,7 +462,7 @@ class EconomyCog(commands.Cog):
         user_id = str(user.id)
         base_earn = 5_000
         bonus_per_streak = 1_000
-        streak_window = 8  # seconds
+        streak_window = 16  # seconds
 
         # Load streaks and last claim dates
         streaks = self.load_streaks()

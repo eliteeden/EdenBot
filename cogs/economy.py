@@ -467,7 +467,7 @@ class EconomyCog(commands.Cog):
         streaks = self.load_streaks()  # Example: {user_id: {"streak": int, "last_claim": "YYYY-MM-DD"}}
         user_data = streaks.get(user_id, {"streak": 0, "last_claim": None})
 
-        today = datetime.utcnow().date()
+        today = datetime.now().date()
 
         # Check if the streak should continue or reset
         if user_data["last_claim"] is not None:

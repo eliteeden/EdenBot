@@ -455,28 +455,28 @@ class EconomyCog(commands.Cog):
 
 
     @commands.command(name="daily")
-    @commands.cooldown(1, 3, commands.BucketType.user)  # 24-hour cooldown
+    @commands.cooldown(1, 3, commands.BucketType.user)  # 3-second cooldown for testing
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards."""
         user = ctx.author
         user_id = str(user.id)
         base_earn = 5_000
         bonus_per_streak = 1_000
+        streak_window = 8  # seconds
 
         # Load streaks and last claim dates
         streaks = self.load_streaks()
-        raw_data = streaks.get(user_id, {"streak": 0, "last_claim": None})
-        user_data = {"streak": raw_data, "last_claim": None} if isinstance(raw_data, int) else raw_data
+        user_data = streaks.get(user_id, {"streak": 0, "last_claim": None})
 
-        today = datetime.now().date()
+        now = datetime.now()
+        delta = timedelta(seconds=0)  # default value for first-time claim
 
         # Check if the streak should continue or reset
         if user_data["last_claim"] is not None:
             last_claim_time = datetime.fromisoformat(user_data["last_claim"])
-            now = datetime.now()
             delta = now - last_claim_time
 
-            if delta.total_seconds() <= 3:
+            if delta.total_seconds() <= streak_window:
                 user_data["streak"] += 1
             else:
                 user_data["streak"] = 1
@@ -484,9 +484,7 @@ class EconomyCog(commands.Cog):
             user_data["streak"] = 1
 
         # Update last claim timestamp
-        user_data["last_claim"] = datetime.now().isoformat()
-
-
+        user_data["last_claim"] = now.isoformat()
 
         # Calculate earnings
         streak = user_data["streak"]
@@ -496,16 +494,17 @@ class EconomyCog(commands.Cog):
         self.add(user, total_earn)
 
         # Save updated streak info
-        user_data["last_claim"] = datetime.now().isoformat()
         streaks[user_id] = user_data
         self.save_streaks(streaks)
+
+        # Debug print
+        print(f"[DEBUG] {user.display_name} | Δ: {delta.total_seconds():.2f}s | Streak: {streak}")
 
         await ctx.send(
             f"🌟 {user.display_name}, you’ve claimed your daily reward of {base_earn:,} Eden coins + "
             f"{bonus_per_streak:,} × {streak} streak bonus = {total_earn:,} coins! "
-            f"(Streak: {streak} days)"
+            f"(Streak: {streak})"
         )
-
     @daily.error
     async def daily_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):

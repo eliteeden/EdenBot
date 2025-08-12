@@ -1052,28 +1052,6 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
 # Main commands
 
 @bot.command()
-@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
-async def jsons(ctx):
-    """Lists all JSON files in the current directory."""
-    files = [f for f in os.listdir('.') if f.endswith('.json')]
-    if files:
-        await ctx.send("📄 JSON files:\n" + '\n'.join(files))
-    else:
-        await ctx.send("No JSON files found.")
-
-@bot.command(aliases=["fetchjson", "getjson", "json"])
-@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
-async def fetch(ctx, *, filename):
-    """Sends the JSON file by filename (extension optional)."""
-    file_path = filename if filename.endswith('.json') else f"{filename}.json"
-    
-    if os.path.exists(file_path):
-        await ctx.send(file=discord.File(file_path))
-    else:
-        await ctx.send("JSON file not found.")
-
-
-@bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
 async def nohup(ctx):
     try:

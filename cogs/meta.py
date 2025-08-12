@@ -9,7 +9,7 @@ class MetaCog(commands.Cog):
         self.bot = bot
 
 
-    @commands.command(name="countlines", aliases=["countlines", "countlinescode", "lines"])
+    @commands.command(name="countlines", aliases=["botlines", "countlinescode", "lines"])
     async def count_lines(self, ctx):
         """Counts all lines in main.py and cogs/*.py"""
         total_lines = 0

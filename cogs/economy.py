@@ -8,6 +8,7 @@ import os
 import random
 from typing import Optional, overload
 from constants import CHANNELS, ROLES, USERS
+from datetime import datetime, timedelta
 
 # Type Hints
 from cogs.inventory import InventoryCog
@@ -450,8 +451,11 @@ class EconomyCog(commands.Cog):
             f"{ctx.author.mention} decided to buy *totally legal* substances from {member.mention} for {coins:,} eden coins.",
             f"{member.mention}, you should buy \"sugar\" from {ctx.author.mention} with the {coins:,} eden coins they just gave you.\n-# (blame Germanic)",
         ]))
+    
+
+
     @commands.command(name="daily")
-    @commands.cooldown(1, 86400, commands.BucketType.user)  # 24-hour cooldown
+    @commands.cooldown(1, 8, commands.BucketType.user)  # 24-hour cooldown
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards."""
         user = ctx.author
@@ -459,26 +463,41 @@ class EconomyCog(commands.Cog):
         base_earn = 5_000
         bonus_per_streak = 1_000
 
-        # Load current streak data
-        streaks = self.load_streaks()
-        streak = streaks.get(user_id, 0)
-        streak += 1
-        await ctx.author.send(streak)
+        # Load streaks and last claim dates
+        streaks = self.load_streaks()  # Example: {user_id: {"streak": int, "last_claim": "YYYY-MM-DD"}}
+        user_data = streaks.get(user_id, {"streak": 0, "last_claim": None})
 
-        # Calculate total earnings
+        today = datetime.utcnow().date()
+
+        # Check if the streak should continue or reset
+        if user_data["last_claim"] is not None:
+            last_claim_date = datetime.strptime(user_data["last_claim"], "%Y-%m-%d").date()
+            if today - last_claim_date == timedelta(days=1):
+                # Continued streak
+                user_data["streak"] += 1
+            elif today - last_claim_date > timedelta(days=1):
+                # Missed a day → reset streak
+                user_data["streak"] = 1
+        else:
+            # First-time claim
+            user_data["streak"] = 1
+
+        # Calculate earnings
+        streak = user_data["streak"]
         total_earn = base_earn + (bonus_per_streak * streak)
 
         # Update the bank
-        current_balance = self.get(user_id)
         self.add(user, total_earn)
 
-        # Save streak back
-        streaks[user_id] = streak
+        # Save updated streak info
+        user_data["last_claim"] = today.strftime("%Y-%m-%d")
+        streaks[user_id] = user_data
         self.save_streaks(streaks)
 
         await ctx.send(
             f"🌟 {user.display_name}, you’ve claimed your daily reward of {base_earn:,} Eden coins + "
-            f"{bonus_per_streak:,} x {streak} streak bonus = {total_earn:,} coins!"
+            f"{bonus_per_streak:,} × {streak} streak bonus = {total_earn:,} coins! "
+            f"(Streak: {streak} days)"
         )
     @daily.error
     async def daily_error(self, ctx, error):
@@ -487,7 +506,6 @@ class EconomyCog(commands.Cog):
         else:
             error_type = type(error).__name__
             await ctx.send(f"⚠️ Unexpected error: `{error_type}`\nMessage: {error}")
-
         
 
     @commands.command(name='pot', aliases=['jackpot'])

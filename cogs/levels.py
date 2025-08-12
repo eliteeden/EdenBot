@@ -1,7 +1,7 @@
 from typing import Optional
 import discord
 from discord import Member, User, NotFound
-from discord.ext import commands
+from discord.ext import commands, tasks 
 import asyncio
 import logging
 import os
@@ -51,6 +51,8 @@ class LevelsCog(commands.Cog):
         self.bot = bot
         self.storage = self.DummyStorage()
         self.cooldowns = {}
+        self.export_levels_loop.start()
+
 
         # Load data once at startup
         self.storage.load_if_empty()
@@ -136,8 +138,8 @@ class LevelsCog(commands.Cog):
     
     async def cog_unload(self):
         # 🧹 Automatically export data when cog is unloaded
-        self.storage.export_to_json()
-        print("🧼 Levels data auto-exported on shutdown.")
+        self.export_levels_loop.cancel()
+        print("LevelsCog unloaded. Exporting data...")
 
     async def assign_level_roles(self, member: discord.Member):
         milestone_roles = {
@@ -478,8 +480,31 @@ class LevelsCog(commands.Cog):
     @commands.command(name="export_levels")
     async def export_levels(self, ctx):
         """Exports current level data to JSON file"""
-        self.storage.export_to_json("levels_data.json")
+        # Offload to a thread if this is blocking I/O
+        await self._export_levels_background()
         await ctx.send("✅ Level data exported to `levels_data.json`")
+
+    @tasks.loop(minutes=5.0)
+    async def export_levels_loop(self):
+        """Periodic export every 5 minutes"""
+        try:
+            await self._export_levels_background()
+        except Exception as e:
+            # Optional: add your logging here
+            print(f"[export_levels_loop] Export failed: {e}")
+
+    @export_levels_loop.before_loop
+    async def before_export_levels_loop(self):
+        # Wait until the bot is fully ready before starting the loop
+        await self.bot.wait_until_ready()
+
+    async def _export_levels_background(self):
+        """Run the export without blocking the event loop."""
+        loop = asyncio.get_running_loop()
+        # If export_to_json is CPU-bound or blocking I/O, run it in a thread:
+        await loop.run_in_executor(None, self.storage.export_to_json, "levels_data.json")
+        # If export_to_json is already async, just: await self.storage.export_to_json("levels_data.json")
+
 
     @commands.command(name="setxp")
     @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)

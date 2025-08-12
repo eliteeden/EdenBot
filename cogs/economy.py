@@ -455,7 +455,7 @@ class EconomyCog(commands.Cog):
 
 
     @commands.command(name="daily")
-    @commands.cooldown(1, 8, commands.BucketType.user)  # 24-hour cooldown
+    @commands.cooldown(1, 3, commands.BucketType.user)  # 24-hour cooldown
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards."""
         user = ctx.author
@@ -464,22 +464,20 @@ class EconomyCog(commands.Cog):
         bonus_per_streak = 1_000
 
         # Load streaks and last claim dates
-        streaks = self.load_streaks()  # Example: {user_id: {"streak": int, "last_claim": "YYYY-MM-DD"}}
-        user_data = streaks.get(user_id, {"streak": 0, "last_claim": None})
+        streaks = self.load_streaks()
+        raw_data = streaks.get(user_id, {"streak": 0, "last_claim": None})
+        user_data = {"streak": raw_data, "last_claim": None} if isinstance(raw_data, int) else raw_data
 
-        today = datetime.now().date()
+        today = datetime.utcnow().date()
 
         # Check if the streak should continue or reset
         if user_data["last_claim"] is not None:
             last_claim_date = datetime.strptime(user_data["last_claim"], "%Y-%m-%d").date()
             if today - last_claim_date == timedelta(days=1):
-                # Continued streak
                 user_data["streak"] += 1
             elif today - last_claim_date > timedelta(days=1):
-                # Missed a day → reset streak
                 user_data["streak"] = 1
         else:
-            # First-time claim
             user_data["streak"] = 1
 
         # Calculate earnings
@@ -499,6 +497,7 @@ class EconomyCog(commands.Cog):
             f"{bonus_per_streak:,} × {streak} streak bonus = {total_earn:,} coins! "
             f"(Streak: {streak} days)"
         )
+
     @daily.error
     async def daily_error(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):

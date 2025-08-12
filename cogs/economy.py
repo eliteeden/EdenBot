@@ -101,6 +101,33 @@ class EconomyCog(commands.Cog):
         else:
             self.set(user_id, 0)  # If user doesn't exist, set balance to 0
             return 0
+        
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        reset = False
+        command = ctx.command
+
+        if isinstance(error, commands.CommandOnCooldown):
+            total_seconds = int(error.retry_after)
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+
+            time_parts = []
+            if hours > 0:
+                time_parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+            if minutes > 0:
+                time_parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+            if seconds > 0 or not time_parts:
+                time_parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+
+            time_string = ", ".join(time_parts)
+            await ctx.send(f"⏳ You're on cooldown! Try again in {time_string}.")
+        else:
+            await ctx.send("⚠️ An unexpected error occurred.")
+
+        if reset and command:
+            command.reset_cooldown(ctx)
+
 
     @commands.command(name='work', aliases=['w'])
     @commands.cooldown(1,45, commands.BucketType.user)

@@ -1,11 +1,13 @@
-from encodings import aliases
+import asyncio
+import sys
 from discord.ext import commands
 import discord
 import os
 import subprocess
 from collections import Counter
 import time
-import psutil, platform
+from dotenv import load_dotenv
+import psutil
 start_time = time.time()
 #SO META
 
@@ -15,6 +17,22 @@ class MetaCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    async def execvc(self, cmd: str, *args, **kwargs):
+        """Executes a bash command"""
+        result = await asyncio.create_subprocess_exec(
+            sys.executable, "-c", cmd,
+            *args,
+            **kwargs,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=os.getcwd()
+        )
+        await result.wait()
+        stdout, stderr = [out.decode("utf-8") for out in await result.communicate()]
+        if result.returncode == 0:
+            return stdout.strip()
+        else:
+            return f"Error: {stderr.strip()}"
 
     @commands.command(name="countlines", aliases=["botlines", "countlinescode", "lines"])
     async def count_lines(self, ctx):
@@ -219,13 +237,14 @@ class MetaCog(commands.Cog):
         uptime = int(time.time() - start_time)
         hours, rem = divmod(uptime, 3600)
         mins, secs = divmod(rem, 60)
+        load_dotenv("/etc/os-release")
         await ctx.send(
             f"🧬 **Bot DNA**:\n"
             f"- Commands: `{len(self.bot.commands)}`\n"
             f"- Cogs: `{len(self.bot.cogs)}`\n"
-            f"- Uptime: `{hours}h {mins}m {secs}s`\n"
-            f"- RAM: `{mem:.2f} MB`\n"
-            f"- OS: `{platform.system()} {platform.release()}`"
+            f"- Uptime: `{f'{hours}h' if hours not in [None, 0, '', '0'] else ''} {mins}m {secs}s`\n"
+            f"- RAM: `{mem:,.2f} MB`\n"
+            f"- OS: `{os.getenv('PRETTY_NAME', await self.execvc('uname -mor'))}`\n"
         )
 
     @commands.command(name="commandstats", aliases=["cmdstats", "cmdcount"])

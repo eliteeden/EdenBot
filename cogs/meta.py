@@ -7,7 +7,7 @@ from collections import Counter
 import time
 import psutil, platform
 start_time = time.time()
-
+#SO META
 
 class MetaCog(commands.Cog):
     """A cog for Eden Bot meta."""

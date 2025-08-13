@@ -5,6 +5,7 @@ import os
 import subprocess
 from collections import Counter
 import time
+import psutil, platform
 start_time = time.time()
 
 
@@ -89,6 +90,31 @@ class MetaCog(commands.Cog):
 
             await ctx.send(response)
 
+    @commands.command(name="blame")
+    async def blame_line(self, ctx, filename: str, line_number: int):
+        """Blames a specific line in a file."""
+        import subprocess
+        try:
+            result = subprocess.run(
+                ["git", "blame", "-L", f"{line_number},{line_number}", "--", filename],
+                capture_output=True, text=True, check=True
+            )
+            await ctx.send(f"🔍 Line {line_number} in `{filename}`: {result.stdout.strip()}")
+        except Exception as e:
+            await ctx.send(f"Could not blame line: {e}")
+
+    @commands.command(name="blamefile", aliases=["blamefile", "blameall"])
+    async def blame_file(self, ctx, filename: str):
+        """Blames an entire file."""
+        import subprocess
+        try:
+            result = subprocess.run(
+                ["git", "blame", filename],
+                capture_output=True, text=True, check=True
+            )
+            await ctx.send(f"🔍 Blame for `{filename}`:\n```\n{result.stdout.strip()}\n```")
+        except Exception as e:
+            await ctx.send(f"Could not blame file: {e}")
 
 
     @commands.command(name="uptime")
@@ -134,6 +160,34 @@ class MetaCog(commands.Cog):
         """Shows bot latency."""
         latency = self.bot.latency * 1000  # ms
         await ctx.send(f"🏓 Ping! Latency: `{latency:.2f}ms`")
+
+    @commands.command(name="selfdestruct")
+    async def self_destruct(self, ctx):
+        """Fake bot shutdown sequence."""
+        import asyncio
+        await ctx.send("Initiating self-destruct sequence...")
+        for i in range(10, 0, -1):
+            await ctx.send(f"{i}...")
+            await asyncio.sleep(1)
+        await ctx.send("Just kidding teehee.")
+
+    @commands.command(name="dna")
+    async def dna(self, ctx):
+        """Displays bot's internal stats."""
+        
+        process = psutil.Process()
+        mem = process.memory_info().rss / 1024 / 1024
+        uptime = int(time.time() - start_time)
+        hours, rem = divmod(uptime, 3600)
+        mins, secs = divmod(rem, 60)
+        await ctx.send(
+            f"🧬 **Bot DNA**:\n"
+            f"- Commands: `{len(self.bot.commands)}`\n"
+            f"- Cogs: `{len(self.bot.cogs)}`\n"
+            f"- Uptime: `{hours}h {mins}m {secs}s`\n"
+            f"- RAM: `{mem:.2f} MB`\n"
+            f"- OS: `{platform.system()} {platform.release()}`"
+        )
 
     @commands.command(name="commandstats", aliases=["cmdstats", "cmdcount"])
     async def commandstats(self, ctx):

@@ -48,6 +48,45 @@ class MetaCog(commands.Cog):
             f"📄 Counted `{file_count}` Python files.\n🧮 Total lines of code: `{total_lines}`\n✅ Files scanned:\n" +
             "\n".join(f"- `{p}`" for p in paths_checked)
         )
+    @commands.command(name="truecount", aliases=["truelines", "linesplus", "alllines"])
+    async def truecount_lines(self, ctx):
+        """Counts lines in Python and JSON files across the project."""
+
+        total_lines = 0
+        file_count = 0
+        paths_checked = []
+
+        # Define root paths to scan
+        paths = ["main.py", "cogs"]
+
+        # File extensions to include
+        valid_exts = [".py", ".json"]
+
+        for path in paths:
+            if os.path.isfile(path) and any(path.endswith(ext) for ext in valid_exts):
+                with open(path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                    total_lines += len(lines)
+                    file_count += 1
+                    paths_checked.append(path)
+            elif os.path.isdir(path):
+                for root, _, files in os.walk(path):
+                    for file in files:
+                        if any(file.endswith(ext) for ext in valid_exts):
+                            full_path = os.path.join(root, file)
+                            try:
+                                with open(full_path, "r", encoding="utf-8") as f:
+                                    lines = f.readlines()
+                                    total_lines += len(lines)
+                                    file_count += 1
+                                    paths_checked.append(full_path)
+                            except Exception as e:
+                                print(f"[countfiles] Failed to read {full_path}: {e}")
+
+        await ctx.send(
+            f"📁 Counted `{file_count}` files (.py + .json).\n🧮 Total lines: `{total_lines}`\n✅ Files scanned:\n" +
+            "\n".join(f"- `{p}`" for p in paths_checked)
+        )
 
     @commands.command(name="contributions", aliases=["coderstats", "contribs", "gitstats"])
     async def contributions(self, ctx):
@@ -198,6 +237,7 @@ class MetaCog(commands.Cog):
             cog_map.setdefault(cog, []).append(cmd.name)
 
         response = "**📊 Command Stats:**\n"
+        response += f"Total: {len(self.bot.commands)} commands\n"
         for cog, cmds in cog_map.items():
             response += f"- `{cog}`: {len(cmds)} commands\n"
         await ctx.send(response)

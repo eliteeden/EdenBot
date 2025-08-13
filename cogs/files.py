@@ -103,6 +103,14 @@ class FilesCog(commands.Cog):
             await ctx.send(file=discord.File(file_path))
         else:
             await ctx.send("JSON file not found.")
+    @commands.command(aliases=["cat"])
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    async def file(self, ctx: commands.Context, *, filename: str):
+        """Sends any random file (doesn't even have to be in the project dir)"""
+        if os.path.exists(filename):
+            await ctx.send(file=discord.File(filename))
+        else:
+            await ctx.send("File not found.")
     @commands.command(aliases=["wipejson", "clearjson", "resetjson"])
     @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
     async def wipe(self, ctx, *, filename):

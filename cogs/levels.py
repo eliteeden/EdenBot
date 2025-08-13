@@ -488,13 +488,13 @@ class LevelsCog(commands.Cog):
     async def export_levels_loop(self):
         """Periodic export every 5 minutes"""
         try:
-            channel = self.bot.get_channel(1390772599700590623)  
+            # channel = self.bot.get_channel(1390772599700590623)  
 
-            if isinstance(channel, TextChannel):
+            # if isinstance(channel, TextChannel):
                 await self._export_levels_background()
-                await channel.send("✅ Loop successful!\nLevel data exported to `levels_data.json`")
-            else:
-                print(f"[export_levels_loop] Channel is not a TextChannel or is None: {channel}")
+                # await channel.send("✅ Loop successful!\nLevel data exported to `levels_data.json`")
+            # else:
+                # print(f"[export_levels_loop] Channel is not a TextChannel or is None: {channel}")
         except Exception as e:
             print(f"[export_levels_loop] Export failed: {e}")
 

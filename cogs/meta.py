@@ -75,7 +75,7 @@ class MetaCog(commands.Cog):
         paths_checked = []
 
         # Define root paths to scan
-        paths = ["main.py", "cogs", ".json"]
+        paths = ["main.py", "cogs", *".json"]
 
         # File extensions to include
         valid_exts = [".py", ".json"]

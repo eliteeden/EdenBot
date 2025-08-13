@@ -1,6 +1,6 @@
 from typing import Optional
 import discord
-from discord import Member, User, NotFound
+from discord import Member, TextChannel, User, NotFound
 from discord.ext import commands, tasks 
 import asyncio
 import logging
@@ -488,10 +488,16 @@ class LevelsCog(commands.Cog):
     async def export_levels_loop(self):
         """Periodic export every 5 minutes"""
         try:
-            await self._export_levels_background()
+            channel = self.bot.get_channel(1390772599700590623)  
+
+            if isinstance(channel, TextChannel):
+                await self._export_levels_background()
+                await channel.send("✅ Loop successful!\nLevel data exported to `levels_data.json`")
+            else:
+                print(f"[export_levels_loop] Channel is not a TextChannel or is None: {channel}")
         except Exception as e:
-            # Optional: add your logging here
             print(f"[export_levels_loop] Export failed: {e}")
+
 
     @export_levels_loop.before_loop
     async def before_export_levels_loop(self):

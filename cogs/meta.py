@@ -1,3 +1,4 @@
+from encodings import aliases
 from discord.ext import commands
 import discord
 import os
@@ -50,52 +51,72 @@ class MetaCog(commands.Cog):
     @commands.command(name="contributions", aliases=["coderstats", "contribs", "gitstats"])
     async def contributions(self, ctx):
         """Estimates contributor percentages using git blame."""
-        repo_path = os.getcwd()
-        author_counter = Counter()
-        total_lines = 0
+        async with ctx.typing():
+            repo_path = os.getcwd()
+            author_counter = Counter()
+            total_lines = 0
 
-        # Collect all .py files
-        py_files = []
-        for root, _, files in os.walk(repo_path):
-            for file in files:
-                if file.endswith(".py"):
-                    py_files.append(os.path.join(root, file))
+            # Collect all .py files
+            py_files = []
+            for root, _, files in os.walk(repo_path):
+                for file in files:
+                    if file.endswith(".py"):
+                        py_files.append(os.path.join(root, file))
 
-        # Run git blame on each file
-        for file_path in py_files:
-            try:
-                result = subprocess.run(
-                    ["git", "blame", "--line-porcelain", file_path],
-                    capture_output=True, text=True, check=True
-                )
-                for line in result.stdout.splitlines():
-                    if line.startswith("author "):
-                        author = line[len("author "):]
-                        author_counter[author] += 1
-                        total_lines += 1
-            except subprocess.CalledProcessError:
-                continue  # Skip files not tracked by Git
+            # Run git blame on each file
+            for file_path in py_files:
+                try:
+                    result = subprocess.run(
+                        ["git", "blame", "--line-porcelain", file_path],
+                        capture_output=True, text=True, check=True
+                    )
+                    for line in result.stdout.splitlines():
+                        if line.startswith("author "):
+                            author = line[len("author "):]
+                            author_counter[author] += 1
+                            total_lines += 1
+                except subprocess.CalledProcessError:
+                    continue  # Skip files not tracked by Git
 
-        if total_lines == 0:
-            return await ctx.send("No tracked lines found. Is this a Git repo?")
+            if total_lines == 0:
+                return await ctx.send("No tracked lines found. Is this a Git repo?")
 
-        # Build response
-        response = "📊 **Contribution Breakdown**:\n"
-        for author, count in author_counter.most_common():
-            percent = (count / total_lines) * 100
-            response += f"- `{author}`: {count} lines ({percent:.2f}%)\n"
+            # Build response
+            response = "📊 **Contribution Breakdown**:\n"
+            for author, count in author_counter.most_common():
+                percent = (count / total_lines) * 100
+                response += f"- `{author}`: {count} lines ({percent:.2f}%)\n"
 
-        await ctx.send(response)
+            await ctx.send(response)
 
 
 
     @commands.command(name="uptime")
     async def uptime(self, ctx):
-        """Displays bot uptime."""
+        """Displays bot uptime and roasts the second latest contributor."""
+        # Calculate uptime
         seconds = int(time.time() - start_time)
         hours, remainder = divmod(seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
-        await ctx.send(f"⏱️ Uptime: `{hours}h {minutes}m {seconds}s`")
+        uptime_str = f"{hours}h {minutes}m {seconds}s"
+
+        # Get second latest commit author
+        try:
+            result = subprocess.run(
+                ["git", "log", "--pretty=format:%an", "-n", "2"],
+                capture_output=True, text=True, check=True
+            )
+            authors = result.stdout.strip().splitlines()
+            if len(authors) >= 2:
+                culprit = authors[1]
+            else:
+                culprit = "someone mysterious"
+        except Exception as e:
+            culprit = "an unknown force"
+            print(f"[uptime] Git error: {e}")
+
+        await ctx.send(f"⏱️ It has been {uptime_str} since **{culprit}** fucked up.")
+
 
     @commands.command(name="pong")
     async def pong(self, ctx):
@@ -103,7 +124,7 @@ class MetaCog(commands.Cog):
         latency = self.bot.latency * 1000  # ms
         await ctx.send(f"🏓 Ping! Latency: `{latency:.2f}ms`")
 
-    @commands.command(name="commandstats")
+    @commands.command(name="commandstats", aliases=["cmdstats", "cmdcount"])
     async def commandstats(self, ctx):
         """Lists command counts by Cog."""
         cog_map = {}

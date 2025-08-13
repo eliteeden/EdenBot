@@ -173,37 +173,37 @@ class LevelsCog(commands.Cog):
         all_players = []
         page = 0
         per_page = 100  # MEE6's default page size
+        async with ctx.typing():
+            try:
+                while True:
+                    api_url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}"
+                    response = requests.get(api_url)
+                    response.raise_for_status()
+                    data = response.json().get("players", [])
 
-        try:
-            while True:
-                api_url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}"
-                response = requests.get(api_url)
-                response.raise_for_status()
-                data = response.json().get("players", [])
+                    if response.status_code == 429:
+                        await asyncio.sleep(10)
+                        continue  # retry the same page
+                    if not data:
+                        break  # Stop when no more data is returned
 
-                if response.status_code == 429:
-                    await asyncio.sleep(10)
-                    continue  # retry the same page
-                if not data:
-                    break  # Stop when no more data is returned
+                    all_players.extend(data)
+                    await asyncio.sleep(1) 
+                    page += 1
 
-                all_players.extend(data)
-                await asyncio.sleep(1) 
-                page += 1
+                if not all_players:
+                    await ctx.send("No leaderboard data found from MEE6.")
+                    return
 
-            if not all_players:
-                await ctx.send("No leaderboard data found from MEE6.")
-                return
+                for player in all_players:
+                    user_id = str(player["id"])
+                    total_xp = int(player["xp"])
+                    self.storage.set(f"{guild_id}:{user_id}:xp", total_xp)
+                    self.storage.add(f"{guild_id}:players", user_id)
 
-            for player in all_players:
-                user_id = str(player["id"])
-                total_xp = int(player["xp"])
-                self.storage.set(f"{guild_id}:{user_id}:xp", total_xp)
-                self.storage.add(f"{guild_id}:players", user_id)
-
-            await ctx.send(f"✅ Imported {len(all_players)} players from MEE6.")
-        except requests.exceptions.RequestException as e:
-            await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
+                await ctx.send(f"✅ Imported {len(all_players)} players from MEE6.")
+            except requests.exceptions.RequestException as e:
+                await ctx.send(f"⚠️ Failed to fetch MEE6 data: {str(e)}")
     #Smoking that mee6 pack
 
     @commands.command(name="rank", aliases=["m6rank"])
@@ -512,9 +512,9 @@ class LevelsCog(commands.Cog):
         # If export_to_json is already async, just: await self.storage.export_to_json("levels_data.json")
 
 
-    @commands.command(name="setxp")
+    @commands.command(name="setlvl")
     @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
-    async def setxp(self, ctx, member: discord.Member, level: int):
+    async def setlvl(self, ctx, member: discord.Member, level: int):
         try:
             """Sets a member's XP to match the requested level - 10 XP"""
             if self.is_ban(member):

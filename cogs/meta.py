@@ -20,7 +20,7 @@ class MetaCog(commands.Cog):
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
         result = await asyncio.create_subprocess_exec(
-            sys.executable, "-c", cmd,
+            "bash", "-c", cmd,
             *args,
             **kwargs,
             stdout=asyncio.subprocess.PIPE,

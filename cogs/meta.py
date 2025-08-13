@@ -103,7 +103,7 @@ class MetaCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"Could not blame line: {e}")
 
-    @commands.command(name="blamefile", aliases=["blamefile", "blameall"])
+    @commands.command(name="blamefile", aliases=["blamepy", "blameall"])
     async def blame_file(self, ctx, filename: str):
         """Blames an entire file."""
         import subprocess

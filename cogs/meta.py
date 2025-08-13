@@ -102,8 +102,8 @@ class MetaCog(commands.Cog):
 
         # Author mapping
         author_map = {
-            "Henry": "@cootshk",
-            "HappyJuice3": "@.hapiy"
+            "Henry": "<@921605971577548820>",
+            "HappyJuice3": "<@1021831032347033680>"
 
         }
         # Get second latest commit author

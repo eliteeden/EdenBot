@@ -68,7 +68,7 @@ class MetaCog(commands.Cog):
         )
     @commands.command(name="truecount", aliases=["truelines", "linesplus", "alllines"])
     async def truecount_lines(self, ctx):
-        """Counts lines in Python and JSON files across the project."""
+        """Counts lines in Python and JSON files across the project, sending results in chunks."""
 
         total_lines = 0
         file_count = 0
@@ -76,8 +76,6 @@ class MetaCog(commands.Cog):
 
         # Define root paths to scan
         paths = ["main.py", "cogs", *".json"]
-
-        # File extensions to include
         valid_exts = [".py", ".json"]
 
         for path in paths:
@@ -101,11 +99,14 @@ class MetaCog(commands.Cog):
                             except Exception as e:
                                 print(f"[countfiles] Failed to read {full_path}: {e}")
 
+        # Send summary first
         await ctx.send(
-            f"📁 Counted `{file_count}` files (.py + .json).\n🧮 Total lines: `{total_lines}`\n✅ Files scanned:\n" +
-            "\n".join(f"- `{p}`" for p in paths_checked)
+            f"📁 Counted `{file_count}` files (.py + .json).\n🧮 Total lines: `{total_lines}`\n✅ Files scanned:"
         )
 
+        # Send each file path as a separate message (or chunk them)
+        for path in paths_checked:
+            await ctx.send(f"- `{path}`")
     @commands.command(name="contributions", aliases=["coderstats", "contribs", "gitstats"])
     async def contributions(self, ctx):
         """Estimates contributor percentages using git blame."""

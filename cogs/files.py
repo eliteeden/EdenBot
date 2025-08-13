@@ -93,9 +93,9 @@ class FilesCog(commands.Cog):
         else:
             await ctx.send("No JSON files found.")
 
-    @commands.command(aliases=["fetchjson", "getjson", "json"])
+    @commands.command(name='getjson', aliases=["fetchjson", "json"])
     @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
-    async def fetch(self, ctx, *, filename):
+    async def fetchjson(self, ctx, *, filename):
         """Sends the JSON file by filename (extension optional)."""
         file_path = filename if filename.endswith('.json') else f"{filename}.json"
         

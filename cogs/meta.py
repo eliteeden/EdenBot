@@ -260,6 +260,10 @@ class MetaCog(commands.Cog):
         for cog, cmds in cog_map.items():
             response += f"- `{cog}`: {len(cmds)} commands\n"
         await ctx.send(response)
+    @commands.command(name="fetch", aliases=["neofetch", "fastfetch"])
+    async def fetch(self, ctx):
+        await self.execvc("neofetch > /tmp/fetch.ansi")
+        await ctx.send("```ansi\n" + await self.execvc("cat /tmp/fetch.ansi") + "\n```")
 
 async def setup(bot):
     """Load the MetaCog cog."""

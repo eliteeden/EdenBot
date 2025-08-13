@@ -242,7 +242,7 @@ class MetaCog(commands.Cog):
             f"🧬 **Bot DNA**:\n"
             f"- Commands: `{len(self.bot.commands)}`\n"
             f"- Cogs: `{len(self.bot.cogs)}`\n"
-            f"- Uptime: `{f'{hours}h' if hours not in [None, 0, '', '0'] else ''} {mins}m {secs}s`\n"
+            f"- Uptime: `{f'{hours}h ' if hours not in [None, 0, '', '0'] else ''}{mins}m {secs}s`\n"
             f"- RAM: `{mem:,.2f} MB`\n"
             f"- OS: `{os.getenv('PRETTY_NAME', await self.execvc('uname -mor'))}`\n"
         )

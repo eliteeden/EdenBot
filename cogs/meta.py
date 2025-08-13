@@ -100,6 +100,12 @@ class MetaCog(commands.Cog):
         minutes, seconds = divmod(remainder, 60)
         uptime_str = f"{hours}h {minutes}m {seconds}s"
 
+        # Author mapping
+        author_map = {
+            "Henry": "@cootshk",
+            "HappyJuice3": "@.hapiy"
+
+        }
         # Get second latest commit author
         try:
             result = subprocess.run(
@@ -109,6 +115,11 @@ class MetaCog(commands.Cog):
             authors = result.stdout.strip().splitlines()
             if len(authors) >= 2:
                 culprit = authors[1]
+                if culprit in author_map:
+                    culprit = author_map[culprit]
+                else:
+                    culprit = f"@{culprit.replace(' ', '').lower()}"
+                
             else:
                 culprit = "someone mysterious"
         except Exception as e:

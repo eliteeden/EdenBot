@@ -75,7 +75,7 @@ class MetaCog(commands.Cog):
         paths_checked = []
 
         # Define root paths to scan
-        paths = ["main.py", "cogs", *".json"]
+        paths = ["main.py", "cogs", "*.json"]
         valid_exts = [".py", ".json"]
 
         for path in paths:
@@ -105,8 +105,8 @@ class MetaCog(commands.Cog):
         )
 
         # Send each file path as a separate message (or chunk them)
-        for path in paths_checked:
-            await ctx.send(f"- `{path}`")
+        # for path in paths_checked:
+            # await ctx.send(f"- `{path}`")
     @commands.command(name="contributions", aliases=["coderstats", "contribs", "gitstats"])
     async def contributions(self, ctx):
         """Estimates contributor percentages using git blame."""

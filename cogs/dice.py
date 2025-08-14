@@ -7,8 +7,53 @@ class DiceCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+    
+    @commands.command(name='roll', aliases=['roll_dice'])
+    async def better_roll(self, ctx: commands.Context, *, dice: str):
+        """Roll one or more dice. Example: ;roll 1d2 3d4. Put a + or a - after the roll (1d20+) for advantage or disadvantage"""
+        dice_list = dice.split(" ")
+        rolls = []
+        total = 0
+        if dice_list == []:
+            return await ctx.send("No dice specified?")
+        for die in dice_list:
+            current_rolls = []
+            advantage = 0
+            if die[-1] == "+":
+                advantage = 1
+            elif die[-1] == "-":
+                advantage = -1
+            die = die.rstrip("+-")
+            if 'd' in die:
+                num, side = [int(x) for x in die.split('d')]
+            else:
+                side = int(die)
+                num = 1
+            if advantage != 0:
+                num += 1
+            for _ in range(num):
+                roll = random.randint(1, side)
+                current_rolls += [roll]
+            current_rolls.sort()
+            match advantage:
+                case 1:
+                    current_rolls = current_rolls[1:]
+                case -1:
+                    current_rolls = current_rolls[:-1]
+            total += sum(current_rolls)
+            rolls += current_rolls
 
-    @commands.command(name='roll', aliases=['dice', 'd'])
+        match len(rolls):
+            case 0:
+                return await ctx.send("No dice rolled?")
+            case 1:
+                return await ctx.send(f"{ctx.author.mention} rolled a {rolls[0]}.")
+            case 2:
+                return await ctx.send(f"{ctx.author.mention} rolled a {rolls[0]} and a {rolls[1]}, totalling: {total}")
+            case _:
+                return await ctx.send(f"{ctx.author.mention} rolled {', '.join(map(str, rolls[:-1]))}, and a {rolls[-1]}, totalling: {total}")
+
+    @commands.command(name='roll_num', aliases=['dice', 'd'])
     async def roll_dice(self, ctx: commands.Context, sides: int = 6):
         """Roll a dice with the specified number of sides (default is 6)."""
         if sides < 2:

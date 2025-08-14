@@ -1,6 +1,4 @@
-from curses.ascii import isdigit
 from discord.ext import commands
-import discord
 import random
 
 class DiceCog(commands.Cog):

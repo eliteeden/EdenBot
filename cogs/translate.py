@@ -1,3 +1,4 @@
+from encodings import aliases
 import discord
 from discord.ext import commands
 import requests
@@ -28,7 +29,8 @@ class TranslateCog(commands.Cog):
                 await ctx.send("Translation failed. Try again.")
         except requests.exceptions.RequestException as e:
             await ctx.send(f"Error: {e}")
-    @commands.command(name='translate_reply')
+    
+    @commands.command(name='translate_reply', aliases=['duo_reply', 'english_reply', "gtl_reply", "tr"])
     async def translate_reply(self, ctx, target_lang: str = "en"):
         """Translates the replied-to message to the target language (default: English)."""
         if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
@@ -37,7 +39,7 @@ class TranslateCog(commands.Cog):
 
             url = "https://libretranslate.de/translate"
             headers = {
-                "Content-Type": "application/x-www-form-urlencoded"
+                "Content-Type": "application/json"
             }
             payload = {
                 "q": text_to_translate,
@@ -47,20 +49,14 @@ class TranslateCog(commands.Cog):
             }
 
             try:
-                response = requests.post(url, data=payload, headers=headers)
+                response = requests.post(url, json=payload, headers=headers)
 
-                # Check for non-200 status codes
                 if response.status_code != 200:
                     await ctx.send(f"API error {response.status_code}: {response.text}")
                     return
 
-                # Try parsing JSON safely
-                try:
-                    data = response.json()
-                    translated_text = data.get("translatedText")
-                except ValueError:
-                    await ctx.send("Error: Response was not valid JSON.")
-                    return
+                data = response.json()
+                translated_text = data.get("translatedText")
 
                 if translated_text:
                     await ctx.send(f"**Translated:** {translated_text}")
@@ -68,9 +64,10 @@ class TranslateCog(commands.Cog):
                     await ctx.send("Translation failed. No text returned.")
             except requests.exceptions.RequestException as e:
                 await ctx.send(f"Request error: {e}")
+            except ValueError:
+                await ctx.send("Error: Response was not valid JSON.")
         else:
             await ctx.send("Please reply to a message you want to translate.")
-
 async def setup(bot):
     """Load the Translate cog."""
     await bot.add_cog(TranslateCog(bot))

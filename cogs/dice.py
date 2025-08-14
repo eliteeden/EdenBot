@@ -1,3 +1,4 @@
+from curses.ascii import isdigit
 from discord.ext import commands
 import discord
 import random
@@ -25,10 +26,14 @@ class DiceCog(commands.Cog):
                 advantage = -1
             die = die.rstrip("+-")
             if 'd' in die:
-                num, side = [int(x) for x in die.split('d')]
-            else:
+                num, side = die.split('d')
+                num  = 1  if num  == '' else int(num)
+                side = 20 if side == '' else int(side)
+            elif die.isdigit():
                 side = int(die)
                 num = 1
+            else: 
+                return await ctx.send(f"Invalid die format: {die}. Use format like 1d20 or 3d6.")
             if advantage != 0:
                 num += 1
             for _ in range(num):
@@ -50,8 +55,8 @@ class DiceCog(commands.Cog):
                 return await ctx.send(f"{ctx.author.mention} rolled a {rolls[0]}.")
             case 2:
                 return await ctx.send(f"{ctx.author.mention} rolled a {rolls[0]} and a {rolls[1]}, totalling: {total}")
-            case _:
-                return await ctx.send(f"{ctx.author.mention} rolled {', '.join(map(str, rolls[:-1]))}, and a {rolls[-1]}, totalling: {total}")
+            case _ as num:
+                return await ctx.send(f"{ctx.author.mention} rolled {num} dice: {', '.join(map(str, rolls[:-1]))}, and a {rolls[-1]}, totalling: {total}")
 
     @commands.command(name='roll_num', aliases=['dice', 'd'])
     async def roll_dice(self, ctx: commands.Context, sides: int = 6):

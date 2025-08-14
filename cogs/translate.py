@@ -28,16 +28,17 @@ class TranslateCog(commands.Cog):
                 await ctx.send("Translation failed. Try again.")
         except requests.exceptions.RequestException as e:
             await ctx.send(f"Error: {e}")
-    
-    @commands.command(name='translate_reply', aliases=['tr_reply', "tr", "engpls"])
-    async def translate_reply(self, ctx, target_lang: str):
-        """Translates the replied-to message to the target language."""
-        # Check if the command is used in reply to another message
+    @commands.command(name='translate_reply')
+    async def translate_reply(self, ctx, target_lang: str = "en"):
+        """Translates the replied-to message to the target language (default: English)."""
         if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
             original_message = ctx.message.reference.resolved
             text_to_translate = original_message.content
 
             url = "https://libretranslate.de/translate"
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
             payload = {
                 "q": text_to_translate,
                 "source": "auto",
@@ -46,16 +47,27 @@ class TranslateCog(commands.Cog):
             }
 
             try:
-                response = requests.post(url, data=payload)
-                response.raise_for_status()
-                translated_text = response.json().get("translatedText")
+                response = requests.post(url, data=payload, headers=headers)
+
+                # Check for non-200 status codes
+                if response.status_code != 200:
+                    await ctx.send(f"API error {response.status_code}: {response.text}")
+                    return
+
+                # Try parsing JSON safely
+                try:
+                    data = response.json()
+                    translated_text = data.get("translatedText")
+                except ValueError:
+                    await ctx.send("Error: Response was not valid JSON.")
+                    return
 
                 if translated_text:
                     await ctx.send(f"**Translated:** {translated_text}")
                 else:
-                    await ctx.send("Translation failed. Try again.")
+                    await ctx.send("Translation failed. No text returned.")
             except requests.exceptions.RequestException as e:
-                await ctx.send(f"Error: {e}")
+                await ctx.send(f"Request error: {e}")
         else:
             await ctx.send("Please reply to a message you want to translate.")
 

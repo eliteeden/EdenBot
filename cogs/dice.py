@@ -33,7 +33,7 @@ class DiceCog(commands.Cog):
     @commands.command(name='d100')
     async def roll_d100(self, ctx: commands.Context):
         return await self.roll_dice(ctx, 100)
-    @commands.command(name=d24)
+    @commands.command(name='d24')
     async def roll_d24(self, ctx: commands.Context):
         return await self.roll_dice(ctx, 24)
 

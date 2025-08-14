@@ -35,7 +35,7 @@ class TranslateCog(commands.Cog):
 
             try:
                 translation = self.translator.translate(text_to_translate, dest=lang)
-                await ctx.send(f"**Translated ({lang}):** {translation}")
+                await ctx.send(f"**Translated ({lang}):** {translation.text}")
             except Exception as e:
                 await ctx.send(f"Translation error: {e}")
         else:

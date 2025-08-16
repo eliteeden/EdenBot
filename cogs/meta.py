@@ -385,8 +385,14 @@ class MetaCog(commands.Cog):
             embed.add_field(name="Cloudflare", value=warp_status, inline=True)
         embed.add_field(name="Server Count", value=len(self.bot.guilds), inline=True)
         embed.add_field(name="User Count", value=len(self.bot.users), inline=True)
-        embed.set_footer(text=f"Ping: {self.bot.latency * 1000:.2f} ms")
+        branches = await self.execvc("git branch")
+        embed.add_field(
+            name="Branch",  # More stupid splitting cmds
+            value=f"Current: **{branches.strip().split('*')[-1].split('\n')[0].strip()}**, {len(branches.strip().split('\n'))-1} slaves",
+            inline=True,
+        )
 
+        embed.set_footer(text=f"Ping: {self.bot.latency * 1000:.2f} ms")
         await ctx.send(embed=embed)
 
     statuses = Literal["playing", "watching", "listening", "none"]

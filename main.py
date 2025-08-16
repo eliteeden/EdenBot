@@ -9,7 +9,7 @@ from asyncio import subprocess
 import datetime
 from dotenv import load_dotenv
 import discord
-from discord import app_commands, Embed, Intents, Interaction, Member, User 
+from discord import app_commands, Embed, Intents, Interaction, Member, User
 from discord.ext import commands
 import json
 import os
@@ -25,14 +25,14 @@ from cogs.inventory import InventoryCog
 # Elite bot for a server of bitches
 
 try:
-    with open('users.json', encoding='utf-8') as s:
+    with open("users.json", encoding="utf-8") as s:
         bank = json.load(s)
 except (ValueError, FileNotFoundError):
     bank = {}
-    bank['users'] = []
+    bank["users"] = []
 
 
-bot = commands.Bot(command_prefix=';', intents=Intents.all())
+bot = commands.Bot(command_prefix=";", intents=Intents.all())
 
 load_dotenv()
 
@@ -44,11 +44,29 @@ if not token:
 
 DISABLED_COMMAND_CHANNEL_ID = CHANNELS.CAPITAL
 BLOCK_MESSAGE = f"No commands in <#{CHANNELS.CAPITAL}>\nUse bot commands in <#{CHANNELS.EDEN_BOT_COMMANDS}>, you brat"
-EXEMPT_COMMANDS = ["purge", "ping", "botpurge", "web", "roll", "d20", "d6", "d100", "endslow", "slowmode", "ban", "mute", "snipe"]
+EXEMPT_COMMANDS = [
+    "purge",
+    "ping",
+    "botpurge",
+    "web",
+    "roll",
+    "d20",
+    "d6",
+    "d100",
+    "endslow",
+    "slowmode",
+    "ban",
+    "mute",
+    "snipe",
+]
+
 
 @bot.check
 async def block_commands_in_channel(ctx: commands.Context):
-    if not any(role.id == ROLES.MODERATOR or role.id == ROLES.TOTALLY_MOD for role in ctx.author.roles):
+    if not any(
+        role.id == ROLES.MODERATOR or role.id == ROLES.TOTALLY_MOD
+        for role in ctx.author.roles
+    ):
         if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
             if ctx.command.name not in EXEMPT_COMMANDS:  # type: ignore
                 try:
@@ -57,6 +75,7 @@ async def block_commands_in_channel(ctx: commands.Context):
                     pass
                 return False  # Block execution
     return True  # Allow execution
+
 
 @bot.event
 async def on_ready():
@@ -68,7 +87,7 @@ async def on_ready():
         print(f"Failed to start confessions: {e}")
     try:
         # Reddit background task got moved to the cog
-        
+
         print("Slash commands synced successfully!")
 
         # Load cogs
@@ -79,20 +98,22 @@ async def on_ready():
                     print(f"Loaded cog: {filename[:-3]}")
                 except Exception as e:
                     print(f"Failed to load cog {filename[:-3]}: {e}")
-        
+
         # TODO: this needs to be a command
         await bot.tree.sync()
     except Exception as e:
         print(f"Failed to sync commands: {e}")
     channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
     await channel.send("I'm backkkkk")
-    print('Systems online')
+    print("Systems online")
+
 
 # Global tracking for repeated messages
 global_repeat_counts = {}
 
 
 BLACKLIST_FILE = "blacklist.json"
+
 
 # Load blacklist from file
 def load_blacklist():
@@ -102,14 +123,17 @@ def load_blacklist():
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
+
 # Save updated blacklist to file
 def save_blacklist(users):
     with open(BLACKLIST_FILE, "w") as f:
         json.dump({"users": users}, f, indent=4)
 
+
 # Check if user is blacklisted
 def is_blacklisted(user_id):
     return user_id in load_blacklist()
+
 
 # Global check
 @bot.check
@@ -118,6 +142,7 @@ async def block_blacklisted_users(ctx):
         await ctx.send("Get your disgusting hands off of me, bitch.")
         return False
     return True
+
 
 # Mod command to blacklist a user
 @bot.command()
@@ -142,10 +167,11 @@ async def whitelist(ctx, user: discord.User):
             users.remove(user.id)
             save_blacklist(users)
             await ctx.send(f"{user.name} has been whitelisted.")
-        else:        
+        else:
             await ctx.send(f"✅ {user.name} is already whitelisted.")
     except Exception as e:
         await ctx.send(f"Error: {e}")
+
 
 # Command error handling
 @bot.event
@@ -155,51 +181,82 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("You are missing moderator permissions, you wannabe.")
     elif isinstance(error, commands.CommandNotFound):
-        await ctx.send("That command doesn't exist stupid. Type `;help` to see available commands.")
+        await ctx.send(
+            "That command doesn't exist stupid. Type `;help` to see available commands."
+        )
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("Some parameters are missing, Einstein.")
     elif isinstance(error, commands.CommandOnCooldown):
-            total_seconds = int(error.retry_after)
-            hours = total_seconds // 3600
-            minutes = (total_seconds % 3600) // 60
-            seconds = total_seconds % 60
+        total_seconds = int(error.retry_after)
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
 
-            time_parts = []
-            if hours > 0:
-                time_parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
-            if minutes > 0:
-                time_parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
-            if seconds > 0 or not time_parts:
-                time_parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+        time_parts = []
+        if hours > 0:
+            time_parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+        if minutes > 0:
+            time_parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+        if seconds > 0 or not time_parts:
+            time_parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
 
-            time_string = ", ".join(time_parts)
-            await ctx.send(f"Slow down! Try again in {time_string}.")
+        time_string = ", ".join(time_parts)
+        await ctx.send(f"Slow down! Try again in {time_string}.")
     elif isinstance(error, commands.BadArgument):
         await ctx.send("Invalid argument provided.")
     elif isinstance(error, commands.CommandInvokeError):
-        await ctx.send("An error occurred while executing the command. Leave me alone for a bit.")
+        await ctx.send(
+            "An error occurred while executing the command. Leave me alone for a bit."
+        )
         bot_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
-        message = '\n'.join([f"Error in command `{ctx.command}`: {error.original}",
-                                          f"{'-' * 20}",
-                                          "```py",
-                                          f"{traceback.format_exception(error.original)}",
-                                          "```",])
+        message = "\n".join(
+            [
+                f"Error in command `{ctx.command}`: {error.original}",
+                f"{'-' * 20}",
+                "```py",
+                f"{traceback.format_exception(error.original)}",
+                "```",
+            ]
+        )
         if len(message) < 2000:
             await bot_channel.send(message)
         else:
             for i in range(0, len(message), 2000):
-                await bot_channel.send(message[i:i+2000])
+                await bot_channel.send(message[i : i + 2000])
         print(error)
     else:
         raise error
 
+
 HUGGINGFACE_API_KEY = "redacted"
 
-swears = ["fuck", "shit", "ass", "dick", "pussy", "hell", "asshole", "douche", "motherfucker", "nonce", "bitch", "cunt", "cocksucker", "wanker", "twat", "bellend", "bastard", "damn", "asshat", "cum", "hubbins", "r/teenagers"]
+swears = [
+    "fuck",
+    "shit",
+    "ass",
+    "dick",
+    "pussy",
+    "hell",
+    "asshole",
+    "douche",
+    "motherfucker",
+    "nonce",
+    "bitch",
+    "cunt",
+    "cocksucker",
+    "wanker",
+    "twat",
+    "bellend",
+    "bastard",
+    "damn",
+    "asshat",
+    "cum",
+    "hubbins",
+    "r/teenagers",
+]
 
 
 from bs4 import BeautifulSoup
-
 
 
 @bot.command(aliases=["l", "lyric"])
@@ -213,9 +270,7 @@ async def lyrics(ctx, *, query: str):
             title, artist = map(str.strip, query.split("-", 1))
             search_query = f"{title} {artist}"
 
-            headers = {
-                "Authorization": f"Bearer {GENIUS_API_TOKEN}"
-            }
+            headers = {"Authorization": f"Bearer {GENIUS_API_TOKEN}"}
 
             async with aiohttp.ClientSession() as session:
                 # Search for the song
@@ -235,7 +290,9 @@ async def lyrics(ctx, *, query: str):
                     soup = BeautifulSoup(html, "lxml")
                     # Look for <div> with data-lyrics-container
                     # Scrape and clean only valid lyrics lines
-                    containers = soup.find_all("div", attrs={"data-lyrics-container": "true"})
+                    containers = soup.find_all(
+                        "div", attrs={"data-lyrics-container": "true"}
+                    )
                     lyrics_lines = []
 
                     for tag in containers:
@@ -248,13 +305,17 @@ async def lyrics(ctx, *, query: str):
                 return await ctx.send("Lyrics not found on the page.")
 
             # Chunk lyrics for Discord embeds (max 1024 chars per embed description)
-            chunks = [lyrics[i:i+1024] for i in range(0, len(lyrics), 1024)]
+            chunks = [lyrics[i : i + 1024] for i in range(0, len(lyrics), 1024)]
 
             for i, chunk in enumerate(chunks):
                 embed = discord.Embed(
-                    title=f"{title} - {artist}" if i == 0 else f"{title} - {artist} (Part {i+1})",
+                    title=(
+                        f"{title} - {artist}"
+                        if i == 0
+                        else f"{title} - {artist} (Part {i+1})"
+                    ),
                     description=chunk,
-                    color=discord.Color.blurple()
+                    color=discord.Color.blurple(),
                 )
                 await ctx.send(embed=embed)
 
@@ -267,10 +328,14 @@ async def lyrics(ctx, *, query: str):
 async def eat(ctx, *, victim):
     await ctx.send(f"{victim} has been eaten")
 
+
 @eat.error
 async def eat_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("That command doesn't exist, stupid. Use `;help` to look for available commands")
+        await ctx.send(
+            "That command doesn't exist, stupid. Use `;help` to look for available commands"
+        )
+
 
 def load_profanity_data():
     try:
@@ -279,16 +344,17 @@ def load_profanity_data():
     except FileNotFoundError:
         return {}
 
+
 # Save profanity data to a JSON file
 def save_profanity_data(profanity_data):
     with open("profanities.json", "w") as file:
         json.dump(profanity_data, file, indent=4)
 
+
 # Initialize profanity tracking
 profanity_data = load_profanity_data()
 
 
-        
 import asyncio
 import time
 
@@ -298,22 +364,25 @@ last_update = {}
 sticky_queues = {}  # Stores queues per channel
 sticky_tasks = {}  # Tracks background tasks per channel
 
+
 def load_sticky_data():
     if not os.path.exists(STICKY_FILE):
         return {}
     with open(STICKY_FILE, "r") as f:
         return json.load(f)
 
+
 def save_sticky_data(data):
     with open(STICKY_FILE, "w") as f:
         json.dump(data, f, indent=4)
+
 
 sticky_data = load_sticky_data()
 
 
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR)
-async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None): # type: ignore
+async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None):  # type: ignore
     try:
         if channel is None:
             channel = ctx.channel
@@ -327,7 +396,7 @@ async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None): 
         sticky_data[str(channel.id)] = {
             "guild_id": ctx.guild.id,
             "message_id": msg.id,
-            "msg_content": msg_content
+            "msg_content": msg_content,
         }
         save_sticky_data(sticky_data)
 
@@ -335,13 +404,14 @@ async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None): 
         last_update[str(channel.id)] = time.time()
 
         await ctx.send("Created sticky message successfully.")
-    
+
     except Exception as e:
         await ctx.send(f"An error occurred: {e}")
 
+
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR)
-async def unstick(ctx, channel: discord.TextChannel = None): # type: ignore
+async def unstick(ctx, channel: discord.TextChannel = None):  # type: ignore
     try:
         if channel is None:
             channel = ctx.channel
@@ -371,10 +441,13 @@ def load_responses():
     with open("autoresponses.json", "r") as f:
         return json.load(f)
 
+
 # Save updated responses
 def save_responses(data):
     with open("autoresponses.json", "w") as f:
         json.dump(data, f, indent=4)
+
+
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def responses(ctx):
@@ -388,13 +461,13 @@ async def responses(ctx):
             await ctx.send(f"```\n{content}\n```")
         else:
             # Split into 1024-character chunks for embeds
-            chunks = [content[i:i+1024] for i in range(0, len(content), 1024)]
+            chunks = [content[i : i + 1024] for i in range(0, len(content), 1024)]
 
             for i, chunk in enumerate(chunks):
                 embed = discord.Embed(
                     title=f"Auto Responses (Part {i+1})",
                     description=f"```json\n{chunk}\n```",
-                    color=discord.Color.teal()
+                    color=discord.Color.teal(),
                 )
                 await ctx.author.send(embed=embed)
 
@@ -403,14 +476,16 @@ async def responses(ctx):
     except Exception as e:
         await ctx.send(f"Unexpected error: `{e}`")
 
+
 @bot.command()
-@commands.has_any_role(ROLES.MODERATOR, "happy")
+@commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def ar(ctx, category: str, trigger: str, *, reply: str = "remove"):
     """
+    Sets an auto response
     Usage:
-      • !ar auto hello Hi there!
-      • !ar exact ping pong
-      • !ar auto hello remove   ← Removes 'hello' from AUTO_RESPONSES
+      • ;ar auto hello Hi there!
+      • ;ar exact ping pong
+      • ;ar auto hello remove   ← Removes 'hello' from AUTO_RESPONSES
     """
     responses = load_responses()
     category_key = "AUTO_RESPONSES" if category.lower() == "auto" else "EXACT_RESPONSES"
@@ -429,12 +504,11 @@ async def ar(ctx, category: str, trigger: str, *, reply: str = "remove"):
         await ctx.send(f"Added `{trigger}` to {category_key}")
 
 
-
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
-    
+
     responses = load_responses()
 
     channel_id = str(message.channel.id)
@@ -448,8 +522,9 @@ async def on_message(message):
         await sticky_queues[channel_id].put(message)  # Add message to queue
 
         if channel_id not in sticky_tasks or sticky_tasks[channel_id].done():
-            sticky_tasks[channel_id] = asyncio.create_task(process_sticky_queue(channel_id))
-
+            sticky_tasks[channel_id] = asyncio.create_task(
+                process_sticky_queue(channel_id)
+            )
 
     content = message.content.lower()
     channel_id = message.channel.id
@@ -465,7 +540,6 @@ async def on_message(message):
         await message.channel.send(responses["EXACT_RESPONSES"][content])
         return
 
-
     # Profanity tracking
     for profanity in swears:
         if profanity in content:
@@ -480,12 +554,16 @@ async def on_message(message):
     if global_repeat_counts[channel_id]["last_message"] == content:
         global_repeat_counts[channel_id]["repeat_count"] += 1
     else:
-        if global_repeat_counts[channel_id]["repeat_count"] >= 3 and content.strip() != "":
+        if (
+            global_repeat_counts[channel_id]["repeat_count"] >= 3
+            and content.strip() != ""
+        ):
             await message.channel.send(
                 f"Broke the chain of {global_repeat_counts[channel_id]['repeat_count']} messages!"
             )
         global_repeat_counts[channel_id]["last_message"] = content
         global_repeat_counts[channel_id]["repeat_count"] = 1
+
 
 async def process_sticky_queue(channel_id: str):
     """Processes sticky messages periodically instead of immediately."""
@@ -501,7 +579,7 @@ async def process_sticky_queue(channel_id: str):
             await asyncio.sleep(5)
 
         sticky_info = sticky_data[channel_id]
-        channel: discord.TextChannel = await bot.fetch_channel(int(channel_id)) # type: ignore
+        channel: discord.TextChannel = await bot.fetch_channel(int(channel_id))  # type: ignore
 
         try:
             old_msg = await channel.fetch_message(sticky_info["message_id"])
@@ -518,12 +596,13 @@ async def process_sticky_queue(channel_id: str):
         await asyncio.sleep(3)  # Ensures steady processing instead of instant reactions
 
 
-
-
 @bot.event
 async def on_member_join(member: User):
     channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
-    await channel.send(f'Welcome to Elite Eden {member.mention} \n<@&{ROLES.WELCOME_PING}> say hello to our new member!')
+    await channel.send(
+        f"Welcome to Elite Eden {member.mention} \n<@&{ROLES.WELCOME_PING}> say hello to our new member!"
+    )
+
 
 @bot.event
 async def on_member_remove(member: User):
@@ -533,19 +612,20 @@ async def on_member_remove(member: User):
         # Can't on_member_ban just go here?
     except discord.NotFound:
         print(f"{member} left the server (not banned)")
-        channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
-        await channel.send(f'{member.mention} ({member.name}) just left Elite Eden like a pussy.')
+        channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
+        await channel.send(
+            f"{member.mention} ({member.name}) just left Elite Eden like a pussy."
+        )
 
-       
 
 @bot.event
 async def on_member_ban(guild, member: User):
-    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
-    await channel.send(f'Good riddance to {member.mention} ({member.name}).')    
+    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
+    await channel.send(f"Good riddance to {member.mention} ({member.name}).")
 
 
 @bot.command()
-async def profanity(ctx: commands.Context, member: Member = None): # type: ignore
+async def profanity(ctx: commands.Context, member: Member = None):  # type: ignore
     if member is None:
         member: Member = ctx.author  # Default to command user if no member specified
 
@@ -554,6 +634,7 @@ async def profanity(ctx: commands.Context, member: Member = None): # type: ignor
 
     count = profanity_data.get(user_id, 0)
     await ctx.send(f"{member.mention} has used {count} profane words.")
+
 
 @bot.command()
 async def profanities(ctx):
@@ -571,18 +652,23 @@ async def profanities(ctx):
     # Create paginated embeds
     for i in range(0, len(top_users), 10):  # Show 10 users per page
         embed = discord.Embed(title="Profanity Leaderboard", color=discord.Color.red())
-        for idx, (user_id, count) in enumerate(top_users[i:i+10], start=i+1):
-            embed.add_field(name=f"{idx}. {user_id}", value=f"{count} profane words", inline=False)
+        for idx, (user_id, count) in enumerate(top_users[i : i + 10], start=i + 1):
+            embed.add_field(
+                name=f"{idx}. {user_id}", value=f"{count} profane words", inline=False
+            )
 
         paginator.add_page(embed)
 
     await paginator.send(ctx)  # Send paginated leaderboard
 
+
 # commands
 @bot.command()
 async def ping(ctx):
-    #the first ever command
-    await ctx.send('Pong')
+    # the first ever command
+    await ctx.send("Pong")
+
+
 @bot.command()
 async def changelog(ctx):
     try:
@@ -594,7 +680,9 @@ async def changelog(ctx):
 
         for line in lines:
             # If adding this line would push us over Discord's 2000-char limit…
-            if len(current_chunk) + len(line) + 7 > 2000:  # 7 accounts for code block syntax
+            if (
+                len(current_chunk) + len(line) + 7 > 2000
+            ):  # 7 accounts for code block syntax
                 chunks.append(current_chunk)
                 current_chunk = ""
             current_chunk += line
@@ -606,92 +694,142 @@ async def changelog(ctx):
             await ctx.send(f"```txt\n{chunk}\n```")
 
     except FileNotFoundError:
-        await ctx.send("File not found. Please check the path: `eden bot changelog.txt`.")
+        await ctx.send(
+            "File not found. Please check the path: `eden bot changelog.txt`."
+        )
     except Exception as e:
         await ctx.send(f"Error: `{e}`")
 
 
-
-
 @bot.command()
 async def longday(ctx):
-    await ctx.send('Its been a long day \n'
-                   'Without you my friend \n'
-                   'And I will tell you all about it when i see you again \n')
+    await ctx.send(
+        "Its been a long day \n"
+        "Without you my friend \n"
+        "And I will tell you all about it when i see you again \n"
+    )
 
 
 @bot.command()
 async def halp(ctx):
     try:
         """Displays paginated bot command list"""
-        paginator = bot.cogs["PaginatorCog"]() # type: ignore
+        paginator = bot.cogs["PaginatorCog"]()  # type: ignore
 
         # Text commands
 
         # Red embed for moderation commands
-        embed1 = Embed(title='Moderation Commands', color=0xff0000)
-        embed1.add_field(name='ban', value='This command bans a member', inline=False)
-        embed1.add_field(name='unban', value='This command unbans a member', inline=False)
-        embed1.add_field(name='kick', value='This command kicks a member', inline=False)
-        embed1.add_field(name='mute', value='This command mutes a member', inline=False)
-        embed1.add_field(name='purge', value='This command purges messages', inline=False)
-        embed1.add_field(name='warn', value='This command warns a member', inline=False)
-        embed1.add_field(name='warns', value='This command checks member warns', inline=False)
-        embed1.add_field(name='removewarn', value='This command removes member warns', inline=False)
-        embed1.add_field(name='botpurge', value='Clears bot messages', inline=False)
-        embed1.add_field(name='listrole', value='Lists all roles in the server', inline=False)
+        embed1 = Embed(title="Moderation Commands", color=0xFF0000)
+        embed1.add_field(name="ban", value="This command bans a member", inline=False)
+        embed1.add_field(
+            name="unban", value="This command unbans a member", inline=False
+        )
+        embed1.add_field(name="kick", value="This command kicks a member", inline=False)
+        embed1.add_field(name="mute", value="This command mutes a member", inline=False)
+        embed1.add_field(
+            name="purge", value="This command purges messages", inline=False
+        )
+        embed1.add_field(name="warn", value="This command warns a member", inline=False)
+        embed1.add_field(
+            name="warns", value="This command checks member warns", inline=False
+        )
+        embed1.add_field(
+            name="removewarn", value="This command removes member warns", inline=False
+        )
+        embed1.add_field(name="botpurge", value="Clears bot messages", inline=False)
+        embed1.add_field(
+            name="listrole", value="Lists all roles in the server", inline=False
+        )
         paginator.add_page(embed1)
 
         # Orange embed for economy commands
-        embed2 = Embed(title='Economy Commands', color=0xffa500)
-        embed2.add_field(name='bal', value='Shows the user balance', inline=False)
-        embed2.add_field(name='coinflip', value='Play Heads or Tails to win coins', inline=False)
-        embed2.add_field(name='roulette', value='Guess bullets for a chance to win coins', inline=False)
-        embed2.add_field(name='work', value='Earn Eden coins by working', inline=False)
-        embed2.add_field(name='invest', value='Invest coins to increase your balance', inline=False)
-        embed2.add_field(name='gamble', value='Try gambling to win coins', inline=False)
-        embed2.add_field(name='setbal', value='Manually set user balance', inline=False)
-        embed2.add_field(name='subbal', value='Subtract coins from user balance', inline=False)
-        embed2.add_field(name='topbal', value='Shows the top 10 richest users', inline=False)
-        embed2.add_field(name='districtclaim', value='Claim a district', inline=False)
+        embed2 = Embed(title="Economy Commands", color=0xFFA500)
+        embed2.add_field(name="bal", value="Shows the user balance", inline=False)
+        embed2.add_field(
+            name="coinflip", value="Play Heads or Tails to win coins", inline=False
+        )
+        embed2.add_field(
+            name="roulette",
+            value="Guess bullets for a chance to win coins",
+            inline=False,
+        )
+        embed2.add_field(name="work", value="Earn Eden coins by working", inline=False)
+        embed2.add_field(
+            name="invest", value="Invest coins to increase your balance", inline=False
+        )
+        embed2.add_field(name="gamble", value="Try gambling to win coins", inline=False)
+        embed2.add_field(name="setbal", value="Manually set user balance", inline=False)
+        embed2.add_field(
+            name="subbal", value="Subtract coins from user balance", inline=False
+        )
+        embed2.add_field(
+            name="topbal", value="Shows the top 10 richest users", inline=False
+        )
+        embed2.add_field(name="districtclaim", value="Claim a district", inline=False)
         paginator.add_page(embed2)
 
         # Yellow embed for fun commands
-        embed3 = Embed(title='Fun Commands', color=0xFFFF00)
-        embed3.add_field(name='meme', value='Fetches a random image from Reddit', inline=False)
-        embed3.add_field(name='hug', value='Hug a user', inline=False)
-        embed3.add_field(name='kiss', value='Kiss a user', inline=False)
-        embed3.add_field(name='cheer', value='Cheer up a user', inline=False)
-        embed3.add_field(name='compliment', value='Compliment a user', inline=False)
-        embed3.add_field(name='howgay', value='Checks how gay a user is', inline=False)
-        embed3.add_field(name='fuck', value='Random fun response', inline=False)
-        embed3.add_field(name='longday', value="It's been a long day...", inline=False)
-        embed3.add_field(name='web', value='Fetch search results from the web', inline=False)
-        embed3.add_field(name='wiki', value='Fetch information from Wikipedia', inline=False)
+        embed3 = Embed(title="Fun Commands", color=0xFFFF00)
+        embed3.add_field(
+            name="meme", value="Fetches a random image from Reddit", inline=False
+        )
+        embed3.add_field(name="hug", value="Hug a user", inline=False)
+        embed3.add_field(name="kiss", value="Kiss a user", inline=False)
+        embed3.add_field(name="cheer", value="Cheer up a user", inline=False)
+        embed3.add_field(name="compliment", value="Compliment a user", inline=False)
+        embed3.add_field(name="howgay", value="Checks how gay a user is", inline=False)
+        embed3.add_field(name="fuck", value="Random fun response", inline=False)
+        embed3.add_field(name="longday", value="It's been a long day...", inline=False)
+        embed3.add_field(
+            name="web", value="Fetch search results from the web", inline=False
+        )
+        embed3.add_field(
+            name="wiki", value="Fetch information from Wikipedia", inline=False
+        )
         paginator.add_page(embed3)
 
         # Green embed for informational commands
-        embed4 = Embed(title='Informational Commands', color=0x008000)
-        embed4.add_field(name='define', value='Fetches the definition of a word', inline=False)
-        embed4.add_field(name='urban', value='Fetches word definition from Urban Dictionary', inline=False)
-        embed4.add_field(name='lyrics', value='Fetch song lyrics using Lyrics.ovh API', inline=False)
-        embed4.add_field(name='gethex', value='Retrieves a hex color code or color name from a hex code', inline=False)
-        embed4.add_field(name='changelog', value='Shows the bot changelog', inline=False)
-        embed4.add_field(name='halp', value='Displays help for bot commands', inline=False)
-        embed4.add_field(name='help', value='Shows this message', inline=False)
+        embed4 = Embed(title="Informational Commands", color=0x008000)
+        embed4.add_field(
+            name="define", value="Fetches the definition of a word", inline=False
+        )
+        embed4.add_field(
+            name="urban",
+            value="Fetches word definition from Urban Dictionary",
+            inline=False,
+        )
+        embed4.add_field(
+            name="lyrics", value="Fetch song lyrics using Lyrics.ovh API", inline=False
+        )
+        embed4.add_field(
+            name="gethex",
+            value="Retrieves a hex color code or color name from a hex code",
+            inline=False,
+        )
+        embed4.add_field(
+            name="changelog", value="Shows the bot changelog", inline=False
+        )
+        embed4.add_field(
+            name="halp", value="Displays help for bot commands", inline=False
+        )
+        embed4.add_field(name="help", value="Shows this message", inline=False)
         paginator.add_page(embed4)
 
         # Blue embed for miscellaneous commands
-        embed5 = Embed(title='Miscellaneous Commands', color=0x0000FF)
-        embed5.add_field(name='ping', value='Returns Pong', inline=False)
-        embed5.add_field(name='slowmode', value='Sets a slow mode duration', inline=False)
-        embed5.add_field(name='endslow', value='Ends slow mode', inline=False)
-        embed5.add_field(name='snipe', value='Retrieves last deleted message', inline=False)
-        embed5.add_field(name='stick', value='Sticks a message', inline=False)
-        embed5.add_field(name='unstick', value='Removes a stuck message', inline=False)
-        embed5.add_field(name='timer', value='Sets a countdown timer', inline=False)
-        embed5.add_field(name='cinema', value='Movie-related command', inline=False)
-        embed5.set_footer(text='This bot was made by Happy')
+        embed5 = Embed(title="Miscellaneous Commands", color=0x0000FF)
+        embed5.add_field(name="ping", value="Returns Pong", inline=False)
+        embed5.add_field(
+            name="slowmode", value="Sets a slow mode duration", inline=False
+        )
+        embed5.add_field(name="endslow", value="Ends slow mode", inline=False)
+        embed5.add_field(
+            name="snipe", value="Retrieves last deleted message", inline=False
+        )
+        embed5.add_field(name="stick", value="Sticks a message", inline=False)
+        embed5.add_field(name="unstick", value="Removes a stuck message", inline=False)
+        embed5.add_field(name="timer", value="Sets a countdown timer", inline=False)
+        embed5.add_field(name="cinema", value="Movie-related command", inline=False)
+        embed5.set_footer(text="This bot was made by Happy")
         paginator.add_page(embed5)
 
         await paginator.send(ctx)
@@ -699,35 +837,53 @@ async def halp(ctx):
         await ctx.send(f"Error: {e}")
 
 
-
-
 # List of banned words (case-insensitive)
-slur_words = {"retard", "fag", "faggot", "nigga", "*tard", "nigger", "tard", "dyke", "mentally ill"}
+slur_words = {
+    "retard",
+    "fag",
+    "faggot",
+    "nigga",
+    "*tard",
+    "nigger",
+    "tard",
+    "dyke",
+    "mentally ill",
+}
+
 
 @bot.tree.command(name="talk")
-@app_commands.checks.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms", "happy")
-async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None): # type: ignore
+@app_commands.checks.has_any_role(
+    ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms", "happy"
+)
+async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None):  # type: ignore
     # Check for the item or the role
-    allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]# ROLES.TALK_PERMS]
-    has_role = any(role.id in allowed_roles for role in interaction.user.roles) # type: ignore
+    allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]  # ROLES.TALK_PERMS]
+    has_role = any(role.id in allowed_roles for role in interaction.user.roles)  # type: ignore
     inventory: InventoryCog = bot.get_cog("InventoryCog")  # type: ignore
-    if has_role or interaction.guild_id != GUILDS.ELITE_EDEN: # or inventory.has_item(interaction.user, "Talk Command Permissions"):
+    if (
+        has_role or interaction.guild_id != GUILDS.ELITE_EDEN
+    ):  # or inventory.has_item(interaction.user, "Talk Command Permissions"):
         pass
     else:
-        await interaction.response.send_message("You do not have permission to use this command.\nGo check out the `;shop`.", ephemeral=True)
+        await interaction.response.send_message(
+            "You do not have permission to use this command.\nGo check out the `;shop`.",
+            ephemeral=True,
+        )
         return
 
     await interaction.response.defer(ephemeral=True)
     if channel is None:
-        channel: discord.TextChannel = interaction.channel # type: ignore
+        channel: discord.TextChannel = interaction.channel  # type: ignore
     if (not channel.permissions_for(interaction.user).send_messages) and (not has_role):  # type: ignore
-        await interaction.response.send_message("You do not have permission to send messages in that channel.", ephemeral=True)
+        await interaction.response.send_message(
+            "You do not have permission to send messages in that channel.",
+            ephemeral=True,
+        )
 
     # Check for bad words
     lowered = message.lower()
     flagged = any(bad_word in lowered for bad_word in slur_words)
     blocked = False
-
 
     # If flagged, notify a specific channel
     alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
@@ -746,11 +902,15 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
             await channel.send(message)  # type: ignore
     except Exception as e:
         if isinstance(e, discord.Forbidden):
-            await interaction.response.send_message("I don't have permission to send messages in this channel.", ephemeral=True)
+            await interaction.response.send_message(
+                "I don't have permission to send messages in this channel.",
+                ephemeral=True,
+            )
             return
-        await interaction.response.send_message(f"Error sending message: {e}", ephemeral=True)
+        await interaction.response.send_message(
+            f"Error sending message: {e}", ephemeral=True
+        )
 
-    
     # Clean up original interaction
     await interaction.delete_original_response()
 
@@ -759,21 +919,21 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
 @app_commands.describe(
     title="The title of the embed",
     message="The description of the embed, separate lines with '|'",
-    color="The hexadecimal color code for the embed"
+    color="The hexadecimal color code for the embed",
 )
 async def embed(
-    interaction: Interaction, 
-    title: str, 
-    message: str, 
-    color: str = "#5865F2"  # Discord blurple hex
+    interaction: Interaction,
+    title: str,
+    message: str,
+    color: str = "#5865F2",  # Discord blurple hex
 ):
     """Create an embed with a title, description, and color."""
     try:
         # Format the message into separate lines
-        formatted_message = "\n".join(message.split('|'))
+        formatted_message = "\n".join(message.split("|"))
 
         # Convert hex string to integer color
-        color = color.lstrip('#')  
+        color = color.lstrip("#")
         color_int = int(color, 16)
 
         # Create the embed
@@ -788,12 +948,16 @@ async def embed(
         has_role = any(role_id in allowed_role_ids for role_id in user_roles)
 
         # Fallback check: inventory item presence
-        has_permission = has_role 
+        has_permission = has_role
 
         # Set footer only if user lacks required permissions
         if not has_permission:
-            avatar_url = interaction.user.avatar.url if interaction.user.avatar else None
-            embed.set_footer(text=f"Requested by {interaction.user.name}", icon_url=avatar_url)
+            avatar_url = (
+                interaction.user.avatar.url if interaction.user.avatar else None
+            )
+            embed.set_footer(
+                text=f"Requested by {interaction.user.name}", icon_url=avatar_url
+            )
 
         # Defer the response (ephemeral)
         await interaction.response.defer(ephemeral=True)
@@ -807,12 +971,11 @@ async def embed(
     except ValueError:
         await interaction.response.send_message(
             "Invalid color code. Please provide a valid hexadecimal value like #FF5733.",
-            ephemeral=True
+            ephemeral=True,
         )
 
 
 user_colors = {}  # Dictionary to store user-specific colors
-
 
 
 def load_colors():
@@ -826,39 +989,53 @@ def load_colors():
     except json.JSONDecodeError:
         return {}  # Return an empty dictionary if JSON is invalid
 
+
 # Save updated user colors to JSON
 def save_colors(data):
     with open("user_colors.json", "w") as file:
         json.dump(data, file, indent=4)
 
+
 # Generate a random hex color
 def generate_hex_color():
     return f"#{random.randint(0, 0xFFFFFF):06x}"
 
+
 user_colors = load_colors()  # Load colors at startup
+
+
 class ConfessCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @app_commands.command(name="confess", description="Send an anonymous confession")
-    async def confess(self, interaction: discord.Interaction, message: str, image: str = ""):
-        user_name = str(interaction.user.name)  # Convert username to string for JSON compatibility
+    async def confess(
+        self, interaction: discord.Interaction, message: str, image: str = ""
+    ):
+        user_name = str(
+            interaction.user.name
+        )  # Convert username to string for JSON compatibility
 
         if user_name not in user_colors:
             user_colors[user_name] = generate_hex_color()
             save_colors(user_colors)  # Save the updated data
 
         hex_code: str = user_colors[user_name]
-        embed = discord.Embed(title=f"Anon-{hex_code.removeprefix('#')}".capitalize(), description=message, color=int(hex_code[1:], 16))
+        embed = discord.Embed(
+            title=f"Anon-{hex_code.removeprefix('#')}".capitalize(),
+            description=message,
+            color=int(hex_code[1:], 16),
+        )
 
         if image != "":
             embed.set_image(url=image)
 
-        await interaction.response.defer(ephemeral=True)  # Prevents errors by deferring the interaction
+        await interaction.response.defer(
+            ephemeral=True
+        )  # Prevents errors by deferring the interaction
         await interaction.channel.send(embed=embed)  # type: ignore # Sends the embed without replying to the trigger
         await interaction.delete_original_response()
 
-    
     @commands.command(name="resetconfessions")
     @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
     async def reset_confessions(self, ctx: commands.Context):
@@ -867,7 +1044,7 @@ class ConfessCog(commands.Cog):
         user_colors = {}
         save_colors(user_colors)  # Save the reset data
         await ctx.send("All user colors have been reset.")
-    
+
     async def cog_load(self):
         try:
             self.bot.tree.add_command(ConfessCog(bot).confess)
@@ -879,10 +1056,14 @@ def is_unusual_name(name):
     """Checks if a name contains non-standard characters or excessive symbols."""
     if name is None:
         return False
-    
-    normalized_name = unicodedata.normalize('NFKD', name)  # Normalize Unicode characters
-    standard_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
-    
+
+    normalized_name = unicodedata.normalize(
+        "NFKD", name
+    )  # Normalize Unicode characters
+    standard_chars = set(
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
+    )
+
     return any(char not in standard_chars for char in normalized_name)
 
 
@@ -892,21 +1073,29 @@ async def rfs(ctx):
     author = ctx.author
     try:
         """Resets usernames of members whose names exceed the given length."""
-        
+
         for member in ctx.guild.members:
-            if member.nick and is_unusual_name(member.nick):  # Check if nickname is unusual
+            if member.nick and is_unusual_name(
+                member.nick
+            ):  # Check if nickname is unusual
                 if author.top_role.position > member.top_role.position:
                     try:
                         await member.edit(nick=None)
-                        await ctx.author.send(f"Reset {member.display_name}'s nickname to their default.")
+                        await ctx.author.send(
+                            f"Reset {member.display_name}'s nickname to their default."
+                        )
                     except discord.Forbidden:
-                        await ctx.author.send(f"Failed to reset {member.display_name}'s nickname (insufficient permissions).")
+                        await ctx.author.send(
+                            f"Failed to reset {member.display_name}'s nickname (insufficient permissions)."
+                        )
                     except discord.HTTPException:
-                        await ctx.author.send(f"An error occurred while resetting {member.display_name}'s nickname.")
-
+                        await ctx.author.send(
+                            f"An error occurred while resetting {member.display_name}'s nickname."
+                        )
 
     except Exception as e:
         await ctx.send(f"Error: {e}")
+
 
 # Event commands
 
@@ -917,9 +1106,8 @@ command_tracked_messages = {}
 message_role_mapping = {}
 
 
-
 @bot.command()
-@commands.has_any_role('MODERATOR')
+@commands.has_any_role("MODERATOR")
 async def districtclaim(ctx, category_id: int):
     # Find the category
     category = discord.utils.get(ctx.guild.categories, id=category_id)
@@ -931,61 +1119,88 @@ async def districtclaim(ctx, category_id: int):
     text_channels = category.text_channels
 
     # List of channel IDs to exclude
-    excluded_channels = [CHANNELS.VIP_LOUNGE, CHANNELS.HONEYMOON, CHANNELS.DISTRICT_SOUTH , CHANNELS.DISTRICT_EAST, CHANNELS.DISTRICT_WEST, CHANNELS.DISTRICT_NORTH]  # Replace with actual IDs of channels to skip
+    excluded_channels = [
+        CHANNELS.VIP_LOUNGE,
+        CHANNELS.HONEYMOON,
+        CHANNELS.DISTRICT_SOUTH,
+        CHANNELS.DISTRICT_EAST,
+        CHANNELS.DISTRICT_WEST,
+        CHANNELS.DISTRICT_NORTH,
+    ]  # Replace with actual IDs of channels to skip
 
     # Filter out excluded channels
-    valid_channels = [channel for channel in text_channels if channel.id not in excluded_channels]
+    valid_channels = [
+        channel for channel in text_channels if channel.id not in excluded_channels
+    ]
 
     if len(valid_channels) < 4:
-        await ctx.send("Not enough valid channels in this category to send unique messages!")
+        await ctx.send(
+            "Not enough valid channels in this category to send unique messages!"
+        )
         return
 
     # Randomly select 4 unique channels
     random_channels = random.sample(valid_channels, 4)
 
     # Define 4 unique messages and assign specific roles to them using role IDs
-    messages = [
-        "South: 🌴",
-        "East: 🌾",
-        "West: 🍁",
-        "North: 🌲"
-    ]
-    role_ids = [ROLES.DISTRICT_SOUTH, ROLES.DISTRICT_EAST, ROLES.DISTRICT_WEST, ROLES.DISTRICT_NORTH]  # Replace with actual role IDs
+    messages = ["South: 🌴", "East: 🌾", "West: 🍁", "North: 🌲"]
+    role_ids = [
+        ROLES.DISTRICT_SOUTH,
+        ROLES.DISTRICT_EAST,
+        ROLES.DISTRICT_WEST,
+        ROLES.DISTRICT_NORTH,
+    ]  # Replace with actual role IDs
 
     # Send messages and map them to roles
     for channel, message, role_id in zip(random_channels, messages, role_ids):
         sent_message = await channel.send(message)
-        message_role_mapping[sent_message.id] = role_id  # Map message ID to its unique role ID
+        message_role_mapping[sent_message.id] = (
+            role_id  # Map message ID to its unique role ID
+        )
 
     await ctx.send("Messages sent! Reply with 'claimed' to these messages to interact.")
 
     try:
         while message_role_mapping:  # Continue until all messages are claimed
             # Wait for a valid reply
-            reply = await bot.wait_for("message", timeout=60.0, check=lambda r: (
-                r.reference
-                and r.reference.message_id in message_role_mapping
-            ))
+            reply = await bot.wait_for(
+                "message",
+                timeout=60.0,
+                check=lambda r: (
+                    r.reference and r.reference.message_id in message_role_mapping
+                ),
+            )
 
             if "claimed" in reply.content.lower():  # Check for the keyword 'claimed'
                 assigned_role_id = message_role_mapping[reply.reference.message_id]
                 member_role_ids = [role.id for role in reply.author.roles]
 
                 if assigned_role_id in member_role_ids:
-                    await reply.channel.send(f"{reply.author.mention} successfully claimed the message!")
-                    del message_role_mapping[reply.reference.message_id]  # Remove the claimed message
+                    await reply.channel.send(
+                        f"{reply.author.mention} successfully claimed the message!"
+                    )
+                    del message_role_mapping[
+                        reply.reference.message_id
+                    ]  # Remove the claimed message
 
                     # Check if all messages have been claimed
                     if not message_role_mapping:  # Dictionary is empty
-                        await ctx.send("All messages have been claimed! Great job, everyone! 🎉")
+                        await ctx.send(
+                            "All messages have been claimed! Great job, everyone! 🎉"
+                        )
                         break
                 else:
                     await reply.channel.send(f"{reply.author.mention}, Wrong district!")
             else:
-                await reply.channel.send(f"{reply.author.mention}, *try again... and maybe read the instructions this time?* 🙄")
+                await reply.channel.send(
+                    f"{reply.author.mention}, *try again... and maybe read the instructions this time?* 🙄"
+                )
     except asyncio.TimeoutError:
         # Stop listening after timeout if no reply occurs
-        await ctx.send("No replies detected for remaining messages within the timeout period.")
+        await ctx.send(
+            "No replies detected for remaining messages within the timeout period."
+        )
+
 
 # Cog commands
 @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
@@ -1000,12 +1215,16 @@ async def cogs(ctx: commands.Context):
             cog_name = cog[:-3]
             send_cogs.append(cog_name)
     await ctx.send("Available cogs: `" + "`, `".join(send_cogs) + "`")
+
+
 @cogs.error
 async def cogs_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("Trust me, you can't untangle the spaghetti inside.")
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
+
+
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
 async def reload(ctx: commands.Context, cog: str):
@@ -1016,17 +1235,23 @@ async def reload(ctx: commands.Context, cog: str):
     except Exception as e:
         await ctx.send(f"Failed to reload {cog} cog: {e}")
         print(e)
+
+
 @reload.error
 async def reload_error(ctx: commands.Context, error: commands.CommandError):
     """Handles errors for the reload command."""
     if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("buzz off butterfingers, only an elite few can tinker with me like that")
+        await ctx.send(
+            "buzz off butterfingers, only an elite few can tinker with me like that"
+        )
     elif isinstance(error, commands.ExtensionNotFound):
         await ctx.send("The specified cog does not exist.")
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("What do you want me to do, reload *everything*?")
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
+
+
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
 async def load(ctx: commands.Context, cog: str):
@@ -1037,6 +1262,8 @@ async def load(ctx: commands.Context, cog: str):
     except Exception as e:
         await ctx.send(f"Failed to load {cog} cog: {e}")
         print(e)
+
+
 @load.error
 async def load_error(ctx: commands.Context, error: commands.CommandError):
     """Handles errors for the load command."""
@@ -1049,7 +1276,9 @@ async def load_error(ctx: commands.Context, error: commands.CommandError):
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
 
+
 # Main commands
+
 
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD)
@@ -1060,13 +1289,16 @@ async def nohup(ctx):
     except Exception as e:
         await ctx.send(f"Error: {e}")
 
+
 @bot.command()
 @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
 async def pull(ctx: commands.Context):
     """Fetches the latest changes from git."""
     try:
         # Run the git pull command
-        result = await subprocess.create_subprocess_shell("git pull", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = await subprocess.create_subprocess_shell(
+            "git pull", stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
         stdout, stderr = await result.communicate()
         if stdout:
@@ -1080,13 +1312,18 @@ async def pull(ctx: commands.Context):
             await ctx.send(f"Failed to pull changes: {stderr.decode()}")
     except Exception as e:
         await ctx.send(f"An error occurred while pulling changes: {e}")
+
+
 @pull.error
 async def pull_error(ctx: commands.Context, error: commands.CommandError):
     """Handles errors for the pull command."""
     if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("Where are you trying to pull from, the depths of hell? Only the elite can do that.")
+        await ctx.send(
+            "Where are you trying to pull from, the depths of hell? Only the elite can do that."
+        )
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
+
 
 # This was mostly created by Happy!
 load_dotenv()

@@ -368,7 +368,8 @@ class MetaCog(commands.Cog):
 
     statuses = Literal["playing", "watching", "listening", "none"]
 
-    @commands.command(name="status")
+    @commands.command(name="setstatus", aliases=["play", "watch", "listen"])
+    @commands.has_role(ROLES.TOTALLY_MOD)
     async def set_status(
         self,
         ctx: commands.Context,
@@ -376,7 +377,7 @@ class MetaCog(commands.Cog):
         *,
         status: str,
     ):
-        """Sets the bot's status."""
+        """Sets the bot's status. Supported types: playing, watching, listening, none."""
         activity: Optional[discord.BaseActivity] = None
         match type:
             case "playing":
@@ -394,6 +395,20 @@ class MetaCog(commands.Cog):
 
         await self.bot.change_presence(activity=activity)
         await ctx.send("✅ Status updated successfully.")
+
+    @set_status.error
+    async def set_status_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ):
+        """Handles errors for set_status command."""
+        if isinstance(error, commands.MissingRole):
+            await ctx.send("Who do you think you are, bossing me around like that?")
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(
+                "Invalid status type. Use 'playing', 'watching', 'listening', or 'none'."
+            )
+        else:
+            raise error  # let the global error handler take care of it
 
 
 async def setup(bot):

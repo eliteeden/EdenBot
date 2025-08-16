@@ -100,3 +100,5 @@ async def setup(bot):
     """Function to load the ConversionCog."""
     await bot.add_cog(ConversionCog(bot))
     print("ConversionCog has been loaded.")
+
+#Someone cooked here

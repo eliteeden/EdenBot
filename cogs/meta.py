@@ -322,17 +322,9 @@ class MetaCog(commands.Cog):
             value=f"{int(time.time() - start_time)} seconds ago",
             inline=True,
         )
-        uptime = await self.execvc("uptime | sed 's/.*up//gmi' | sed 's/,.*//gmi'")
-        await ctx.send("Debug: Uptime: " + uptime)
-        if "day" in uptime:
-            days = uptime.split(" ")[0]
-            hh, mm = uptime.split(" ")[-1].split(":")
-        else:
-            days = 0
-            hh, mm = uptime.split(":")
         embed.add_field(
             name="System Uptime",
-            value=f"{days} days {hh} hours {mm} minutes",
+            value=(await self.execvc("uptime -p")).removeprefix("up "),
             inline=True,
         )
         embed.add_field(

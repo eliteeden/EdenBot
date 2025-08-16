@@ -5,6 +5,7 @@ import random
 from discord import Embed
 from constants import CHANNELS  # Make sure this has CHANNELS.REDDIT defined!
 
+
 class RedditCog(commands.Cog):
     """A cog for fetching safe memes from Reddit."""
 
@@ -27,19 +28,22 @@ class RedditCog(commands.Cog):
                 if response.status_code == 200:
                     data = response.json()
                     posts = [
-                        post["data"] for post in data["data"]["children"]
-                        if post["data"]["url"].endswith(("jpg", "png", "gif", "jpeg")) and not post["data"].get("over_18", False)
+                        post["data"]
+                        for post in data["data"]["children"]
+                        if post["data"]["url"].endswith(("jpg", "png", "gif", "jpeg"))
+                        and not post["data"].get("over_18", False)
                     ]
 
                     if posts:
                         latest_post = posts[0]
                         post_id = latest_post["id"]
 
-                        if self.LAST_POST_IDS.get(subreddit) or post_id != post_id: # None should also fail this check
+                        if (
+                            self.LAST_POST_IDS.get(subreddit) or post_id != post_id
+                        ):  # None should also fail this check
                             self.LAST_POST_IDS[subreddit] = post_id
                             embed = Embed(
-                                title=latest_post["title"],
-                                color=discord.Color.orange()
+                                title=latest_post["title"], color=discord.Color.orange()
                             )
                             embed.set_image(url=latest_post["url"])
                             channel = self.bot.get_channel(CHANNELS.REDDIT)
@@ -62,8 +66,10 @@ class RedditCog(commands.Cog):
                 if response.status_code == 200:
                     data = response.json()
                     valid_posts = [
-                        post["data"] for post in data["data"]["children"]
-                        if post["data"]["url"].endswith(("jpg", "png", "gif", "jpeg")) and not post["data"].get("over_18", False)
+                        post["data"]
+                        for post in data["data"]["children"]
+                        if post["data"]["url"].endswith(("jpg", "png", "gif", "jpeg"))
+                        and not post["data"].get("over_18", False)
                     ]
 
                     if valid_posts:
@@ -78,11 +84,14 @@ class RedditCog(commands.Cog):
 
                         # Send random meme to user
                         chosen_post = random.choice(valid_posts)
-                        embed = Embed(title=chosen_post["title"], color=discord.Color.yellow())
+                        embed = Embed(
+                            title=chosen_post["title"], color=discord.Color.yellow()
+                        )
                         embed.set_image(url=chosen_post["url"])
                         meme_footer_responses = [
                             f"unfunny image brought to you by {ctx.author.name}",
-                            "mildly amusing, this one","take this meme and leave me alone",
+                            "mildly amusing, this one",
+                            "take this meme and leave me alone",
                             "LOL",
                             "I find this one rather amusing",
                             "This is humor for dummies but enjoy",
@@ -107,18 +116,21 @@ class RedditCog(commands.Cog):
                     await ctx.send(f"Error fetching data: {response.status_code}")
         except Exception as e:
             await ctx.send(f"Error: {e}")
+
     async def cog_load(self) -> None:
         """This fires when the cog is loaded."""
         # Start the background task to check subreddits
         if not self.check_subreddits.is_running():
             self.check_subreddits.start()
         return await super().cog_load()
+
     async def cog_unload(self) -> None:
         """This fires when the cog is unloaded."""
         # Stop the background task to check subreddits
         if self.check_subreddits.is_running():
             self.check_subreddits.stop()
         return await super().cog_unload()
+
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""

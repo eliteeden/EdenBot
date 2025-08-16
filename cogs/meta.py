@@ -8,8 +8,9 @@ from collections import Counter
 import time
 from dotenv import load_dotenv
 import psutil
+
 start_time = time.time()
-#SO META
+
 
 class MetaCog(commands.Cog):
     """A cog for Eden Bot meta."""
@@ -20,12 +21,14 @@ class MetaCog(commands.Cog):
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
         result = await asyncio.create_subprocess_exec(
-            "bash", "-c", cmd,
+            "bash",
+            "-c",
+            cmd,
             *args,
             **kwargs,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd=os.getcwd()
+            cwd=os.getcwd(),
         )
         await result.wait()
         stdout, stderr = [out.decode("utf-8") for out in await result.communicate()]
@@ -34,7 +37,9 @@ class MetaCog(commands.Cog):
         else:
             return f"Error: {stderr.strip()}"
 
-    @commands.command(name="countlines", aliases=["botlines", "countlinescode", "lines"])
+    @commands.command(
+        name="countlines", aliases=["botlines", "countlinescode", "lines"]
+    )
     async def count_lines(self, ctx):
         """Counts all lines in main.py and cogs/*.py"""
         total_lines = 0
@@ -63,9 +68,10 @@ class MetaCog(commands.Cog):
                                 paths_checked.append(full_path)
 
         await ctx.send(
-            f"📄 Counted `{file_count}` Python files.\n🧮 Total lines of code: `{total_lines}`\n✅ Files scanned:\n" +
-            "\n".join(f"- `{p}`" for p in paths_checked)
+            f"📄 Counted `{file_count}` Python files.\n🧮 Total lines of code: `{total_lines}`\n✅ Files scanned:\n"
+            + "\n".join(f"- `{p}`" for p in paths_checked)
         )
+
     @commands.command(name="truecount", aliases=["truelines", "linesplus", "alllines"])
     async def truecount_lines(self, ctx):
         """Counts lines in Python and JSON files across the project, sending results in chunks."""
@@ -106,8 +112,11 @@ class MetaCog(commands.Cog):
 
         # Send each file path as a separate message (or chunk them)
         # for path in paths_checked:
-            # await ctx.send(f"- `{path}`")
-    @commands.command(name="contributions", aliases=["coderstats", "contribs", "gitstats"])
+        # await ctx.send(f"- `{path}`")
+
+    @commands.command(
+        name="contributions", aliases=["coderstats", "contribs", "gitstats"]
+    )
     async def contributions(self, ctx):
         """Estimates contributor percentages using git blame."""
         async with ctx.typing():
@@ -127,11 +136,13 @@ class MetaCog(commands.Cog):
                 try:
                     result = subprocess.run(
                         ["git", "blame", "--line-porcelain", file_path],
-                        capture_output=True, text=True, check=True
+                        capture_output=True,
+                        text=True,
+                        check=True,
                     )
                     for line in result.stdout.splitlines():
                         if line.startswith("author "):
-                            author = line[len("author "):]
+                            author = line[len("author ") :]
                             author_counter[author] += 1
                             total_lines += 1
                 except subprocess.CalledProcessError:
@@ -152,12 +163,17 @@ class MetaCog(commands.Cog):
     async def blame_line(self, ctx, filename: str, line_number: int):
         """Blames a specific line in a file."""
         import subprocess
+
         try:
             result = subprocess.run(
                 ["git", "blame", "-L", f"{line_number},{line_number}", "--", filename],
-                capture_output=True, text=True, check=True
+                capture_output=True,
+                text=True,
+                check=True,
             )
-            await ctx.send(f"🔍 Line {line_number} in `{filename}`: {result.stdout.strip()}")
+            await ctx.send(
+                f"🔍 Line {line_number} in `{filename}`: {result.stdout.strip()}"
+            )
         except Exception as e:
             await ctx.send(f"Could not blame line: {e}")
 
@@ -165,15 +181,16 @@ class MetaCog(commands.Cog):
     async def blame_file(self, ctx, filename: str):
         """Blames an entire file."""
         import subprocess
+
         try:
             result = subprocess.run(
-                ["git", "blame", filename],
-                capture_output=True, text=True, check=True
+                ["git", "blame", filename], capture_output=True, text=True, check=True
             )
-            await ctx.send(f"🔍 Blame for `{filename}`:\n```\n{result.stdout.strip()}\n```")
+            await ctx.send(
+                f"🔍 Blame for `{filename}`:\n```\n{result.stdout.strip()}\n```"
+            )
         except Exception as e:
             await ctx.send(f"Could not blame file: {e}")
-
 
     @commands.command(name="uptime")
     async def uptime(self, ctx):
@@ -187,14 +204,15 @@ class MetaCog(commands.Cog):
         # Author mapping
         author_map = {
             "Henry": "<@921605971577548820>",
-            "HappyJuice3": "<@1021831032347033680>"
-
+            "HappyJuice3": "<@1021831032347033680>",
         }
         # Get second latest commit author
         try:
             result = subprocess.run(
                 ["git", "log", "--pretty=format:%an", "-n", "2"],
-                capture_output=True, text=True, check=True
+                capture_output=True,
+                text=True,
+                check=True,
             )
             authors = result.stdout.strip().splitlines()
             if len(authors) >= 2:
@@ -203,7 +221,7 @@ class MetaCog(commands.Cog):
                     culprit = author_map[culprit]
                 else:
                     culprit = f"@{culprit.replace(' ', '').lower()}"
-                
+
             else:
                 culprit = "someone mysterious"
         except Exception as e:
@@ -211,7 +229,6 @@ class MetaCog(commands.Cog):
             print(f"[uptime] Git error: {e}")
 
         await ctx.send(f"⏱️ It has been {uptime_str} since **{culprit}** fucked up.")
-
 
     @commands.command(name="pong")
     async def pong(self, ctx):
@@ -223,6 +240,7 @@ class MetaCog(commands.Cog):
     async def self_destruct(self, ctx):
         """Fake bot shutdown sequence."""
         import asyncio
+
         await ctx.send("Initiating self-destruct sequence...")
         for i in range(10, 0, -1):
             await ctx.send(f"{i}...")
@@ -232,7 +250,7 @@ class MetaCog(commands.Cog):
     @commands.command(name="dna")
     async def dna(self, ctx):
         """Displays bot's internal stats."""
-        
+
         process = psutil.Process()
         mem = process.memory_info().rss / 1024 / 1024
         uptime = int(time.time() - start_time)
@@ -261,10 +279,12 @@ class MetaCog(commands.Cog):
         for cog, cmds in cog_map.items():
             response += f"- `{cog}`: {len(cmds)} commands\n"
         await ctx.send(response)
+
     @commands.command(name="fetch", aliases=["neofetch", "fastfetch"])
     async def fetch(self, ctx):
         await self.execvc("neofetch > /tmp/fetch.ansi")
         await ctx.send("```ansi\n" + await self.execvc("cat /tmp/fetch.ansi") + "\n```")
+
 
 async def setup(bot):
     """Load the MetaCog cog."""

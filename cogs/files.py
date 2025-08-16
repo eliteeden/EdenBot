@@ -4,6 +4,7 @@ import os
 from constants import ROLES
 import json
 
+
 class FilesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -36,7 +37,7 @@ class FilesCog(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     @commands.has_any_role(ROLES.TOTALLY_MOD)
-    async def deletefile(self, ctx, filename: str): 
+    async def deletefile(self, ctx, filename: str):
         """Deletes a saved file."""
         file_path = f"files/{filename}"
         if os.path.exists(file_path):
@@ -47,7 +48,7 @@ class FilesCog(commands.Cog):
 
     @commands.command()
     @commands.has_any_role(ROLES.TOTALLY_MOD)
-    async def listfiles(self, ctx): 
+    async def listfiles(self, ctx):
         """Lists all saved files."""
         files = os.listdir("files")
         if not files:
@@ -56,10 +57,9 @@ class FilesCog(commands.Cog):
 
         file_list = "\n".join(files)
         await ctx.send(f"Saved files:\n{file_list}")
-        
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True) 
+    @commands.has_permissions(manage_messages=True)
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def sendfile(self, ctx, channelID: int = None, filename: str = None):
         """Sends a previously saved file."""
@@ -87,22 +87,23 @@ class FilesCog(commands.Cog):
     @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
     async def jsons(self, ctx):
         """Lists all JSON files in the current directory."""
-        files = [f for f in os.listdir('.') if f.endswith('.json')]
+        files = [f for f in os.listdir(".") if f.endswith(".json")]
         if files:
-            await ctx.send("📄 JSON files:\n" + '\n'.join(files))
+            await ctx.send("📄 JSON files:\n" + "\n".join(files))
         else:
             await ctx.send("No JSON files found.")
 
-    @commands.command(name='getjson', aliases=["fetchjson", "json"])
+    @commands.command(name="getjson", aliases=["fetchjson", "json"])
     @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
     async def fetchjson(self, ctx, *, filename):
         """Sends the JSON file by filename (extension optional)."""
-        file_path = filename if filename.endswith('.json') else f"{filename}.json"
-        
+        file_path = filename if filename.endswith(".json") else f"{filename}.json"
+
         if os.path.exists(file_path):
             await ctx.send(file=discord.File(file_path))
         else:
             await ctx.send("JSON file not found.")
+
     @commands.command(aliases=["cat"])
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def file(self, ctx: commands.Context, *, filename: str):
@@ -111,22 +112,26 @@ class FilesCog(commands.Cog):
             await ctx.send(file=discord.File(filename))
         else:
             await ctx.send("File not found.")
+
     @commands.command(aliases=["wipejson", "clearjson", "resetjson"])
     @commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
     async def wipe(self, ctx, *, filename):
         """Wipes the contents of a JSON file (leaves it as {})."""
-        file_path = filename if filename.endswith('.json') else f"{filename}.json"
+        file_path = filename if filename.endswith(".json") else f"{filename}.json"
 
         if os.path.exists(file_path):
             try:
                 with open(file_path, "w", encoding="utf-8") as f:
                     json.dump({}, f, indent=4)
-                await ctx.send(f"✅ `{file_path}` has been wiped and now contains an empty JSON object.")
+                await ctx.send(
+                    f"✅ `{file_path}` has been wiped and now contains an empty JSON object."
+                )
             except Exception as e:
-                await ctx.send(f"⚠️ Failed to wipe `{file_path}`.\nError: `{type(e).__name__}` - {e}")
+                await ctx.send(
+                    f"⚠️ Failed to wipe `{file_path}`.\nError: `{type(e).__name__}` - {e}"
+                )
         else:
             await ctx.send("❌ JSON file not found.")
-
 
 
 # Required function to load this cog

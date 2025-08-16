@@ -372,7 +372,7 @@ class MetaCog(commands.Cog):
         branches = await self.execvc("git branch")
         embed.add_field(
             name="Branch",  # More stupid splitting cmds
-            value=f"Current: **{branches.strip().split('*')[-1].split('\n')[0].strip()}**, {len(branches.strip().split('\n'))-1} slaves",
+            value=f"Current: **{(name:=branches.strip().split('*')[-1].split('\n')[0].strip())}**, {(num:=(len(branches.strip().split('\n'))-1))} {'slave' if name == "master" else 'branch'}{('s' if name == 'master' else 'es') if num != 1 else ''}",
             inline=True,
         )
 

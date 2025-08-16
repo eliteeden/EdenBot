@@ -318,7 +318,14 @@ class MetaCog(commands.Cog):
             color=discord.Color.blue(),
         )
         embed.add_field(
-            name="Uptime", value=f"{int(time.time() - start_time)} seconds", inline=True
+            name="Last Reload",
+            value=f"{int(time.time() - start_time)} seconds ago",
+            inline=True,
+        )
+        embed.add_field(
+            name="System Uptime",
+            value=f"{(await self.execvc('uptime')).split('up')[0].strip()}",
+            inline=True,
         )
         embed.add_field(
             name="Memory Usage",

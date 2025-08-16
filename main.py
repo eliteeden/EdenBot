@@ -450,31 +450,10 @@ def save_responses(data):
 
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-async def responses(ctx):
-    try:
-        with open("autoresponses.json", "r", encoding="utf-8") as file:
-            content = file.read()
-
-        # Discord message limit is 2000 characters
-        if len(content) <= 2000:
-            # Send whole file in one code block
-            await ctx.send(f"```\n{content}\n```")
-        else:
-            # Split into 1024-character chunks for embeds
-            chunks = [content[i : i + 1024] for i in range(0, len(content), 1024)]
-
-            for i, chunk in enumerate(chunks):
-                embed = discord.Embed(
-                    title=f"Auto Responses (Part {i+1})",
-                    description=f"```json\n{chunk}\n```",
-                    color=discord.Color.teal(),
-                )
-                await ctx.author.send(embed=embed)
-
-    except FileNotFoundError:
-        await ctx.send("File not found. Please make sure `autoresponses.json` exists.")
-    except Exception as e:
-        await ctx.send(f"Unexpected error: `{e}`")
+async def responses(ctx: commands.Context):
+    await ctx.author.send(
+        file=discord.File("autoresponses.json", "ar.json", spoiler=True)
+    )
 
 
 @bot.command()

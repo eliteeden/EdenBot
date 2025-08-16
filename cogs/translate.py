@@ -13,7 +13,7 @@ class TranslateCog(commands.Cog):
         """Translates text to the specified language."""
         try:
             translation = self.translator.translate(text, dest=lang)
-            await ctx.send(f"**Translated ({lang}):** {translation}")
+            await ctx.send(f"**Translated ({lang}):** {translation.text}")
         except Exception as e:
             await ctx.send(f"Translation error: {e}")
 

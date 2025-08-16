@@ -1,5 +1,7 @@
 import asyncio
 import sys
+from typing import Literal, Optional
+import aiohttp
 from discord.ext import commands
 import discord
 import os
@@ -8,6 +10,8 @@ from collections import Counter
 import time
 from dotenv import load_dotenv
 import psutil
+
+from constants import ROLES
 
 start_time = time.time()
 
@@ -236,10 +240,30 @@ class MetaCog(commands.Cog):
         latency = self.bot.latency * 1000  # ms
         await ctx.send(f"🏓 Ping! Latency: `{latency:.2f}ms`")
 
-    @commands.command(name="selfdestruct")
-    async def self_destruct(self, ctx):
-        """Fake bot shutdown sequence."""
-        import asyncio
+    @commands.command(
+        name="selfdestruct",
+        aliases=[
+            "windowsmoment",
+            "bsod",
+            "yesiknowwhatthefuckimdoingandwanttoreload",
+            "noidontknowwhatimdoingandwanttoreloadanyways",
+        ],
+    )
+    async def self_destruct(self, ctx: commands.Context, for_real: bool = False):
+        if (
+            isinstance(ctx.author, discord.Member)
+            and ctx.author.get_role(ROLES.TOTALLY_MOD)
+            and for_real
+        ):
+            # Real shutdown
+            async def shutdown_wrapper():
+                for file in os.listdir("cogs"):
+                    if file.endswith(".py") and file != "meta.py":
+                        await self.bot.unload_extension(f"cogs.{file[:-3]}")
+
+            await ctx.send("Restarting...")
+            await shutdown_wrapper()
+            return await self.execvc("reload")  # this *should* get queued
 
         await ctx.send("Initiating self-destruct sequence...")
         for i in range(10, 0, -1):
@@ -284,6 +308,92 @@ class MetaCog(commands.Cog):
     async def fetch(self, ctx):
         await self.execvc("neofetch > /tmp/fetch.ansi")
         await ctx.send("```ansi\n" + await self.execvc("cat /tmp/fetch.ansi") + "\n```")
+
+    @commands.command(name="status", aliases=["botstatus", "botinfo"])
+    async def status(self, ctx: commands.Context):
+        """Displays the bot's status."""
+        embed = discord.Embed(
+            title="Eden Bot Status",
+            description=f"Currently running with {len(self.bot.cogs)} cogs and {len(self.bot.commands)} commands.",
+            color=discord.Color.blue(),
+        )
+        embed.add_field(
+            name="Uptime", value=f"{int(time.time() - start_time)} seconds", inline=True
+        )
+        embed.add_field(
+            name="Memory Usage",
+            value=f"{psutil.Process().memory_info().rss / 1024 / 1024:.2f} MB",
+            inline=True,
+        )
+        embed.add_field(
+            name="Python Version", value=sys.version.split()[0], inline=True
+        )
+        embed.add_field(
+            name="Discord.py Version", value=discord.__version__, inline=True
+        )
+        load_dotenv("/etc/os-release")
+        embed.add_field(
+            name="OS", value=os.getenv("PRETTY_NAME", "Unknown"), inline=True
+        )
+        # External IP
+        try:
+            ip: str = "Unknown"
+            # aiohttp to https://httpbin.org/get
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://httpbin.org/get") as resp:
+                    data = await resp.json()
+                    ip = data["origin"]
+            # IP masking
+            if ip.startswith("99.") and ip.endswith(".53"):
+                ip = "99.**.**.53"
+            embed.add_field(name="External IP", value=ip, inline=True)
+        except:
+            embed.add_field(name="External IP", value="Could not fetch IP", inline=True)
+        internal_ip = await self.execvc("hostname -I | awk '{print $1}'")
+        embed.add_field(
+            name="Internal IP", value=internal_ip.strip() or "Unknown", inline=True
+        )
+        warp_status = (await self.execvc("warp-cli status")).strip()
+        if "Disconnected" in warp_status:
+            embed.add_field(name="Cloudflare", value="Disconnected", inline=True)
+        elif "Connected" in warp_status:
+            embed.add_field(name="Cloudflare", value="Connected", inline=True)
+        else:
+            embed.add_field(name="Cloudflare", value=warp_status, inline=True)
+        embed.add_field(name="Server Count", value=len(self.bot.guilds), inline=True)
+        embed.add_field(name="User Count", value=len(self.bot.users), inline=True)
+        embed.set_footer(text=f"Ping: {self.bot.latency * 1000:.2f} ms")
+
+        await ctx.send(embed=embed)
+
+    statuses = Literal["playing", "watching", "listening", "none"]
+
+    @commands.command(name="status")
+    async def set_status(
+        self,
+        ctx: commands.Context,
+        type: statuses = "none",
+        *,
+        status: str,
+    ):
+        """Sets the bot's status."""
+        activity: Optional[discord.BaseActivity] = None
+        match type:
+            case "playing":
+                activity = discord.Game(name=status)
+            case "watching":
+                activity = discord.Activity(
+                    type=discord.ActivityType.watching, name=status
+                )
+            case "listening":
+                activity = discord.Activity(
+                    type=discord.ActivityType.listening, name=status
+                )
+            case "none":
+                activity = None
+
+        await self.bot.change_presence(activity=activity)
+        await ctx.send("✅ Status updated successfully.")
 
 
 async def setup(bot):

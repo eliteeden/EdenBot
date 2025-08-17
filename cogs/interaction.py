@@ -531,7 +531,7 @@ class InteractionCog(commands.Cog):
             return
 
         paginator_class = paginator_cog.Paginator  # type: ignore
-        paginator = paginator_class()
+        paginator = paginator_class(self)
 
         members = sorted(role.members, key=lambda m: m.display_name.lower())
         for i in range(0, len(members), 10):

@@ -6,15 +6,18 @@ from discord.ext import commands
 import discord
 import os
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import Counter
 import time
 from dotenv import load_dotenv
 import psutil
+import json
+import os 
 
 from constants import ROLES
 
 start_time = time.time()
+DATA_FILE = "memberstats.json"
 
 
 class MetaCog(commands.Cog):
@@ -24,7 +27,36 @@ class MetaCog(commands.Cog):
         self.bot = bot
         self.joins = []
         self.leaves = []
+        self.data = self.load_data()
 
+    def count_events(self, timestamps, days):
+        cutoff = datetime.now() - timedelta(days=days)
+        return sum(1 for ts in timestamps if ts >= cutoff)
+    def load_data(self):
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, "r") as f:
+                raw = json.load(f)
+                return {
+                    gid: {
+                        "joins": [datetime.fromisoformat(ts) for ts in info["joins"]],
+                        "leaves": [datetime.fromisoformat(ts) for ts in info["leaves"]],
+                    }
+                    for gid, info in raw.items()
+                }
+        return {}
+    def save_data(self):
+        with open(DATA_FILE, "w") as f:
+            json.dump(
+                {
+                    gid: {
+                        "joins": [ts.isoformat() for ts in info["joins"]],
+                        "leaves": [ts.isoformat() for ts in info["leaves"]],
+                    }
+                    for gid, info in self.data.items()
+                },
+                f,
+                indent=2,
+            )
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
         result = await asyncio.create_subprocess_exec(
@@ -54,25 +86,23 @@ class MetaCog(commands.Cog):
     async def on_member_remove(self, member):
         self.leaves.append(datetime.now())
 
-    def count_events(self, events, days):
-        now = datetime.now()
-        cutoff = now.timestamp() - (days * 86400)
-        return sum(1 for e in events if e.timestamp() >= cutoff)
-
     @commands.command(name="memberstats", aliases=["joinsleaves", "mlstats", "edenstats", "serverstats"])
     async def memberstats(self, ctx: commands.Context):
-        """Shows member join/leave stats over time."""
-        day_joins = self.count_events(self.joins, 1)
-        week_joins = self.count_events(self.joins, 7)
-        month_joins = self.count_events(self.joins, 30)
+        """Shows member join/leave stats for this server."""
+        gid = str(ctx.guild.id)
+        stats = self.data.get(gid, {"joins": [], "leaves": []})
 
-        day_leaves = self.count_events(self.leaves, 1)
-        week_leaves = self.count_events(self.leaves, 7)
-        month_leaves = self.count_events(self.leaves, 30)
+        day_joins = self.count_events(stats["joins"], 1)
+        week_joins = self.count_events(stats["joins"], 7)
+        month_joins = self.count_events(stats["joins"], 30)
+
+        day_leaves = self.count_events(stats["leaves"], 1)
+        week_leaves = self.count_events(stats["leaves"], 7)
+        month_leaves = self.count_events(stats["leaves"], 30)
 
         embed = discord.Embed(
-            title="📊 Member Join/Leave Stats",
-            color=discord.Color.green(),
+            title=f"📊 Member Stats for {ctx.guild.name}",
+            color=discord.Color.purple(),
         )
         embed.add_field(
             name="1 Day",
@@ -89,9 +119,13 @@ class MetaCog(commands.Cog):
             value=f"➕ Joins: {month_joins}\n➖ Leaves: {month_leaves}\n📈 Net: {month_joins - month_leaves}",
             inline=False,
         )
+        embed.add_field(
+            name="Current Member Count",
+            value=f"{ctx.guild.member_count:,}",
+            inline=True,
+        )
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
         await ctx.send(embed=embed)
-
 
     @commands.command(
         name="countlines", aliases=["botlines", "countlinescode", "lines"]

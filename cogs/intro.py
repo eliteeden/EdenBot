@@ -11,10 +11,11 @@ class UnintroducedRemover(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        valid_triggers = ["➸Nickname:", "Name:", "➸Nickname"]
         if message.author.bot:
             return
 
-        if message.channel.id == self.channel_id and "➸Nickname:" in message.content:
+        if message.channel.id == self.channel_id and any(trigger in message.context for trigger in valid_triggers):
             guild = message.guild
             member = message.author
             role = guild.get_role(self.role_id)
@@ -25,12 +26,12 @@ class UnintroducedRemover(commands.Cog):
                     (
                         line
                         for line in message.content.splitlines()
-                        if "➸Nickname:" in line
+                        if any(trigger in line for trigger in valid_triggers)
                     ),
                     None,
                 )
                 if name_line:
-                    extracted = name_line.split("➸Nickname:", 1)[1].strip()
+                    extracted = name_line.split(any(trigger for trigger in valid_triggers), 1)[1].strip()
                     new_name = (
                         extracted
                         if len(extracted) <= self.max_nick_length

@@ -33,18 +33,24 @@ class MetaCog(commands.Cog):
         cutoff = datetime.now() - timedelta(days=days)
         return sum(1 for ts in timestamps if ts >= cutoff)
     def load_data(self):
-        if os.path.exists(DATA_FILE):
+        if not os.path.exists(DATA_FILE):
+            # Create file with empty dict if it doesn't exist
+            with open(DATA_FILE, "w") as f:
+                json.dump({}, f)
+            return {}
+
+        try:
             with open(DATA_FILE, "r") as f:
                 raw = json.load(f)
                 return {
                     gid: {
-                        "joins": [datetime.fromisoformat(ts) for ts in info["joins"]],
-                        "leaves": [datetime.fromisoformat(ts) for ts in info["leaves"]],
+                        "joins": [datetime.fromisoformat(ts) for ts in raw.get(gid, {}).get("joins", [])],
+                        "leaves": [datetime.fromisoformat(ts) for ts in raw.get(gid, {}).get("leaves", [])],
                     }
-                    for gid, info in raw.items()
+                    for gid in raw
                 }
-        else:
-                # Create empty file if it doesn't exist
+        except json.JSONDecodeError:
+            # File exists but is empty or corrupted — reset it
             with open(DATA_FILE, "w") as f:
                 json.dump({}, f)
             return {}
@@ -62,7 +68,7 @@ class MetaCog(commands.Cog):
                 f,
                 indent=2,
             )
-            
+
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
         result = await asyncio.create_subprocess_exec(

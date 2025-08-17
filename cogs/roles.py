@@ -11,41 +11,67 @@ class RolesCog(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_roles=True)
-    # Has the phone error am i right?
-    async def createrole(
-        self, ctx, name: str, color: discord.Color = None, above_role_id: int = None
-    ):
+    async def createrole(self, ctx, name: str, color: str = None, above_role_id: int = None):
+        """
+        Create a role with optional color and position.
+        Usage:
+        - ;createrole RoleName #FF5733 123456789012345678
+        - ;createrole RoleName blue
+        """
         guild = ctx.guild
+
         try:
+            # Resolve color using ColorCog
             if color is None:
-                color = discord.Color.default()
+                role_color = discord.Color.default()
+            else:
+                color = color.strip().lower()
+                if not color.startswith("#") and len(color) <= 20:
+                    # Assume it's a name, resolve to hex
+                    color_cog = ctx.bot.get_cog("ColorCog")
+                    if color_cog:
+                        hex_code = color_cog.color_to_hex(color)
+                        if hex_code and hex_code ;= "Unknown hex":
+                            color = hex_code
+                        else:
+                            await ctx.send("❌ Couldn't resolve that color name.")
+                            return
+                    else:
+                        await ctx.send("❌ ColorCog is not loaded.")
+                        return
+
+                # Strip '#' and convert to discord.Color
+                hex_clean = color.lstrip("#")
+                try:
+                    role_color = discord.Color(int(hex_clean, 16))
+                except ValueError:
+                    await ctx.send("❌ Invalid hex code.")
+                    return
+
+            # Determine position
             if above_role_id is None:
                 above_role_id = guild.roles[-1].id
 
-            # Get the role to place the new role above
             above_role = guild.get_role(above_role_id)
             if not above_role:
-                return await ctx.send("Role with that ID not found.")
+                return await ctx.send("❌ Role with that ID not found.")
 
-            # Calculate new position
             new_position = above_role.position + 1
 
-            # Create the role
+            # Create and move role
             new_role = await guild.create_role(
-                name=name, color=color, reason=f"Created by {ctx.author}"
+                name=name, color=role_color, reason=f"Created by {ctx.author}"
             )
-
-            # Move the role to the desired position
-            await ctx.guild.edit_role_positions(positions={new_role: new_position})
+            await guild.edit_role_positions(positions={new_role: new_position})
 
             await ctx.send(
-                f"✅ Created role **{new_role.name}** above **{above_role.name}**."
+                f"✅ Created role **{new_role.name}** above **{above_role.name}** with color `{color}`."
             )
-        except discord.Forbidden:
-            await ctx.send("I don't have permission to manage roles or move that role.")
-        except discord.HTTPException as e:
-            await ctx.send(f"Failed to create or move role: {e}")
 
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to manage or move roles.")
+        except discord.HTTPException as e:
+            await ctx.send(f"❌ Failed to create or move role: {e}") 
     @commands.command(name="reorderrole", aliases=["reorder", "moverole", "raiserole", "raise"])
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
@@ -54,7 +80,7 @@ class RolesCog(commands.Cog):
         """
         Reorder a role to be above another role.
         Usage:
-          - !reorderrole @Role1 @Role2
+          - ;reorderrole @Role1 @Role2
         """
         guild = ctx.guild
         me = guild.me
@@ -90,7 +116,7 @@ class RolesCog(commands.Cog):
         """
         Add a role to a member.
         Usage:
-          - !add_role @Member @Role
+          - ;add_role @Member @Role
         """
         if role in member.roles:
             await ctx.send(f"{member.mention} already has the role {role.name}.")
@@ -109,55 +135,109 @@ class RolesCog(commands.Cog):
     @commands.command(name="bulk_add_role", aliases=["massrole", "addroles", "bulkassign", "bulkadd"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
     async def bulk_add_role(self, ctx, role: discord.Role, *args):
-        """
-        Add a role to multiple members using mentions or user IDs.
-        Usage:
-        - !bulk_add_role @Role @User1 @User2 ...
-        - !bulk_add_role @Role 123456789012345678 987654321098765432 ...
-        """
-        if not args:
-            await ctx.send("❌ You must provide at least one member (mention or ID).")
-            return
+        async with ctx.typing():
+            """
+            Add a role to multiple members using mentions or user IDs.
+            Usage:
+            - ;bulk_add_role @Role @User1 @User2 ...
+            - ;bulk_add_role @Role 123456789012345678 987654321098765432 ...
+            """
+            if not args:
+                await ctx.send("❌ You must provide at least one member (mention or ID).")
+                return
 
-        success = []
-        already_has = []
-        failed = []
+            success = []
+            already_has = []
+            failed = []
 
-        for arg in args:
-            try:
-                # Try to resolve as mention or ID
-                member = await commands.MemberConverter().convert(ctx, arg)
-            except commands.BadArgument:
-                failed.append((arg, "User not found"))
-                continue
+            for arg in args:
+                try:
+                    # Try to resolve as mention or ID
+                    member = await commands.MemberConverter().convert(ctx, arg)
+                except commands.BadArgument:
+                    failed.append((arg, "User not found"))
+                    continue
 
-            if role in member.roles:
-                already_has.append(member)
-                continue
+                if role in member.roles:
+                    already_has.append(member)
+                    continue
 
-            try:
-                await member.add_roles(
-                    role, reason=f"Bulk role added by {ctx.author} ({ctx.author.id})"
-                )
-                success.append(member)
-            except discord.Forbidden:
-                failed.append((member.mention, "Missing permissions"))
-            except discord.HTTPException as e:
-                failed.append((member.mention, f"HTTP error: {e}"))
+                try:
+                    await member.add_roles(
+                        role, reason=f"Bulk role added by {ctx.author} ({ctx.author.id})"
+                    )
+                    success.append(member)
+                except discord.Forbidden:
+                    failed.append((member.mention, "Missing permissions"))
+                except discord.HTTPException as e:
+                    failed.append((member.mention, f"HTTP error: {e}"))
 
-        # Build response
-        response = []
+            # Build response
+            response = []
 
-        if success:
-            response.append(f"✅ Added **{role.name}** to: " + ", ".join(m.mention for m in success))
-        if already_has:
-            response.append(f"ℹ️ Already had **{role.name}**: " + ", ".join(m.mention for m in already_has))
-        if failed:
-            response.append("❌ Failed to add role to:")
-            for m, reason in failed:
-                response.append(f"  - {m}: {reason}")
+            if success:
+                response.append(f"✅ Added **{role.name}** to: " + ", ".join(m.mention for m in success))
+            if already_has:
+                response.append(f"ℹ️ Already had **{role.name}**: " + ", ".join(m.mention for m in already_has))
+            if failed:
+                response.append("❌ Failed to add role to:")
+                for m, reason in failed:
+                    response.append(f"  - {m}: {reason}")
 
-        await ctx.send("\n".join(response))                
+            await ctx.send("\n".join(response))             
+
+    @commands.command(name="bulk_remove_role", aliases=["massremoverole", "removeroles", "bulkremove"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    async def bulk_remove_role(self, ctx, role: discord.Role, *args):
+        async with ctx.typing():
+            """
+            Remove a role from multiple members using mentions or user IDs.
+            Usage:
+            - ;bulk_remove_role @Role @User1 @User2 ...
+            - ;bulk_remove_role @Role 123456789012345678 987654321098765432 ...
+            """
+            if not args:
+                await ctx.send("❌ You must provide at least one member (mention or ID).")
+                return
+
+            removed = []
+            not_has_role = []
+            failed = []
+
+            for arg in args:
+                try:
+                    member = await commands.MemberConverter().convert(ctx, arg)
+                except commands.BadArgument:
+                    failed.append((arg, "User not found"))
+                    continue
+
+                if role not in member.roles:
+                    not_has_role.append(member)
+                    continue
+
+                try:
+                    await member.remove_roles(
+                        role, reason=f"Bulk role removed by {ctx.author} ({ctx.author.id})"
+                    )
+                    removed.append(member)
+                except discord.Forbidden:
+                    failed.append((member.mention, "Missing permissions"))
+                except discord.HTTPException as e:
+                    failed.append((member.mention, f"HTTP error: {e}"))
+
+            # Build response
+            response = []
+
+            if removed:
+                response.append(f"✅ Removed **{role.name}** from: " + ", ".join(m.mention for m in removed))
+            if not_has_role:
+                response.append(f"ℹ️ Didn't have **{role.name}**: " + ", ".join(m.mention for m in not_has_role))
+            if failed:
+                response.append("❌ Failed to remove role from:")
+                for m, reason in failed:
+                    response.append(f"  - {m}: {reason}")
+
+            await ctx.send("\n".join(response))   
 
     @commands.command(name="remove_role", aliases=["removerole", "unassign"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
@@ -165,7 +245,7 @@ class RolesCog(commands.Cog):
         """
         Remove a role from a member.
         Usage:
-          - !remove_role @Member @Role
+          - ;remove_role @Member @Role
         """
         if role not in member.roles:
             await ctx.send(f"{member.mention} does not have the role {role.name}.")
@@ -192,9 +272,9 @@ class RolesCog(commands.Cog):
         """
         Delete roles by exact name (case-insensitive) or a specific role by ID/mention.
         Usage:
-          - !delete_roles Moderators
-          - !delete_roles 123456789012345678
-          - !delete_roles @Moderators
+          - ;delete_roles Moderators
+          - ;delete_roles 123456789012345678
+          - ;delete_roles @Moderators
         """
         guild = ctx.guild
         me = guild.me

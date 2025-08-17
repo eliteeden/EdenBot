@@ -46,7 +46,7 @@ class RolesCog(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"Failed to create or move role: {e}")
 
-    @commands.command(name="reorderrole", aliases=["reorder", "moverole", "raiserole"])
+    @commands.command(name="reorderrole", aliases=["reorder", "moverole", "raiserole", "raise"])
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -84,7 +84,7 @@ class RolesCog(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"Failed to reorder roles: {e}")
 
-    @commands.command(name="add_role", aliases=["addrole", "giverole"])
+    @commands.command(name="add_role", aliases=["addrole", "giverole", "assign"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
     async def add_role(self, ctx, member: discord.Member, role: discord.Role):
         """
@@ -105,6 +105,59 @@ class RolesCog(commands.Cog):
                 await ctx.send("I don't have permission to add that role.")
             except discord.HTTPException as e:
                 await ctx.send(f"Failed to add role: {e}")
+
+    @commands.command(name="bulk_add_role", aliases=["massrole", "addroles", "bulkassign", "bulkadd"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    async def bulk_add_role(self, ctx, role: discord.Role, *args):
+        """
+        Add a role to multiple members using mentions or user IDs.
+        Usage:
+        - !bulk_add_role @Role @User1 @User2 ...
+        - !bulk_add_role @Role 123456789012345678 987654321098765432 ...
+        """
+        if not args:
+            await ctx.send("❌ You must provide at least one member (mention or ID).")
+            return
+
+        success = []
+        already_has = []
+        failed = []
+
+        for arg in args:
+            try:
+                # Try to resolve as mention or ID
+                member = await commands.MemberConverter().convert(ctx, arg)
+            except commands.BadArgument:
+                failed.append((arg, "User not found"))
+                continue
+
+            if role in member.roles:
+                already_has.append(member)
+                continue
+
+            try:
+                await member.add_roles(
+                    role, reason=f"Bulk role added by {ctx.author} ({ctx.author.id})"
+                )
+                success.append(member)
+            except discord.Forbidden:
+                failed.append((member.mention, "Missing permissions"))
+            except discord.HTTPException as e:
+                failed.append((member.mention, f"HTTP error: {e}"))
+
+        # Build response
+        response = []
+
+        if success:
+            response.append(f"✅ Added **{role.name}** to: " + ", ".join(m.mention for m in success))
+        if already_has:
+            response.append(f"ℹ️ Already had **{role.name}**: " + ", ".join(m.mention for m in already_has))
+        if failed:
+            response.append("❌ Failed to add role to:")
+            for m, reason in failed:
+                response.append(f"  - {m}: {reason}")
+
+        await ctx.send("\n".join(response))                
 
     @commands.command(name="remove_role", aliases=["removerole", "unassign"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)

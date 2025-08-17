@@ -126,3 +126,22 @@ Eden bot Changelog
 
 
 10:29 am 11/07/2025
+
+-New conversion, meta, files, roles, intro and debates cogs
+-Various new QoL commands
+-New file system using cat, grabfile, json and so on
+-Unintroduced role remover event added
+-New command that imports all mee6 level data #FuckMEE6
+-New rankcard that mimics mee6's rank and a paginated leaderboard
+-Some new autoresponses
+-Meta commands that give data about eden bot like uptime, total lines of code and so on
+-New conversion cog that supports the conversion of heights, distances and weight
+-Lyric command fix
+-Moderation commands have been moved to a new cog
+-New find command that checks all channels for the last message from a user (limit of 100 messages)
+-Whitespacaing
+-New nix files for stuff @Cootshk knows
+-Various role management commands
+
+
+11:56 pm 17/08/2025

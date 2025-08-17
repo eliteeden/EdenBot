@@ -10,14 +10,22 @@ from discord.utils import utcnow
 from googlesearch import search
 import math
 import asyncio
+from bs4 import BeautifulSoup
 import random
 import requests
 import pytz
-
+from dotenv import load_dotenv
 from constants import ROLES, USERS
 
 
 class InteractionCog(commands.Cog):
+    
+    load_dotenv()
+
+    GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
+    token = os.environ.get("TOKEN")
+    if not token:
+        token = input("Bot token not found. Please enter your token:\n> ")
     """Some more random commands"""
 
     def __init__(self, bot: commands.Bot):
@@ -608,6 +616,80 @@ class InteractionCog(commands.Cog):
                     )
         except Exception as e:
             await ctx.send(f"Error: {e}")
+
+    @commands.command(aliases=["ll", "sing"])
+    async def song(self, ctx, *, query: str):
+        """Fetch song lyrics from Genius (format: Song Title - Artist)"""
+        try:
+            async with ctx.typing():
+                if "-" not in query:
+                    return await ctx.send("Please use the format: `Song Title - Artist`")
+
+                title, artist = map(str.strip, query.split("-", 1))
+                search_query = f"{title} {artist}"
+
+                headers = {"Authorization": f"Bearer {GENIUS_API_TOKEN}"}
+
+                async with aiohttp.ClientSession() as session:
+                    # Search for the song
+                    search_url = f"https://api.genius.com/search?q={search_query}"
+                    async with session.get(search_url, headers=headers) as resp:
+                        if resp.status != 200:
+                            return await ctx.send("Could not search Genius.")
+                        data = await resp.json()
+                        hits = data["response"]["hits"]
+                        if not hits:
+                            return await ctx.send("No lyrics found.")
+                        song_url = hits[0]["result"]["url"]
+
+                    # Scrape the lyrics
+                    async with session.get(song_url) as song_resp:
+                        html = await song_resp.text()
+                        soup = BeautifulSoup(html, "lxml")
+                        containers = soup.find_all(
+                            "div", attrs={"data-lyrics-container": "true"}
+                        )
+                        lyrics_lines = []
+
+                        for tag in containers:
+                            for element in tag.stripped_strings:
+                                lyrics_lines.append(element)
+
+                        lyrics = "\n".join(lyrics_lines)
+
+                if not lyrics:
+                    return await ctx.send("Lyrics not found on the page.")
+
+                # Split lyrics into lines and group into chunks under 1024 characters
+                lines = lyrics.split("\n")
+                chunks = []
+                current_chunk = ""
+
+                for line in lines:
+                    if len(current_chunk) + len(line) + 1 <= 1024:
+                        current_chunk += line + "\n"
+                    else:
+                        chunks.append(current_chunk.strip())
+                        current_chunk = line + "\n"
+
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+
+                # Send lyrics in embed chunks
+                for i, chunk in enumerate(chunks):
+                    embed = discord.Embed(
+                        title=(
+                            f"{title} - {artist}"
+                            if i == 0
+                            else f"{title} - {artist} (Part {i+1})"
+                        ),
+                        description=chunk,
+                        color=discord.Color.blurple(),
+                    )
+                    await ctx.send(embed=embed)
+
+        except Exception as e:
+            await ctx.send(f"An error occurred: `{e}`")
 
     # On message event
     @commands.Cog.listener()

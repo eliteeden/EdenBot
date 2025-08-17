@@ -30,14 +30,17 @@ class UnintroducedRemover(commands.Cog):
                     ),
                     None,
                 )
+                new_name = member.name
                 if name_line:
-                    extracted = name_line.split(any(trigger for trigger in valid_triggers), 1)[1].strip()
-                    new_name = (
-                        extracted
-                        if len(extracted) <= self.max_nick_length
-                        else member.name
-                    )
-
+                    for trigger in valid_triggers:
+                        if trigger in name_line:
+                            extracted = name_line.split(trigger, 1)[1].strip()
+                            new_name = (
+                                extracted
+                                if len(extracted) <= self.max_nick_length
+                                else member.name
+                            )
+                            break 
                     await member.edit(nick=new_name)
                     await message.channel.send(
                         f"{member.mention}'s nickname updated to `{new_name}`."

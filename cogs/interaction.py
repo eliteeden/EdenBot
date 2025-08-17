@@ -542,7 +542,7 @@ class InteractionCog(commands.Cog):
             for idx, member in enumerate(members[i:i + 10]):
                 embed.add_field(
                     name=f"{i + idx + 1}. {member.display_name}",
-                    value=member.mention,s
+                    value=member.mention,
                     inline=False,
                 )
             paginator.add_page(embed)

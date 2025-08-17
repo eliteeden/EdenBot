@@ -74,6 +74,13 @@ class MetaCog(commands.Cog):
         bots = sum(1 for m in members if m.bot)
         humans = total - bots
         online = sum(1 for m in members if m.status != discord.Status.offline)
+        offline = total - online
+
+        roles = guild.roles
+        channels = guild.channels
+        text_channels = sum(1 for c in channels if isinstance(c, discord.TextChannel))
+        voice_channels = sum(1 for c in channels if isinstance(c, discord.VoiceChannel))
+        category_channels = sum(1 for c in channels if isinstance(c, discord.CategoryChannel))
 
         gid = str(guild.id)
         previous = self.snapshot.get(gid, {
@@ -87,8 +94,8 @@ class MetaCog(commands.Cog):
         change_symbol = "📈" if net_change > 0 else "📉" if net_change < 0 else "➖"
 
         embed = discord.Embed(
-            title=f"📊 Server Stats for {guild.name}",
-            color=discord.Color.blue(),
+            title=f"📊 Server Stats: {guild.name}",
+            color=discord.Color.gold(),
             timestamp=datetime.utcnow()
         )
         embed.set_thumbnail(url=guild.icon.url if guild.icon else discord.Embed.Empty)
@@ -96,6 +103,14 @@ class MetaCog(commands.Cog):
         embed.add_field(name="🧍 Humans", value=f"{humans:,}", inline=True)
         embed.add_field(name="🤖 Bots", value=f"{bots:,}", inline=True)
         embed.add_field(name="🟢 Online", value=f"{online:,}", inline=True)
+        embed.add_field(name="⚫ Offline", value=f"{offline:,}", inline=True)
+        embed.add_field(name="📅 Server Created", value=guild.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
+        embed.add_field(name="🔐 Verification Level", value=str(guild.verification_level).title(), inline=True)
+        embed.add_field(name="🌐 Locale", value=str(guild.preferred_locale).upper(), inline=True)
+        embed.add_field(name="📁 Roles", value=f"{len(roles):,}", inline=True)
+        embed.add_field(name="💬 Text Channels", value=f"{text_channels:,}", inline=True)
+        embed.add_field(name="🔊 Voice Channels", value=f"{voice_channels:,}", inline=True)
+        embed.add_field(name="📂 Categories", value=f"{category_channels:,}", inline=True)
         embed.add_field(
             name="📊 Comparison",
             value=f"{change_symbol} Change since last check: {net_change:+,}\n🕒 Last checked: {previous_time}",
@@ -105,10 +120,9 @@ class MetaCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-        # Update snapshot
         self.snapshot[gid] = {
             "last_count": total,
-            "last_checked": datetime.utcnow().isoformat()
+            "last_checked": datetime.now().isoformat()
         }
         self.save_snapshot()
 

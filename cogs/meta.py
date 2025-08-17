@@ -6,6 +6,7 @@ from discord.ext import commands
 import discord
 import os
 import subprocess
+from datetime import datetime
 from collections import Counter
 import time
 from dotenv import load_dotenv
@@ -21,6 +22,8 @@ class MetaCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.joins = []
+        self.leaves = []
 
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
@@ -40,6 +43,55 @@ class MetaCog(commands.Cog):
             return stdout.strip()
         else:
             return f"Error: {stderr.strip()}"
+
+
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        self.joins.append(datetime.now())
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        self.leaves.append(datetime.now())
+
+    def count_events(self, events, days):
+        now = datetime.now()
+        cutoff = now.timestamp() - (days * 86400)
+        return sum(1 for e in events if e.timestamp() >= cutoff)
+
+    @commands.command(name="memberstats", aliases=["joinsleaves", "mlstats", "edenstats", "serverstats"])
+    async def memberstats(self, ctx: commands.Context):
+        """Shows member join/leave stats over time."""
+        day_joins = self.count_events(self.joins, 1)
+        week_joins = self.count_events(self.joins, 7)
+        month_joins = self.count_events(self.joins, 30)
+
+        day_leaves = self.count_events(self.leaves, 1)
+        week_leaves = self.count_events(self.leaves, 7)
+        month_leaves = self.count_events(self.leaves, 30)
+
+        embed = discord.Embed(
+            title="📊 Member Join/Leave Stats",
+            color=discord.Color.green(),
+        )
+        embed.add_field(
+            name="1 Day",
+            value=f"➕ Joins: {day_joins}\n➖ Leaves: {day_leaves}\n📈 Net: {day_joins - day_leaves}",
+            inline=False,
+        )
+        embed.add_field(
+            name="7 Days",
+            value=f"➕ Joins: {week_joins}\n➖ Leaves: {week_leaves}\n📈 Net: {week_joins - week_leaves}",
+            inline=False,
+        )
+        embed.add_field(
+            name="30 Days",
+            value=f"➕ Joins: {month_joins}\n➖ Leaves: {month_leaves}\n📈 Net: {month_joins - month_leaves}",
+            inline=False,
+        )
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+        await ctx.send(embed=embed)
+
 
     @commands.command(
         name="countlines", aliases=["botlines", "countlinescode", "lines"]

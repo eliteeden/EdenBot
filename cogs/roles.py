@@ -374,7 +374,51 @@ class RolesCog(commands.Cog):
 
         await ctx.send("\n".join(msg_lines) if msg_lines else "Nothing to report.")
 
+    @commands.command(name="changerolecolor", aliases=["setrolecolor", "rolecolor", "hexrole", "prettify"])
+    @commands.has_permissions(manage_roles=True)
+    async def changerolecolor(self, ctx, role: discord.Role, color: str):
+        """
+        Change the color of an existing role.
+        Usage:
+        - ;changerolecolor @Role #FF5733
+        - ;changerolecolor @Role blue
+        """
+        try:
+            # Resolve color using ColorCog
+            color = color.strip().lower()
+            if not color.startswith("#") and len(color) <= 20:
+                # Assume it's a name, resolve to hex
+                color_cog = ctx.bot.get_cog("ColorCog")
+                if color_cog:
+                    hex_code = color_cog.color_to_hex(color)
+                    if hex_code and hex_code != "Unknown hex":
+                        color = hex_code
+                    else:
+                        await ctx.send("❌ Couldn't resolve that color name.")
+                        return
+                else:
+                    await ctx.send("❌ ColorCog is not loaded.")
+                    return
 
+            # Convert hex to discord.Color
+            hex_clean = color.lstrip("#")
+            try:
+                new_color = discord.Color(int(hex_clean, 16))
+            except ValueError:
+                await ctx.send("❌ Invalid hex code.")
+                return
+
+            # Apply the color change
+            await role.edit(color=new_color, reason=f"Color changed by {ctx.author}")
+            await ctx.send(f"✅ Changed color of **{role.name}** to `{color}`.")
+
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to edit that role.")
+        except discord.HTTPException as e:
+            await ctx.send(f"❌ Failed to change role color: {e}")
+
+
+#This cog was made because we are lazy as fuck
 async def setup(bot):
     """Load the RolesCog cog."""
     await bot.add_cog(RolesCog(bot))

@@ -23,14 +23,16 @@ class InteractionCog(commands.Cog):
     load_dotenv()
 
     GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
-    token = os.environ.get("TOKEN")
-    if not token:
-        token = input("Bot token not found. Please enter your token:\n> ")
-    """Some more random commands"""
+    
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.messages: dict[int, discord.Message] = {}
+        self.GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
+        self.token = os.environ.get("TOKEN")
+        if not self.token:
+            self.token = input("Bot token not found. Please enter your token:\n> ")
+        """Some more random commands"""
 
     def get_gif(self, folder: str) -> File:
         """Returns a random gif from the specified folder"""
@@ -628,7 +630,7 @@ class InteractionCog(commands.Cog):
                 title, artist = map(str.strip, query.split("-", 1))
                 search_query = f"{title} {artist}"
 
-                headers = {"Authorization": f"Bearer {GENIUS_API_TOKEN}"}
+                headers = {"Authorization": f"Bearer {self.GENIUS_API_TOKEN}"}
 
                 async with aiohttp.ClientSession() as session:
                     # Search for the song

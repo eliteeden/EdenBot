@@ -6,18 +6,15 @@ from discord.ext import commands
 import discord
 import os
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import Counter
 import time
 from dotenv import load_dotenv
 import psutil
-import json
-import os 
 
 from constants import ROLES
 
 start_time = time.time()
-DATA_FILE = "memberstats.json"
 
 
 class MetaCog(commands.Cog):
@@ -27,47 +24,6 @@ class MetaCog(commands.Cog):
         self.bot = bot
         self.joins = []
         self.leaves = []
-        self.data = self.load_data()
-
-    def count_events(self, timestamps, days):
-        cutoff = datetime.now() - timedelta(days=days)
-        return sum(1 for ts in timestamps if ts >= cutoff)
-    def load_data(self):
-        if not os.path.exists(DATA_FILE):
-            # Create file with empty dict if it doesn't exist
-            with open(DATA_FILE, "w") as f:
-                json.dump({}, f)
-            return {}
-
-        try:
-            with open(DATA_FILE, "r") as f:
-                raw = json.load(f)
-                return {
-                    gid: {
-                        "joins": [datetime.fromisoformat(ts) for ts in raw.get(gid, {}).get("joins", [])],
-                        "leaves": [datetime.fromisoformat(ts) for ts in raw.get(gid, {}).get("leaves", [])],
-                    }
-                    for gid in raw
-                }
-        except json.JSONDecodeError:
-            # File exists but is empty or corrupted — reset it
-            with open(DATA_FILE, "w") as f:
-                json.dump({}, f)
-            return {}
-
-    def save_data(self):
-        with open(DATA_FILE, "w") as f:
-            json.dump(
-                {
-                    gid: {
-                        "joins": [ts.isoformat() for ts in info["joins"]],
-                        "leaves": [ts.isoformat() for ts in info["leaves"]],
-                    }
-                    for gid, info in self.data.items()
-                },
-                f,
-                indent=2,
-            )
 
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
@@ -89,53 +45,48 @@ class MetaCog(commands.Cog):
             return f"Error: {stderr.strip()}"
 
 
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        self.joins.append(datetime.now())
-
-    @commands.Cog.listener()
-    async def on_member_remove(self, member):
-        self.leaves.append(datetime.now())
-
-    @commands.command(name="memberstats", aliases=["joinsleaves", "mlstats", "edenstats", "serverstats"])
+    @commands.command(name="memberstats", aliases=["serverstats", "guildinfo"])
     async def memberstats(self, ctx: commands.Context):
-        """Shows member join/leave stats for this server."""
-        gid = str(ctx.guild.id)
-        stats = self.data.get(gid, {"joins": [], "leaves": []})
+        """Imports and analyzes live server data."""
+        guild = ctx.guild
+        await guild.chunk()  # Ensures all member data is loaded
 
-        day_joins = self.count_events(stats["joins"], 1)
-        week_joins = self.count_events(stats["joins"], 7)
-        month_joins = self.count_events(stats["joins"], 30)
+        members = guild.members
+        roles = guild.roles
+        channels = guild.channels
 
-        day_leaves = self.count_events(stats["leaves"], 1)
-        week_leaves = self.count_events(stats["leaves"], 7)
-        month_leaves = self.count_events(stats["leaves"], 30)
+        total_members = len(members)
+        bots = sum(1 for m in members if m.bot)
+        humans = total_members - bots
+
+        online = sum(1 for m in members if m.status != discord.Status.offline)
+        offline = total_members - online
+
+        role_count = len(roles)
+        text_channels = sum(1 for c in channels if isinstance(c, discord.TextChannel))
+        voice_channels = sum(1 for c in channels if isinstance(c, discord.VoiceChannel))
+        category_channels = sum(1 for c in channels if isinstance(c, discord.CategoryChannel))
 
         embed = discord.Embed(
-            title=f"📊 Member Stats for {ctx.guild.name}",
-            color=discord.Color.purple(),
+            title=f"📊 Imported Server Stats: {guild.name}",
+            color=discord.Color.green(),
+            timestamp=datetime.utcnow()
         )
-        embed.add_field(
-            name="1 Day",
-            value=f"➕ Joins: {day_joins}\n➖ Leaves: {day_leaves}\n📈 Net: {day_joins - day_leaves}",
-            inline=False,
-        )
-        embed.add_field(
-            name="7 Days",
-            value=f"➕ Joins: {week_joins}\n➖ Leaves: {week_leaves}\n📈 Net: {week_joins - week_leaves}",
-            inline=False,
-        )
-        embed.add_field(
-            name="30 Days",
-            value=f"➕ Joins: {month_joins}\n➖ Leaves: {month_leaves}\n📈 Net: {month_joins - month_leaves}",
-            inline=False,
-        )
-        embed.add_field(
-            name="Current Member Count",
-            value=f"{ctx.guild.member_count:,}",
-            inline=True,
-        )
+        embed.set_thumbnail(url=guild.icon.url if guild.icon else discord.Embed.Empty)
+        embed.add_field(name="👥 Total Members", value=f"{total_members:,}", inline=True)
+        embed.add_field(name="🧍 Humans", value=f"{humans:,}", inline=True)
+        embed.add_field(name="🤖 Bots", value=f"{bots:,}", inline=True)
+        embed.add_field(name="🟢 Online", value=f"{online:,}", inline=True)
+        embed.add_field(name="⚫ Offline", value=f"{offline:,}", inline=True)
+        embed.add_field(name="📅 Server Created", value=guild.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
+        embed.add_field(name="🔐 Verification Level", value=str(guild.verification_level).title(), inline=True)
+        embed.add_field(name="🌐 Locale", value=str(guild.preferred_locale).upper(), inline=True)
+        embed.add_field(name="📁 Roles", value=f"{role_count:,}", inline=True)
+        embed.add_field(name="💬 Text Channels", value=f"{text_channels:,}", inline=True)
+        embed.add_field(name="🔊 Voice Channels", value=f"{voice_channels:,}", inline=True)
+        embed.add_field(name="📂 Categories", value=f"{category_channels:,}", inline=True)
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+
         await ctx.send(embed=embed)
 
     @commands.command(

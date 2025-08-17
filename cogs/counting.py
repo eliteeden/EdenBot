@@ -1,12 +1,13 @@
 import discord
 from discord.ext import commands
 
+
 class Counting(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.channel_id = None      # Set this manually or through a command
+        self.channel_id = None  # Set this manually or through a command
         self.current_count = 0
-        self.last_user_id = None    # To avoid double counting
+        self.last_user_id = None  # To avoid double counting
         self.breaker = None
 
     @commands.Cog.listener()
@@ -17,8 +18,7 @@ class Counting(commands.Cog):
         try:
             number = int(message.content.strip())
         except ValueError:
-            return # We got a message that wasn't a number, ignore it
-
+            return  # We got a message that wasn't a number, ignore it
 
         # Same user posting twice
         if message.author.id == self.last_user_id:
@@ -41,6 +41,7 @@ class Counting(commands.Cog):
         # Valid count
         self.current_count = number
         self.last_user_id = message.author.id
+
     @commands.command(name="setcount")
     async def setcount(self, ctx, start: int):
         """Set the starting number and restrict to this channel."""
@@ -48,7 +49,9 @@ class Counting(commands.Cog):
         self.last_user_id = None
         self.breaker = None
         self.channel_id = ctx.channel.id
-        await ctx.send(f"Counting is now restricted to **{ctx.channel.mention}**. Starting from **{start}**!")
+        await ctx.send(
+            f"Counting is now restricted to **{ctx.channel.mention}**. Starting from **{start}**!"
+        )
 
     @commands.command(name="broken")
     async def broken(self, ctx):
@@ -57,6 +60,7 @@ class Counting(commands.Cog):
             await ctx.send(f"The last breaker was {self.breaker.mention}.")
         else:
             await ctx.send("No one has broken the chain yet!")
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Counting(bot))

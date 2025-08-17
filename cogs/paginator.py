@@ -1,19 +1,22 @@
 import asyncio
 from discord.ext import commands
 
+
 class PaginatorCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
     def paginator(self):
         return self.Paginator(self.bot)
-    class Paginator():
+
+    class Paginator:
         def __init__(self, bot):
             self.bot = bot
             self.pages = []
 
         def add_page(self, embed):
             self.pages.append(embed)
-        
+
         async def send(self, ctx):
             current_page = 0
             message = await ctx.send(embed=self.pages[current_page])
@@ -26,9 +29,14 @@ class PaginatorCog(commands.Cog):
 
             while True:
                 try:
-                    reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
+                    reaction, user = await self.bot.wait_for(
+                        "reaction_add", timeout=60.0, check=check
+                    )
 
-                    if str(reaction.emoji) == "▶️" and current_page < len(self.pages) - 1:
+                    if (
+                        str(reaction.emoji) == "▶️"
+                        and current_page < len(self.pages) - 1
+                    ):
                         current_page += 1
                         await message.edit(embed=self.pages[current_page])
                         await message.remove_reaction(reaction, user)
@@ -40,6 +48,7 @@ class PaginatorCog(commands.Cog):
 
                 except asyncio.TimeoutError:
                     break
+
     def __call__(self):
         return self.paginator()
 

@@ -1,5 +1,7 @@
 import asyncio
 import sys
+from typing import Literal, Optional
+import aiohttp
 from discord.ext import commands
 import discord
 import os
@@ -8,8 +10,11 @@ from collections import Counter
 import time
 from dotenv import load_dotenv
 import psutil
+
+from constants import ROLES
+
 start_time = time.time()
-#SO META
+
 
 class MetaCog(commands.Cog):
     """A cog for Eden Bot meta."""
@@ -20,12 +25,14 @@ class MetaCog(commands.Cog):
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
         result = await asyncio.create_subprocess_exec(
-            "bash", "-c", cmd,
+            "bash",
+            "-c",
+            cmd,
             *args,
             **kwargs,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd=os.getcwd()
+            cwd=os.getcwd(),
         )
         await result.wait()
         stdout, stderr = [out.decode("utf-8") for out in await result.communicate()]
@@ -34,7 +41,9 @@ class MetaCog(commands.Cog):
         else:
             return f"Error: {stderr.strip()}"
 
-    @commands.command(name="countlines", aliases=["botlines", "countlinescode", "lines"])
+    @commands.command(
+        name="countlines", aliases=["botlines", "countlinescode", "lines"]
+    )
     async def count_lines(self, ctx):
         """Counts all lines in main.py and cogs/*.py"""
         total_lines = 0
@@ -63,9 +72,10 @@ class MetaCog(commands.Cog):
                                 paths_checked.append(full_path)
 
         await ctx.send(
-            f"📄 Counted `{file_count}` Python files.\n🧮 Total lines of code: `{total_lines}`\n✅ Files scanned:\n" +
-            "\n".join(f"- `{p}`" for p in paths_checked)
+            f"📄 Counted `{file_count}` Python files.\n🧮 Total lines of code: `{total_lines}`\n✅ Files scanned:\n"
+            + "\n".join(f"- `{p}`" for p in paths_checked)
         )
+
     @commands.command(name="truecount", aliases=["truelines", "linesplus", "alllines"])
     async def truecount_lines(self, ctx):
         """Counts lines in Python and JSON files across the project, sending results in chunks."""
@@ -106,8 +116,11 @@ class MetaCog(commands.Cog):
 
         # Send each file path as a separate message (or chunk them)
         # for path in paths_checked:
-            # await ctx.send(f"- `{path}`")
-    @commands.command(name="contributions", aliases=["coderstats", "contribs", "gitstats"])
+        # await ctx.send(f"- `{path}`")
+
+    @commands.command(
+        name="contributions", aliases=["coderstats", "contribs", "gitstats"]
+    )
     async def contributions(self, ctx):
         """Estimates contributor percentages using git blame."""
         async with ctx.typing():
@@ -127,11 +140,13 @@ class MetaCog(commands.Cog):
                 try:
                     result = subprocess.run(
                         ["git", "blame", "--line-porcelain", file_path],
-                        capture_output=True, text=True, check=True
+                        capture_output=True,
+                        text=True,
+                        check=True,
                     )
                     for line in result.stdout.splitlines():
                         if line.startswith("author "):
-                            author = line[len("author "):]
+                            author = line[len("author ") :]
                             author_counter[author] += 1
                             total_lines += 1
                 except subprocess.CalledProcessError:
@@ -152,12 +167,17 @@ class MetaCog(commands.Cog):
     async def blame_line(self, ctx, filename: str, line_number: int):
         """Blames a specific line in a file."""
         import subprocess
+
         try:
             result = subprocess.run(
                 ["git", "blame", "-L", f"{line_number},{line_number}", "--", filename],
-                capture_output=True, text=True, check=True
+                capture_output=True,
+                text=True,
+                check=True,
             )
-            await ctx.send(f"🔍 Line {line_number} in `{filename}`: {result.stdout.strip()}")
+            await ctx.send(
+                f"🔍 Line {line_number} in `{filename}`: {result.stdout.strip()}"
+            )
         except Exception as e:
             await ctx.send(f"Could not blame line: {e}")
 
@@ -165,15 +185,16 @@ class MetaCog(commands.Cog):
     async def blame_file(self, ctx, filename: str):
         """Blames an entire file."""
         import subprocess
+
         try:
             result = subprocess.run(
-                ["git", "blame", filename],
-                capture_output=True, text=True, check=True
+                ["git", "blame", filename], capture_output=True, text=True, check=True
             )
-            await ctx.send(f"🔍 Blame for `{filename}`:\n```\n{result.stdout.strip()}\n```")
+            await ctx.send(
+                f"🔍 Blame for `{filename}`:\n```\n{result.stdout.strip()}\n```"
+            )
         except Exception as e:
             await ctx.send(f"Could not blame file: {e}")
-
 
     @commands.command(name="uptime")
     async def uptime(self, ctx):
@@ -187,14 +208,15 @@ class MetaCog(commands.Cog):
         # Author mapping
         author_map = {
             "Henry": "<@921605971577548820>",
-            "HappyJuice3": "<@1021831032347033680>"
-
+            "HappyJuice3": "<@1021831032347033680>",
         }
         # Get second latest commit author
         try:
             result = subprocess.run(
                 ["git", "log", "--pretty=format:%an", "-n", "2"],
-                capture_output=True, text=True, check=True
+                capture_output=True,
+                text=True,
+                check=True,
             )
             authors = result.stdout.strip().splitlines()
             if len(authors) >= 2:
@@ -203,7 +225,7 @@ class MetaCog(commands.Cog):
                     culprit = author_map[culprit]
                 else:
                     culprit = f"@{culprit.replace(' ', '').lower()}"
-                
+
             else:
                 culprit = "someone mysterious"
         except Exception as e:
@@ -212,17 +234,37 @@ class MetaCog(commands.Cog):
 
         await ctx.send(f"⏱️ It has been {uptime_str} since **{culprit}** fucked up.")
 
-
     @commands.command(name="pong")
     async def pong(self, ctx):
         """Shows bot latency."""
         latency = self.bot.latency * 1000  # ms
         await ctx.send(f"🏓 Ping! Latency: `{latency:.2f}ms`")
 
-    @commands.command(name="selfdestruct")
-    async def self_destruct(self, ctx):
-        """Fake bot shutdown sequence."""
-        import asyncio
+    @commands.command(
+        name="selfdestruct",
+        aliases=[
+            "windowsmoment",
+            "bsod",
+            "yesiknowwhatthefuckimdoingandwanttoreload",
+            "noidontknowwhatimdoingandwanttoreloadanyways",
+        ],
+    )
+    async def self_destruct(self, ctx: commands.Context, for_real: bool = False):
+        if (
+            isinstance(ctx.author, discord.Member)
+            and ctx.author.get_role(ROLES.TOTALLY_MOD)
+            and for_real
+        ):
+            # Real shutdown
+            async def shutdown_wrapper():
+                for file in os.listdir("cogs"):
+                    if file.endswith(".py") and file != "meta.py":
+                        await self.bot.unload_extension(f"cogs.{file[:-3]}")
+
+            await ctx.send("Restarting...")
+            await shutdown_wrapper()
+            return await self.execvc("reload")  # this *should* get queued
+
         await ctx.send("Initiating self-destruct sequence...")
         for i in range(10, 0, -1):
             await ctx.send(f"{i}...")
@@ -232,7 +274,7 @@ class MetaCog(commands.Cog):
     @commands.command(name="dna")
     async def dna(self, ctx):
         """Displays bot's internal stats."""
-        
+
         process = psutil.Process()
         mem = process.memory_info().rss / 1024 / 1024
         uptime = int(time.time() - start_time)
@@ -261,10 +303,126 @@ class MetaCog(commands.Cog):
         for cog, cmds in cog_map.items():
             response += f"- `{cog}`: {len(cmds)} commands\n"
         await ctx.send(response)
+
     @commands.command(name="fetch", aliases=["neofetch", "fastfetch"])
     async def fetch(self, ctx):
         await self.execvc("neofetch > /tmp/fetch.ansi")
         await ctx.send("```ansi\n" + await self.execvc("cat /tmp/fetch.ansi") + "\n```")
+
+    @commands.command(name="status", aliases=["botstatus", "botinfo"])
+    async def status(self, ctx: commands.Context):
+        """Displays the bot's status."""
+        embed = discord.Embed(
+            title="Eden Bot Status",
+            description=f"Currently running with {len(self.bot.cogs)} cogs and {len(self.bot.commands)} commands.",
+            color=discord.Color.blue(),
+        )
+        embed.add_field(
+            name="Last Reload",
+            value=f"{int(time.time() - start_time)} seconds ago",
+            inline=True,
+        )
+        embed.add_field(
+            name="System Uptime",
+            value=(await self.execvc("uptime -p")).removeprefix("up "),
+            inline=True,
+        )
+        embed.add_field(
+            name="Memory Usage",
+            value=f"{psutil.Process().memory_info().rss / 1024 / 1024:.2f} MB",
+            inline=True,
+        )
+        embed.add_field(
+            name="Python Version", value=sys.version.split()[0], inline=True
+        )
+        embed.add_field(
+            name="Discord.py Version", value=discord.__version__, inline=True
+        )
+        load_dotenv("/etc/os-release")
+        embed.add_field(
+            name="OS", value=os.getenv("PRETTY_NAME", "Unknown"), inline=True
+        )
+        # External IP
+        try:
+            ip: str = "Unknown"
+            # aiohttp to https://httpbin.org/get
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://httpbin.org/get") as resp:
+                    data = await resp.json()
+                    ip = data["origin"]
+            # IP masking
+            if ip.startswith("99.") and ip.endswith(".53"):
+                ip = "99.**.**.53"
+            embed.add_field(name="External IP", value=ip, inline=True)
+        except:
+            embed.add_field(name="External IP", value="Could not fetch IP", inline=True)
+        internal_ip = await self.execvc("hostname -I | awk '{print $1}'")
+        embed.add_field(
+            name="Internal IP", value=internal_ip.strip() or "Unknown", inline=True
+        )
+        warp_status = (await self.execvc("warp-cli status")).strip()
+        if "Disconnected" in warp_status:
+            embed.add_field(name="Cloudflare", value="Disconnected", inline=True)
+        elif "Connected" in warp_status:
+            embed.add_field(name="Cloudflare", value="Connected", inline=True)
+        else:
+            embed.add_field(name="Cloudflare", value=warp_status, inline=True)
+        embed.add_field(name="Server Count", value=len(self.bot.guilds), inline=True)
+        embed.add_field(name="User Count", value=len(self.bot.users), inline=True)
+        branches = await self.execvc("git branch")
+        embed.add_field(
+            name="Branch",  # More stupid splitting cmds
+            value=f"Current: **{(name:=branches.strip().split('*')[-1].split('\n')[0].strip())}**, {(num:=(len(branches.strip().split('\n'))-1))} {'slave' if name == "master" else 'branch'}{('s' if name == 'master' else 'es') if num != 1 else ''}",
+            inline=True,
+        )
+
+        embed.set_footer(text=f"Ping: {self.bot.latency * 1000:.2f} ms")
+        await ctx.send(embed=embed)
+
+    statuses = Literal["playing", "watching", "listening", "none"]
+
+    @commands.command(name="setstatus", aliases=["play", "watch", "listen"])
+    @commands.has_role(ROLES.TOTALLY_MOD)
+    async def set_status(
+        self,
+        ctx: commands.Context,
+        type: statuses = "none",
+        *,
+        status: str,
+    ):
+        """Sets the bot's status. Supported types: playing, watching, listening, none."""
+        activity: Optional[discord.BaseActivity] = None
+        match type:
+            case "playing":
+                activity = discord.Game(name=status)
+            case "watching":
+                activity = discord.Activity(
+                    type=discord.ActivityType.watching, name=status
+                )
+            case "listening":
+                activity = discord.Activity(
+                    type=discord.ActivityType.listening, name=status
+                )
+            case "none":
+                activity = None
+
+        await self.bot.change_presence(activity=activity)
+        await ctx.send("✅ Status updated successfully.")
+
+    @set_status.error
+    async def set_status_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ):
+        """Handles errors for set_status command."""
+        if isinstance(error, commands.MissingRole):
+            await ctx.send("Who do you think you are, bossing me around like that?")
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(
+                "Invalid status type. Use 'playing', 'watching', 'listening', or 'none'."
+            )
+        else:
+            raise error  # let the global error handler take care of it
+
 
 async def setup(bot):
     """Load the MetaCog cog."""

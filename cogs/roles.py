@@ -1,9 +1,9 @@
-
 import discord
 from discord.ext import commands
 import re
 
 from constants import ROLES
+
 
 class RolesCog(commands.Cog):
     def __init__(self, bot):
@@ -12,7 +12,9 @@ class RolesCog(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_roles=True)
     # Has the phone error am i right?
-    async def createrole(self, ctx, name: str, color: discord.Color=None, above_role_id: int=None):
+    async def createrole(
+        self, ctx, name: str, color: discord.Color = None, above_role_id: int = None
+    ):
         guild = ctx.guild
         try:
             if color is None:
@@ -29,18 +31,22 @@ class RolesCog(commands.Cog):
             new_position = above_role.position + 1
 
             # Create the role
-            new_role = await guild.create_role(name=name, color=color, reason=f"Created by {ctx.author}")
+            new_role = await guild.create_role(
+                name=name, color=color, reason=f"Created by {ctx.author}"
+            )
 
             # Move the role to the desired position
-            await ctx.guild.edit_role_positions(positions={new_role:new_position})
+            await ctx.guild.edit_role_positions(positions={new_role: new_position})
 
-            await ctx.send(f"✅ Created role **{new_role.name}** above **{above_role.name}**.")
+            await ctx.send(
+                f"✅ Created role **{new_role.name}** above **{above_role.name}**."
+            )
         except discord.Forbidden:
             await ctx.send("I don't have permission to manage roles or move that role.")
         except discord.HTTPException as e:
             await ctx.send(f"Failed to create or move role: {e}")
 
-    @commands.command(name="reorderrole", aliases=["reorder", "moverole", 'raiserole'])
+    @commands.command(name="reorderrole", aliases=["reorder", "moverole", "raiserole"])
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -61,8 +67,13 @@ class RolesCog(commands.Cog):
         if role.managed or second_role.managed:
             return await ctx.send("Managed roles cannot be reordered.")
 
-        if role.position >= me.top_role.position or second_role.position >= me.top_role.position:
-            return await ctx.send("I cannot reorder roles that are above or equal to my top role.")
+        if (
+            role.position >= me.top_role.position
+            or second_role.position >= me.top_role.position
+        ):
+            return await ctx.send(
+                "I cannot reorder roles that are above or equal to my top role."
+            )
 
         try:
             # Reorder the roles
@@ -71,7 +82,7 @@ class RolesCog(commands.Cog):
         except discord.Forbidden:
             await ctx.send("I don't have permission to manage roles.")
         except discord.HTTPException as e:
-            await ctx.send(f"Failed to reorder roles: {e}") 
+            await ctx.send(f"Failed to reorder roles: {e}")
 
     @commands.command(name="add_role", aliases=["addrole", "giverole"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
@@ -82,18 +93,20 @@ class RolesCog(commands.Cog):
           - !add_role @Member @Role
         """
         if role in member.roles:
-            await ctx.send(f"{member.mention} already has the role {role.name}.")   
+            await ctx.send(f"{member.mention} already has the role {role.name}.")
 
         else:
             try:
-                await member.add_roles(role, reason=f"Role added by {ctx.author} ({ctx.author.id})")
+                await member.add_roles(
+                    role, reason=f"Role added by {ctx.author} ({ctx.author.id})"
+                )
                 await ctx.send(f"✅ Added role **{role.name}** to {member.mention}.")
             except discord.Forbidden:
                 await ctx.send("I don't have permission to add that role.")
             except discord.HTTPException as e:
-                await ctx.send(f"Failed to add role: {e}")    
+                await ctx.send(f"Failed to add role: {e}")
 
-    @commands.command(name="remove_role", aliases=["removerole","unassign"])
+    @commands.command(name="remove_role", aliases=["removerole", "unassign"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
     async def remove_role(self, ctx, member: discord.Member, role: discord.Role):
         """
@@ -105,16 +118,20 @@ class RolesCog(commands.Cog):
             await ctx.send(f"{member.mention} does not have the role {role.name}.")
         else:
             try:
-                await member.remove_roles(role, reason=f"Role removed by {ctx.author} ({ctx.author.id})")
-                await ctx.send(f"✅ Removed role **{role.name}** from {member.mention}.")
+                await member.remove_roles(
+                    role, reason=f"Role removed by {ctx.author} ({ctx.author.id})"
+                )
+                await ctx.send(
+                    f"✅ Removed role **{role.name}** from {member.mention}."
+                )
             except discord.Forbidden:
                 await ctx.send("I don't have permission to remove that role.")
             except discord.HTTPException as e:
                 await ctx.send(f"Failed to remove role: {e}")
-       
 
-
-    @commands.command(name="delete_roles", aliases=["deleteroles", "delroles", 'delrole'])
+    @commands.command(
+        name="delete_roles", aliases=["deleteroles", "delroles", "delrole"]
+    )
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -155,9 +172,13 @@ class RolesCog(commands.Cog):
             if target.id == guild.id:
                 return await ctx.send("You cannot delete the @everyone role.")
             if target.managed:
-                return await ctx.send(f"`{target.name}` is managed by an integration and cannot be deleted.")
+                return await ctx.send(
+                    f"`{target.name}` is managed by an integration and cannot be deleted."
+                )
             if target.position >= me.top_role.position:
-                return await ctx.send(f"My top role is not high enough to delete `{target.name}`.")
+                return await ctx.send(
+                    f"My top role is not high enough to delete `{target.name}`."
+                )
 
             try:
                 await target.delete(reason=reason)
@@ -208,11 +229,15 @@ class RolesCog(commands.Cog):
         # Build a concise report
         msg_lines = []
         if deleted:
-            msg_lines.append(f"Deleted {len(deleted)} role(s): " +
-                             ", ".join(f"`{r.name}` ({r.id})" for r in deleted))
+            msg_lines.append(
+                f"Deleted {len(deleted)} role(s): "
+                + ", ".join(f"`{r.name}` ({r.id})" for r in deleted)
+            )
         if skipped:
-            msg_lines.append(f"Skipped {len(skipped)} role(s): " +
-                             ", ".join(f"`{r.name}` ({r.id}) — {why}" for r, why in skipped))
+            msg_lines.append(
+                f"Skipped {len(skipped)} role(s): "
+                + ", ".join(f"`{r.name}` ({r.id}) — {why}" for r, why in skipped)
+            )
 
         await ctx.send("\n".join(msg_lines) if msg_lines else "Nothing to report.")
 

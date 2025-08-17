@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from googletrans import Translator, LANGUAGES
 
+
 class TranslateCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -22,14 +23,16 @@ class TranslateCog(commands.Cog):
         """Lists supported languages."""
         lang_list = [f"{code}: {name}" for code, name in LANGUAGES.items()]
         # Discord has a 2000 character limit per message, so split if needed
-        chunks = [lang_list[i:i+50] for i in range(0, len(lang_list), 50)]
+        chunks = [lang_list[i : i + 50] for i in range(0, len(lang_list), 50)]
         for chunk in chunks:
             await ctx.send("\n".join(chunk))
 
     @commands.command(name="translate_reply", aliases=["tr_reply", "trr"])
     async def translate_reply(self, ctx, lang: str = "en"):
         """Translates the replied-to message to the specified language (default: English)."""
-        if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
+        if ctx.message.reference and isinstance(
+            ctx.message.reference.resolved, discord.Message
+        ):
             original_message = ctx.message.reference.resolved
             text_to_translate = original_message.content
 

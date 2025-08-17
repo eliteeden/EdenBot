@@ -4,6 +4,7 @@ from typing import Literal, Optional
 import aiohttp
 from discord.ext import commands
 import discord
+import json
 import os
 import subprocess
 from datetime import datetime
@@ -15,15 +16,32 @@ import psutil
 from constants import ROLES
 
 start_time = time.time()
-
+DATA_FILE = "memberstats.json"
 
 class MetaCog(commands.Cog):
     """A cog for Eden Bot meta."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.joins = []
-        self.leaves = []
+        self.snapshot = self.load_snapshot()
+
+    def load_snapshot(self):
+        if not os.path.exists(DATA_FILE):
+            with open(DATA_FILE, "w") as f:
+                json.dump({}, f)
+            return {}
+        try:
+            with open(DATA_FILE, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            with open(DATA_FILE, "w") as f:
+                json.dump({}, f)
+            return {}
+
+    def save_snapshot(self):
+        with open(DATA_FILE, "w") as f:
+            json.dump(self.snapshot, f, indent=2)
+
 
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
@@ -45,49 +63,54 @@ class MetaCog(commands.Cog):
             return f"Error: {stderr.strip()}"
 
 
-    @commands.command(name="memberstats", aliases=["serverstats", "guildinfo"])
+    @commands.command(name="memberstats", aliases=["serverstats", "guildinfo", "edenstats"])
     async def memberstats(self, ctx: commands.Context):
-        """Imports and analyzes live server data."""
+        """Imports live server data and compares member count to last snapshot."""
         guild = ctx.guild
-        await guild.chunk()  # Ensures all member data is loaded
+        await guild.chunk()
 
         members = guild.members
-        roles = guild.roles
-        channels = guild.channels
-
-        total_members = len(members)
+        total = len(members)
         bots = sum(1 for m in members if m.bot)
-        humans = total_members - bots
-
+        humans = total - bots
         online = sum(1 for m in members if m.status != discord.Status.offline)
-        offline = total_members - online
 
-        role_count = len(roles)
-        text_channels = sum(1 for c in channels if isinstance(c, discord.TextChannel))
-        voice_channels = sum(1 for c in channels if isinstance(c, discord.VoiceChannel))
-        category_channels = sum(1 for c in channels if isinstance(c, discord.CategoryChannel))
+        gid = str(guild.id)
+        previous = self.snapshot.get(gid, {
+            "last_count": total,
+            "last_checked": datetime.utcnow().isoformat()
+        })
+        previous_count = previous["last_count"]
+        previous_time = previous["last_checked"]
+
+        net_change = total - previous_count
+        change_symbol = "📈" if net_change > 0 else "📉" if net_change < 0 else "➖"
 
         embed = discord.Embed(
-            title=f"📊 Imported Server Stats: {guild.name}",
-            color=discord.Color.green(),
+            title=f"📊 Server Stats for {guild.name}",
+            color=discord.Color.blue(),
             timestamp=datetime.utcnow()
         )
         embed.set_thumbnail(url=guild.icon.url if guild.icon else discord.Embed.Empty)
-        embed.add_field(name="👥 Total Members", value=f"{total_members:,}", inline=True)
+        embed.add_field(name="👥 Total Members", value=f"{total:,}", inline=True)
         embed.add_field(name="🧍 Humans", value=f"{humans:,}", inline=True)
         embed.add_field(name="🤖 Bots", value=f"{bots:,}", inline=True)
         embed.add_field(name="🟢 Online", value=f"{online:,}", inline=True)
-        embed.add_field(name="⚫ Offline", value=f"{offline:,}", inline=True)
-        embed.add_field(name="📅 Server Created", value=guild.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
-        embed.add_field(name="🔐 Verification Level", value=str(guild.verification_level).title(), inline=True)
-        embed.add_field(name="🌐 Locale", value=str(guild.preferred_locale).upper(), inline=True)
-        embed.add_field(name="📁 Roles", value=f"{role_count:,}", inline=True)
-        embed.add_field(name="💬 Text Channels", value=f"{text_channels:,}", inline=True)
-        embed.add_field(name="🔊 Voice Channels", value=f"{voice_channels:,}", inline=True)
-        embed.add_field(name="📂 Categories", value=f"{category_channels:,}", inline=True)
+        embed.add_field(
+            name="📊 Comparison",
+            value=f"{change_symbol} Change since last check: {net_change:+,}\n🕒 Last checked: {previous_time}",
+            inline=False
+        )
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
 
         await ctx.send(embed=embed)
+
+        # Update snapshot
+        self.snapshot[gid] = {
+            "last_count": total,
+            "last_checked": datetime.utcnow().isoformat()
+        }
+        self.save_snapshot()
 
     @commands.command(
         name="countlines", aliases=["botlines", "countlinescode", "lines"]

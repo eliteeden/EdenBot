@@ -43,7 +43,12 @@ class MetaCog(commands.Cog):
                     }
                     for gid, info in raw.items()
                 }
-        return {}
+        else:
+                # Create empty file if it doesn't exist
+            with open(DATA_FILE, "w") as f:
+                json.dump({}, f)
+            return {}
+
     def save_data(self):
         with open(DATA_FILE, "w") as f:
             json.dump(
@@ -57,6 +62,7 @@ class MetaCog(commands.Cog):
                 f,
                 indent=2,
             )
+            
     async def execvc(self, cmd: str, *args, **kwargs):
         """Executes a bash command"""
         result = await asyncio.create_subprocess_exec(
@@ -75,7 +81,6 @@ class MetaCog(commands.Cog):
             return stdout.strip()
         else:
             return f"Error: {stderr.strip()}"
-
 
 
     @commands.Cog.listener()

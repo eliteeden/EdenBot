@@ -496,50 +496,39 @@ class InteractionCog(commands.Cog):
             await ctx.send("What did I do this time?")
         else:
             await ctx.send(embed=embed)
+
     @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def getmods(self, ctx: commands.Context, *, role_input: str = None):
-        # Use default role ID if no input is provided
-        role = None
-        if role_input:
-            # Try to get role by mention or name
-            role = discord.utils.get(ctx.guild.roles, name=role_input)
-            if not role_input.isdigit():
-                # Try to extract role from mention format
-                if role_input.startswith("<@&") and role_input.endswith(">"):
-                    role_id = int(role_input[3:-1])
-                    role = discord.utils.get(ctx.guild.roles, id=role_id)
-            else:
-                # Try to get role by ID
-                role = discord.utils.get(ctx.guild.roles, id=int(role_input))
+    async def getmods(self, ctx: commands.Context, chosen_role: discord.Role = None):
+        # Use default role ID if no role is provided
+        role_id = 993475229798113320 if not chosen_role else chosen_role.id
+
+        # Find the role object by ID
+        role = discord.utils.get(ctx.guild.roles, id=role_id)
 
         if not role:
-            # Fallback to default role
-            role = discord.utils.get(ctx.guild.roles, id=993475229798113320)
-
-        if not role:
-            await ctx.send("❌ Role not found.")
+            await ctx.send("Role not found.")
             return
 
         if not role.members:
-            await ctx.send("ℹ️ No members have that role.")
+            await ctx.send("No members have that role.")
             return
 
+        # Get paginator cog
         paginator_cog = self.bot.get_cog("PaginatorCog")
-        if not paginator_cog or not hasattr(paginator_cog, "Paginator"):
-            await ctx.send("⚠️ PaginatorCog is not loaded or missing 'Paginator'.")
+        if not paginator_cog:
+            await ctx.send("PaginatorCog is not loaded.")
             return
 
-        paginator_class = paginator_cog.Paginator  # type: ignore
-        paginator = paginator_class(self)
+        paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore
 
-        members = sorted(role.members, key=lambda m: m.display_name.lower())
-        for i in range(0, len(members), 10):
+        members = role.members
+        for i in range(0, len(members), 10):  # 10 members per page
             embed = discord.Embed(
                 title=f"{role.name} Members ({len(role.members)} total)",
                 color=discord.Color.blurple(),
             )
-            for idx, member in enumerate(members[i:i + 10]):
+            for idx, member in enumerate(members[i : i + 10]):
                 embed.add_field(
                     name=f"{i + idx + 1}. {member.display_name}",
                     value=member.mention,

@@ -31,7 +31,7 @@ class RolesCog(commands.Cog):
                     color_cog = ctx.bot.get_cog("ColorCog")
                     if color_cog:
                         hex_code = color_cog.color_to_hex(color)
-                        if hex_code and hex_code ;= "Unknown hex":
+                        if hex_code and hex_code != "Unknown hex":
                             color = hex_code
                         else:
                             await ctx.send("❌ Couldn't resolve that color name.")
@@ -343,7 +343,7 @@ class RolesCog(commands.Cog):
         to_delete = [r for r in matches if can_delete(r)]
 
         if not to_delete:
-            # Nothing deletable; report the reasons
+            # Nothing deletable! report the reasons
             lines = [f"Found {len(matches)} matching role(s), but none can be deleted:"]
             for role, why in skipped:
                 lines.append(f"- `{role.name}` ({role.id}): {why}")

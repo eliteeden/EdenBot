@@ -448,4 +448,6 @@ class MetaCog(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
+    """Load the MetaCog"""
     await bot.add_cog(MetaCog(bot))
+    print("MetaCog has been (re-)loaded successfully!")

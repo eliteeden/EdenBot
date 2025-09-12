@@ -456,7 +456,7 @@ class RolesCog(commands.Cog):
 
 
 #This cog was made because we are lazy as fuck
-async def setup(bot):
+async def setup(bot: commands.Bot):
     """Load the RolesCog cog."""
     await bot.add_cog(RolesCog(bot))
     print("RolesCog has been loaded successfully.")

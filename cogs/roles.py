@@ -417,9 +417,13 @@ class RolesCog(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"❌ Failed to change role color: {e}")
 
+    @commands.command(name="pen")
+    async def pen(self, ctx):
+        await ctx.send("Pen Pineapple Apple Pen")
+
     @commands.command(name="oneoff", aliases=["acr"])
     @commands.has_permissions(manage_roles=True)
-    async def assign_roles(self, ctx):
+    async def oneoff(self, ctx):
         guild = ctx.guild
 
         # Replace these with your actual role IDs
@@ -456,6 +460,7 @@ class RolesCog(commands.Cog):
 
 
 #This cog was made because we are lazy as fuck
+
 async def setup(bot: commands.Bot):
     """Load the RolesCog cog."""
     await bot.add_cog(RolesCog(bot))

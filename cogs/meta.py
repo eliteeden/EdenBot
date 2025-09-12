@@ -268,7 +268,7 @@ class MetaCog(commands.Cog):
         latency = self.bot.latency * 1000
         await ctx.send(f"🏓 Ping! Latency: `{latency:.2f}ms`")
 
-    @commands.command(name="selfdestruct", aliases=["windowsmoment", "bsod"])
+    @commands.command(name="selfdestruct", aliases=["windowsmoment", "bsod", "yesiknowwhatthefuckimdoingandwanttoreload", "noidontknowwhatimdoingandwanttoreloadanyways"])
     async def self_destruct(self, ctx: commands.Context, for_real: bool = False):
         if (
             isinstance(ctx.author, discord.Member)

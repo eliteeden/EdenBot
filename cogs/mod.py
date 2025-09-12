@@ -6,6 +6,8 @@ import asyncio
 import random
 import json
 import os
+
+from sympy import true
 from constants import ROLES, CHANNELS
 
 # Initialize the report dictionary
@@ -24,7 +26,7 @@ class ModCog(commands.Cog):
         self.snipe_messages = {}
 
     @commands.command()
-    @commands.has_any_role("MODERATOR", "happy", "Bonked by Zi", ROLES.PRESIDENT)
+    @commands.has_permissions(moderate_members=True)
     async def mute(self, ctx, member: Member, timelimit):
         if "s" in timelimit:
             gettime = timelimit.strip("s")
@@ -59,12 +61,12 @@ class ModCog(commands.Cog):
         await ctx.send(f"{member.mention} was muted for {timelimit}")
 
     @commands.command()
-    @commands.has_any_role("MODERATOR", "happy", ROLES.PRESIDENT)
+    @commands.has_permissions(moderate_members=True)
     async def unmute(self, ctx, member: Member):
         await member.edit(timed_out_until=None)
 
-    @commands.command(pass_context=True)
-    @commands.has_any_role("VANGUARD", "happy", ROLES.PRESIDENT)
+    @commands.command()
+    @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, user_id: int = None, *, reason: str = None):
         if not user_id:
             await ctx.send("Please provide a valid user ID to ban.")
@@ -81,7 +83,7 @@ class ModCog(commands.Cog):
             await ctx.send(f"An error occurred while banning the user: {e}")
 
     @commands.command(name="tempban")
-    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    @commands.has_permissions(ban_members=True)
     async def tempban(
         self, ctx, user_id: int = None, duration: str = None, *, reason: str = None
     ):
@@ -127,6 +129,7 @@ class ModCog(commands.Cog):
             await ctx.send("I don't have permission to unban that user.")
 
     @commands.command()
+    @commands.has_permissions(moderate_members=True)
     async def listrole(self, ctx, member: Member = None):
         if not member:
             member = ctx.author
@@ -136,13 +139,13 @@ class ModCog(commands.Cog):
         )
 
     @commands.command()
-    @commands.has_any_role("VANGUARD", "happy", ROLES.PRESIDENT)
+    @commands.has_permissions(ban_members=True)
     async def unban(self, ctx, user: User):
         await ctx.guild.unban(user)
         await ctx.send(f"**{user}** was unbanned")
 
     @commands.command()
-    @commands.has_any_role("GUARDIAN", "happy", ROLES.PRESIDENT, ROLES.GUARDIAN)
+    @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: Member):
         try:
             await member.kick()
@@ -153,13 +156,13 @@ class ModCog(commands.Cog):
             await ctx.send("An error occurred while trying to kick the member.")
 
     @commands.command()
-    @commands.has_any_role("MODERATOR", "happy", ROLES.PRESIDENT)
+    @commands.has_permissions(manage_messages=True)
     async def purge(self, ctx, limit: int):
         await ctx.message.delete()
         await ctx.channel.purge(limit=limit)
 
     @commands.command(aliases=["userdel", "hpurge"])
-    @commands.has_any_role(ROLES.MODERATOR, "happy")
+    @commands.has_permissions(manage_messages=True)
     async def userpurge(self, ctx, limit: int):
         def is_user_message(message):
             return not message.author.bot
@@ -168,7 +171,7 @@ class ModCog(commands.Cog):
         await ctx.channel.purge(limit=limit, check=is_user_message)
 
     @commands.command(aliases=["bpurge", "botdel"])
-    @commands.has_any_role("MODERATOR", "happy")
+    @commands.has_permissions(manage_messages=True)
     async def botpurge(self, ctx, limit: int):
         def is_bot_message(message):
             return message.author.bot
@@ -186,7 +189,7 @@ class ModCog(commands.Cog):
         )
 
     @commands.command()
-    @commands.has_any_role("MODERATOR", ROLES.PRESIDENT)
+    @commands.has_permissions(manage_messages=True)
     async def snipe(self, ctx):
         if ctx.channel.id not in self.snipe_messages:
             await ctx.send("There's nothing to snipe in this channel.")
@@ -201,7 +204,7 @@ class ModCog(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.has_any_role("MODERATOR", ROLES.TOTALLY_MOD)
+    @commands.has_permissions(manage_channels=True)
     async def lurk(self, ctx):
         try:
             channel: discord.TextChannel = self.bot.get_channel(CHANNELS.CAPITAL)
@@ -231,10 +234,8 @@ class ModCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"Error: {e}")
 
-    @commands.command(pass_context=True)
-    @commands.has_any_role(
-        "MODERATOR", "happy", "Midnight Watcher", ROLES.SERVER_BOOSTER, ROLES.PRESIDENT
-    )
+    @commands.command()
+    @commands.has_permissions(moderate_members=True)
     async def warn(self, ctx, user: discord.Member = None, *, reason: str = None):
         author = ctx.author
         if not user:
@@ -276,8 +277,8 @@ class ModCog(commands.Cog):
                 f"{user.mention} stop annoying **{ctx.author.name}** by {reason}."
             )
 
-    @commands.command(pass_context=True, aliases=["rwarn", "-warn"])
-    @commands.has_any_role("MODERATOR", "happy")
+    @commands.command(aliases=["rwarn", "-warn"])
+    @commands.has_permissions(moderate_members=True)
     async def removewarn(self, ctx, warn_id: int = None):
         if not warn_id:
             await ctx.send("Please provide the warning ID to remove.")
@@ -298,8 +299,8 @@ class ModCog(commands.Cog):
             json.dump(report, f, indent=4)
         await ctx.send(f"Warning with ID `{warn_id}` has been removed.")
 
-    @commands.command(pass_context=True)
-    @commands.has_any_role("MODERATOR", "happy")
+    @commands.command()
+    @commands.has_permissions(moderate_members=True)
     async def warns(self, ctx, user: discord.Member):
         for current_user in report["users"]:
             if user.name == current_user["name"]:
@@ -320,7 +321,7 @@ class ModCog(commands.Cog):
             await ctx.send(f"{user.name} has no warnings.")
 
     @commands.command(aliases=["sm", "slow"])
-    @commands.has_any_role("MODERATOR")
+    @commands.has_permissions(manage_channels=True)
     async def slowmode(self, ctx, duration: str):
         if "s" in duration:
             dur = duration.strip("s")
@@ -339,7 +340,7 @@ class ModCog(commands.Cog):
             await ctx.send(f"Set the slow mode delay in this channel to {dur} hours!")
 
     @commands.command()
-    @commands.has_any_role("MODERATOR")
+    @commands.has_permissions(manage_channels=True)
     async def endslow(self, ctx):
         await ctx.channel.edit(slowmode_delay=0)
         await ctx.send("Slow-mode is off!")

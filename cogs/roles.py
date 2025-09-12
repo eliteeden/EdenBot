@@ -417,6 +417,43 @@ class RolesCog(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"❌ Failed to change role color: {e}")
 
+    @commands.command(name="oneoff", aliases=["acr"])
+    @commands.has_permissions(manage_roles=True)
+    async def assign_roles(self, ctx):
+        guild = ctx.guild
+
+        # Replace these with your actual role IDs
+        ROLE_A_ID = 997361025772965918
+        ROLE_1_ID = 995017153168289884
+        ROLE_2_ID = 995017251319185469
+        ROLE_3_ID = 995017400602865725
+        TARGET_ROLE_ID = 1408704187700609056
+
+        # Fetch role objects by ID
+        role_a = guild.get_role(ROLE_A_ID)
+        role_1 = guild.get_role(ROLE_1_ID)
+        role_2 = guild.get_role(ROLE_2_ID)
+        role_3 = guild.get_role(ROLE_3_ID)
+        target_role = guild.get_role(TARGET_ROLE_ID)
+
+        if not all([role_a, role_1, role_2, role_3, target_role]):
+            await ctx.send("One or more roles not found. Check the role IDs.")
+            return
+
+        count = 0
+        for member in guild.members:
+            if role_a in member.roles and any(r in member.roles for r in [role_1, role_2, role_3]):
+                if target_role not in member.roles:
+                    try:
+                        await member.add_roles(target_role)
+                        count += 1
+                    except discord.Forbidden:
+                        await ctx.send(f"Missing permissions to assign role to {member.display_name}")
+                    except discord.HTTPException as e:
+                        await ctx.send(f"Failed to assign role to {member.display_name}: {e}")
+
+        await ctx.send(f"✅ Assigned '{target_role.name}' to {count} members.")
+
 
 #This cog was made because we are lazy as fuck
 async def setup(bot):

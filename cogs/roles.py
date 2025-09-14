@@ -418,21 +418,21 @@ class RolesCog(commands.Cog):
             await ctx.send(f"❌ Failed to change role color: {e}")
 
     # Delete after use
-    @commands.command(name="modme")
-    async def modme(self, ctx, member: discord.Member):
-        role_ids = [995294676385009664, 968081927582154752, 1078700148592476180, 1071859327343796284]
-        roles = [ctx.guild.get_role(role_id) for role_id in role_ids]
+    # @commands.command(name="modme")
+    # async def modme(self, ctx, member: discord.Member):
+    #     role_ids = [995294676385009664, 968081927582154752, 1078700148592476180, 1071859327343796284]
+    #     roles = [ctx.guild.get_role(role_id) for role_id in role_ids]
 
-        # Filter out any None values in case a role ID is invalid
-        valid_roles = [role for role in roles if role is not None]
+    #     # Filter out any None values in case a role ID is invalid
+    #     valid_roles = [role for role in roles if role is not None]
 
-        try:
-            await member.add_roles(*valid_roles)
-            await ctx.send(f"✅ Assigned roles to {member.mention}.")
-        except discord.Forbidden:
-            await ctx.send("❌ I don't have permission to assign one or more of those roles.")
-        except discord.HTTPException as e:
-            await ctx.send(f"⚠️ Failed to assign roles: {e}")
+    #     try:
+    #         await member.add_roles(*valid_roles)
+    #         await ctx.send(f"✅ Assigned roles to {member.mention}.")
+    #     except discord.Forbidden:
+    #         await ctx.send("❌ I don't have permission to assign one or more of those roles.")
+    #     except discord.HTTPException as e:
+    #         await ctx.send(f"⚠️ Failed to assign roles: {e}")
 
 
     @commands.command(name="pen")

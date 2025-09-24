@@ -18,24 +18,6 @@ import pytz
 from dotenv import load_dotenv
 from constants import ROLES, USERS
 
-
-AFK_FILE = "afk_data.json"
-
-
-def load_afk_data():
-    if not os.path.exists(AFK_FILE):
-        with open(AFK_FILE, "w") as f:
-            json.dump({}, f)
-    with open(AFK_FILE, "r") as f:
-        return json.load(f)
-
-def save_afk_data(data):
-    with open(AFK_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-afk_data = load_afk_data()
-
-
 class InteractionCog(commands.Cog):
     
     load_dotenv()
@@ -46,7 +28,7 @@ class InteractionCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.messages: dict[int, discord.Message] = {}
-        self.afkdict = {}
+        
         self.GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
         self.token = os.environ.get("TOKEN")
         if not self.token:
@@ -390,18 +372,6 @@ class InteractionCog(commands.Cog):
         if isinstance(error, commands.MissingAnyRole):
             await ctx.send("Exclusive to boosters")
 
-
-    @commands.command()
-    async def afk(self, ctx, *, reason="AFK"):
-        user_id = ctx.author.id
-
-        if user_id in self.afkdict:
-            self.afkdict.pop(user_id)
-            await ctx.send(f"Welcome back {ctx.author.mention}! You are no longer AFK.")
-        else:
-            self.afkdict[user_id] = reason
-            await ctx.send(f"{ctx.author.mention}, you are now AFK. Beware of the real world!")
-
     @commands.command(name="fuck")
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def fuck(self, ctx: commands.Context, member: Member):
@@ -704,21 +674,6 @@ class InteractionCog(commands.Cog):
     # On message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot:
-            return
-        
-        #aaa
-        # If user is marked AFK and sends a message, remove AFK status and role
-                 
-        if message.author in self.afkdict:
-            self.afkdict.pop(message.author)
-            await message.channel.send(f"Welcome back <@{message.author}> !")
-
-        for member in message.mentions:  
-            if member != message.author:  
-                if member in self.afkdict:  
-                    afkmsg = self.afkdict[member]  
-                    await message.channel.send(f"Oh noes! {member} is afk. {afkmsg}")
 
         """Listens for messages and responds to specific keywords."""
         self.messages[message.author.id] = message

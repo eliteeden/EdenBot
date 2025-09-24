@@ -711,6 +711,7 @@ class InteractionCog(commands.Cog):
                  
         if message.author in self.afkdict:
             self.afkdict.pop(message.author)
+            await message.channel.send(f"Welcome back <@{message.author}> !")
 
         for member in message.mentions:  
             if member != message.author:  

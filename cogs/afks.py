@@ -22,13 +22,13 @@ class AFKCog(commands.Cog):
         # Don't remove AFK if the user is invoking the afk command
         if message.author.id in self.afk_users and ctx.command != self.afk:
             del self.afk_users[message.author.id]
-            await message.channel.send(f"Welcome back {message.author.mention}, you're no longer AFK.")
+            await message.channel.send(f"Welcome back {message.author.display_name}, you're no longer AFK.\n-# Took you long enough")
 
         # Notify if mentioned user is AFK
         for user in message.mentions:
             if user.id in self.afk_users:
                 reason = self.afk_users[user.id]
-                await message.channel.send(f"{user.mention} is AFK: {reason}")
+                await message.channel.send(f"{user.display_name} is unavailable at the moment: {reason}")
 
 
 async def setup(bot):

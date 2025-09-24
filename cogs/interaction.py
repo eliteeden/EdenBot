@@ -397,7 +397,14 @@ class InteractionCog(commands.Cog):
             "name": ctx.author.name
         }
         save_afk_data(self.afk_data)
+
+        # Add AFK role if it exists
+        afk_role = discord.utils.get(ctx.guild.roles, name="AFK")
+        if afk_role:
+            await ctx.author.add_roles(afk_role)
+
         await ctx.send(f"{ctx.author.mention} is now AFK: {reason}")
+
 
     @commands.command(name="fuck")
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
@@ -701,20 +708,29 @@ class InteractionCog(commands.Cog):
     # On message event
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if message.author.bot:
+            return
+        
         """Listens for messages and responds to specific keywords."""
         self.messages[message.author.id] = message
 
         # AFK command logic
-
-        if message.author.bot:
-            return
-
         user_id = str(message.author.id)
+
+        # If user is marked AFK and sends a message, remove AFK status and role
         if user_id in self.afk_data:
             del self.afk_data[user_id]
             save_afk_data(self.afk_data)
-            await message.channel.send(f"Welcome back {message.author.mention}, you are no longer AFK!")
 
+            afk_role = discord.utils.get(message.guild.roles, name="AFK")
+            if afk_role and afk_role in message.author.roles:
+                await message.author.remove_roles(afk_role)
+
+            await message.channel.send(
+                f"👋 Welcome back {message.author.mention}, your AFK status has been removed!"
+            )
+
+        # Notify if mentioned user is AFK
         for mention in message.mentions:
             mention_id = str(mention.id)
             if mention_id in self.afk_data:

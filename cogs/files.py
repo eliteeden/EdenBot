@@ -76,7 +76,7 @@ class FilesCog(commands.Cog):
         if not items:
             await ctx.send("📭 Your backlog is empty.")
         else:
-            formatted = "\n".join(f"{i+1}. {item}" for i, item in enumerate(items))
+            formatted = "\n".join(f"`{i+1}`. `{item}`" for i, item in enumerate(items))
             await ctx.send(f"📋 **Your Backlog:**\n{formatted}")
 
 

@@ -707,6 +707,7 @@ class InteractionCog(commands.Cog):
         if message.author.bot:
             return
         
+        #aaa
         # If user is marked AFK and sends a message, remove AFK status and role
                  
         if message.author in self.afkdict:

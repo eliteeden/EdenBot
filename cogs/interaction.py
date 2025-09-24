@@ -21,6 +21,7 @@ from constants import ROLES, USERS
 
 AFK_FILE = "afk_data.json"
 
+
 def load_afk_data():
     if not os.path.exists(AFK_FILE):
         with open(AFK_FILE, "w") as f:
@@ -45,6 +46,7 @@ class InteractionCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.messages: dict[int, discord.Message] = {}
+        self.afkdict = {}
         self.GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
         self.token = os.environ.get("TOKEN")
         if not self.token:
@@ -391,9 +393,15 @@ class InteractionCog(commands.Cog):
 
     @commands.command()
     async def afk(self, ctx, *, reason="AFK"):
-        afk_data[str(ctx.author.id)] = reason or "No reason provided"
-        save_afk_data(afk_data)
-        await ctx.send(f"{ctx.author.mention} is now AFK: {afk_data[str(ctx.author.id)]}")
+        user_id = ctx.author.id
+
+        if user_id in self.afkdict:
+            self.afkdict.pop(user_id)
+            await ctx.send(f"Welcome back {ctx.author.mention}! You are no longer AFK.")
+        else:
+            self.afkdict[user_id] = reason
+            await ctx.send(f"{ctx.author.mention}, you are now AFK. Beware of the real world!")
+
 
 
 
@@ -706,31 +714,17 @@ class InteractionCog(commands.Cog):
         """Listens for messages and responds to specific keywords."""
         self.messages[message.author.id] = message
 
-        # AFK command logic
-        user_id = str(message.author.id)
-
         # If user is marked AFK and sends a message, remove AFK status and role
         
-        user_id = str(message.author.id)
-        if user_id in afk_data:
-            del afk_data[user_id]
-            save_afk_data(afk_data)
-            await message.channel.send(f"{message.author.mention}, welcome back!")
+            
+        if message.author in self.afkdict:
+            self.afkdict.pop(message.author)
 
-        for mention in message.mentions:
-            mention_id = str(mention.id)
-            if mention_id in afk_data:
-                await message.channel.send(f"{mention.name} is AFK: {afk_data[mention_id]}")
-
-        await self.bot.process_commands(message)
-
-
-        # Notify if mentioned user is AFK
-        for mention in message.mentions:
-            mention_id = str(mention.id)
-            if mention_id in self.afk_data:
-                reason = self.afk_data[mention_id]["reason"]
-                await message.channel.send(f"{mention.name} is AFK: {reason}")
+        for member in message.mentions:  
+            if member != message.author:  
+                if member in self.afkdict:  
+                    afkmsg = self.afkdict[member]  
+                    await message.channel.send(f"Oh noes! {member} is afk. {afkmsg}")
 
 
 async def setup(bot: commands.Bot):

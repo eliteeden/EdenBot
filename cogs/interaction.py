@@ -402,10 +402,6 @@ class InteractionCog(commands.Cog):
             self.afkdict[user_id] = reason
             await ctx.send(f"{ctx.author.mention}, you are now AFK. Beware of the real world!")
 
-
-
-
-
     @commands.command(name="fuck")
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def fuck(self, ctx: commands.Context, member: Member):
@@ -711,12 +707,8 @@ class InteractionCog(commands.Cog):
         if message.author.bot:
             return
         
-        """Listens for messages and responds to specific keywords."""
-        self.messages[message.author.id] = message
-
         # If user is marked AFK and sends a message, remove AFK status and role
-        
-            
+                 
         if message.author in self.afkdict:
             self.afkdict.pop(message.author)
 
@@ -725,6 +717,9 @@ class InteractionCog(commands.Cog):
                 if member in self.afkdict:  
                     afkmsg = self.afkdict[member]  
                     await message.channel.send(f"Oh noes! {member} is afk. {afkmsg}")
+
+        """Listens for messages and responds to specific keywords."""
+        self.messages[message.author.id] = message
 
 
 async def setup(bot: commands.Bot):

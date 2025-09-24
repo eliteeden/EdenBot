@@ -4,10 +4,24 @@ import os
 from constants import ROLES
 import json
 
+BACKLOG_FILE = "backlog.json"
+
+def load_backlog():
+    if not os.path.exists(BACKLOG_FILE):
+        with open(BACKLOG_FILE, "w") as f:
+            json.dump({}, f)
+    with open(BACKLOG_FILE, "r") as f:
+        return json.load(f)
+
+def save_backlog(data):
+    with open(BACKLOG_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
 
 class FilesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.backlog = load_backlog()
         os.makedirs("files", exist_ok=True)
 
     @commands.command()
@@ -45,6 +59,26 @@ class FilesCog(commands.Cog):
             await ctx.send(f"Deleted `{filename}`.")
         else:
             await ctx.send("File not found.")
+
+    @commands.command(name="add_backlog", aliases=["todo", "reminddev", "bklog"])
+    async def add_to_backlog(self, ctx, *, item: str):
+        user_id = str(ctx.author.id)
+        if user_id not in self.backlog:
+            self.backlog[user_id] = []
+        self.backlog[user_id].append(item)
+        save_backlog(self.backlog)
+        await ctx.send(f"✅ Added to your backlog: `{item}`")
+
+    @commands.command(name="backlog", aliases=["todos", "ideas"])
+    async def show_backlog(self, ctx):
+        user_id = str(ctx.author.id)
+        items = self.backlog.get(user_id, [])
+        if not items:
+            await ctx.send("📭 Your backlog is empty.")
+        else:
+            formatted = "\n".join(f"{i+1}. {item}" for i, item in enumerate(items))
+            await ctx.send(f"📋 **Your Backlog:**\n{formatted}")
+
 
     @commands.command()
     @commands.has_any_role(ROLES.TOTALLY_MOD)

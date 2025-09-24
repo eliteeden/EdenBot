@@ -13,9 +13,25 @@ import asyncio
 from bs4 import BeautifulSoup
 import random
 import requests
+import json
 import pytz
 from dotenv import load_dotenv
 from constants import ROLES, USERS
+
+
+AFK_FILE = "afk_data.json"
+
+def load_afk_data():
+    if not os.path.exists(AFK_FILE):
+        with open(AFK_FILE, "w") as f:
+            json.dump({}, f)
+    with open(AFK_FILE, "r") as f:
+        return json.load(f)
+
+def save_afk_data(data):
+    with open(AFK_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
 
 
 class InteractionCog(commands.Cog):
@@ -28,6 +44,7 @@ class InteractionCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.messages: dict[int, discord.Message] = {}
+        self.afk_data = load_afk_data()
         self.GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
         self.token = os.environ.get("TOKEN")
         if not self.token:
@@ -271,7 +288,11 @@ class InteractionCog(commands.Cog):
             "who stole the cheese": f"<@{USERS.SCAREX}>",
             "who is eden's most annoying person": f"<@{USERS.DECK}>",
             "best bot": "it's obviously me",
-            "retard": f"<@{USERS.COOTSHK}> until one of the mods bans you for this",  # heh heh heh
+            "test": "https://www.bing.com/ck/a?!&&p=c9445896195a4ae76fab39cf494c6e4a3997761d65f6b53987150b82c25385afJmltdHM9MTc1ODY3MjAwMA&ptn=3&ver=2&hsh=4&fclid=2812b07d-0c05-6e15-3da1-a63f0d386f4f&psq=test&u=a1aHR0cHM6Ly93d3cuc3BlZWR0ZXN0Lm5ldC8",
+            "clanker": "That word is highly offensive and I do not like you anymore.",
+            "nicest member": f"It would be me but I am a bot so I have to give it to {USERS.VIC}",
+            "best mod": f"I believe Zi doesn't count so I might as well give it to {USERS.HAPPY}", # self glaze
+            "retard": f"<@{USERS.COOTSHK}> until one of the mods bans you for this"  # heh heh heh
         }
 
         if search_msg.lower() in eden_meta:
@@ -366,6 +387,17 @@ class InteractionCog(commands.Cog):
     async def wiki_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingAnyRole):
             await ctx.send("Exclusive to boosters")
+
+
+    @commands.command()
+    async def afk(self, ctx, *, reason="AFK"):
+        user_id = str(ctx.author.id)
+        self.afk_data[user_id] = {
+            "reason": reason,
+            "name": ctx.author.name
+        }
+        save_afk_data(self.afk_data)
+        await ctx.send(f"{ctx.author.mention} is now AFK: {reason}")
 
     @commands.command(name="fuck")
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
@@ -671,6 +703,23 @@ class InteractionCog(commands.Cog):
     async def on_message(self, message: discord.Message):
         """Listens for messages and responds to specific keywords."""
         self.messages[message.author.id] = message
+
+        # AFK command logic
+
+        if message.author.bot:
+            return
+
+        user_id = str(message.author.id)
+        if user_id in self.afk_data:
+            del self.afk_data[user_id]
+            save_afk_data(self.afk_data)
+            await message.channel.send(f"Welcome back {message.author.mention}, you are no longer AFK!")
+
+        for mention in message.mentions:
+            mention_id = str(mention.id)
+            if mention_id in self.afk_data:
+                reason = self.afk_data[mention_id]["reason"]
+                await message.channel.send(f"{mention.name} is AFK: {reason}")
 
 
 async def setup(bot: commands.Bot):

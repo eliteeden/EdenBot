@@ -32,6 +32,7 @@ def save_afk_data(data):
     with open(AFK_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
+afk_data = load_afk_data()
 
 
 class InteractionCog(commands.Cog):
@@ -44,7 +45,6 @@ class InteractionCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.messages: dict[int, discord.Message] = {}
-        self.afk_data = load_afk_data()
         self.GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
         self.token = os.environ.get("TOKEN")
         if not self.token:
@@ -290,8 +290,8 @@ class InteractionCog(commands.Cog):
             "best bot": "it's obviously me",
             "test": "https://www.bing.com/ck/a?!&&p=c9445896195a4ae76fab39cf494c6e4a3997761d65f6b53987150b82c25385afJmltdHM9MTc1ODY3MjAwMA&ptn=3&ver=2&hsh=4&fclid=2812b07d-0c05-6e15-3da1-a63f0d386f4f&psq=test&u=a1aHR0cHM6Ly93d3cuc3BlZWR0ZXN0Lm5ldC8",
             "clanker": "That word is highly offensive and I do not like you anymore.",
-            "nicest member": f"It would be me but I am a bot so I have to give it to {USERS.VIC}",
-            "best mod": f"I believe Zi doesn't count so I might as well give it to {USERS.HAPPY}", # self glaze
+            "nicest member": f"It would be me but I am a bot so I have to give it to <@{USERS.VIC}>",
+            "best mod": f"I believe Zi doesn't count so I might as well give it to <@{USERS.HAPPY}>", # self glaze
             "retard": f"<@{USERS.COOTSHK}> until one of the mods bans you for this"  # heh heh heh
         }
 
@@ -391,19 +391,11 @@ class InteractionCog(commands.Cog):
 
     @commands.command()
     async def afk(self, ctx, *, reason="AFK"):
-        user_id = str(ctx.author.id)
-        self.afk_data[user_id] = {
-            "reason": reason,
-            "name": ctx.author.name
-        }
-        save_afk_data(self.afk_data)
+        afk_data[str(ctx.author.id)] = reason or "No reason provided"
+        save_afk_data(afk_data)
+        await ctx.send(f"{ctx.author.mention} is now AFK: {afk_data[str(ctx.author.id)]}")
 
-        # Add AFK role if it exists
-        afk_role = discord.utils.get(ctx.guild.roles, name="AFK")
-        if afk_role:
-            await ctx.author.add_roles(afk_role)
 
-        await ctx.send(f"{ctx.author.mention} is now AFK: {reason}")
 
 
     @commands.command(name="fuck")
@@ -718,17 +710,20 @@ class InteractionCog(commands.Cog):
         user_id = str(message.author.id)
 
         # If user is marked AFK and sends a message, remove AFK status and role
-        if user_id in self.afk_data:
-            del self.afk_data[user_id]
-            save_afk_data(self.afk_data)
+        
+        user_id = str(message.author.id)
+        if user_id in afk_data:
+            del afk_data[user_id]
+            save_afk_data(afk_data)
+            await message.channel.send(f"{message.author.mention}, welcome back!")
 
-            afk_role = discord.utils.get(message.guild.roles, name="AFK")
-            if afk_role and afk_role in message.author.roles:
-                await message.author.remove_roles(afk_role)
+        for mention in message.mentions:
+            mention_id = str(mention.id)
+            if mention_id in afk_data:
+                await message.channel.send(f"{mention.name} is AFK: {afk_data[mention_id]}")
 
-            await message.channel.send(
-                f"👋 Welcome back {message.author.mention}, your AFK status has been removed!"
-            )
+        await self.bot.process_commands(message)
+
 
         # Notify if mentioned user is AFK
         for mention in message.mentions:

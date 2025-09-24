@@ -69,6 +69,30 @@ class FilesCog(commands.Cog):
         save_backlog(self.backlog)
         await ctx.send(f"✅ Added to your backlog: `{item}`")
 
+    @commands.command(name="remove_backlog", aliases=["unlog", "backremove", "bremove"])
+    async def remove_from_backlog(self, ctx, index: int):
+        user_id = str(ctx.author.id)
+        if user_id not in self.backlog or not self.backlog[user_id]:
+            await ctx.send("📭 Your backlog is empty.")
+            return
+        if index < 1 or index > len(self.backlog[user_id]):
+            await ctx.send("❌ Invalid index.")
+            return
+        removed = self.backlog[user_id].pop(index - 1)
+        save_backlog(self.backlog)
+        await ctx.send(f"🗑️ Removed from backlog: `{removed}`")
+
+    @commands.command(name="clear_backlog", aliases=["done", "devwipe", "backclean"])
+    async def clear_backlog(self, ctx):
+        user_id = str(ctx.author.id)
+        if user_id in self.backlog:
+            self.backlog[user_id] = []
+            save_backlog(self.backlog)
+            await ctx.send("🧹 Your backlog has been cleared.")
+        else:
+            await ctx.send("📭 You have no backlog to clear.")
+
+
     @commands.command(name="backlog", aliases=["todos", "ideas"])
     async def show_backlog(self, ctx):
         user_id = str(ctx.author.id)

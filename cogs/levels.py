@@ -546,8 +546,8 @@ class LevelsCog(commands.Cog):
     @commands.command(name="setlvl")
     @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
     async def setlvl(self, ctx, member: discord.Member, level: int):
+        """Sets a member's XP to match the requested level - 10 XP"""
         try:
-            """Sets a member's XP to match the requested level - 10 XP"""
             if self.is_ban(member):
                 await ctx.send("⛔ Member is restricted from XP updates.")
                 return
@@ -569,6 +569,19 @@ class LevelsCog(commands.Cog):
             await self.assign_level_roles(member)
         except Exception as e:
             await ctx.send(f"⚠️ Error setting XP: {str(e)}")
+    @commands.command(name="setxp")
+    @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
+    async def setxp(self, ctx: commands.Context, member: discord.Member, xp: int):
+        """Sets a member to have a specified amount of xp."""
+        if self.is_ban(member):
+            return await ctx.send("⛔ Member is restricted from XP updates.")
+        server_id = str(ctx.guild.id)
+        user_id = str(member.id)
+        self.storage.set(f"{server_id}:{user_id}:xp", xp)
+        self.storage.add(f"{server_id}:players", user_id)
+
+        await self.assign_level_roles(member)
+        await ctx.send(f"{member.mention} is now level {self._get_level_from_xp(xp)}!")
 
     @commands.Cog.listener()
     async def on_message(self, message):

@@ -445,11 +445,11 @@ class RolesCog(commands.Cog):
         guild = ctx.guild
 
         # Replace these with your actual role IDs
-        ROLE_A_ID = 997361025772965918
-        ROLE_1_ID = 995017153168289884
-        ROLE_2_ID = 995017251319185469
-        ROLE_3_ID = 995017400602865725
-        TARGET_ROLE_ID = 1408704187700609056
+        ROLE_A_ID = 1028672106235429045
+        ROLE_1_ID = 1000317394020995082
+        ROLE_2_ID = 2
+        ROLE_3_ID = 1
+        TARGET_ROLE_ID = 1422739044906827837
 
         # Fetch role objects by ID
         role_a = guild.get_role(ROLE_A_ID)

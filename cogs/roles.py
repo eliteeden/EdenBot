@@ -447,8 +447,8 @@ class RolesCog(commands.Cog):
         # Replace these with your actual role IDs
         ROLE_A_ID = 1028672106235429045
         ROLE_1_ID = 1000317394020995082
-        ROLE_2_ID = 2
-        ROLE_3_ID = 1
+        ROLE_2_ID = 1000317394020995082
+        ROLE_3_ID = 1000317394020995082
         TARGET_ROLE_ID = 1422739044906827837
 
         # Fetch role objects by ID

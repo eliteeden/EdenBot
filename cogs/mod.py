@@ -25,7 +25,7 @@ class ModCog(commands.Cog):
         self.bot = bot
         self.snipe_messages = {}
 
-    @commands.command()
+    @commands.command(aliases=["timeout"])
     @commands.has_permissions(moderate_members=True)
     async def mute(self, ctx, member: Member, timelimit):
         if "s" in timelimit:
@@ -60,7 +60,7 @@ class ModCog(commands.Cog):
                 await member.edit(timed_out_until=discord.utils.utcnow() + newtime)
         await ctx.send(f"{member.mention} was muted for {timelimit}")
 
-    @commands.command()
+    @commands.command(aliases=["untimeout", "timein"])
     @commands.has_permissions(moderate_members=True)
     async def unmute(self, ctx, member: Member):
         await member.edit(timed_out_until=None)

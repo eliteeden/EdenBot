@@ -381,7 +381,7 @@ class InteractionCog(commands.Cog):
                     clean_url = query_params.get('uddg', [''])[0]
                     decoded_url = urllib.parse.unquote(clean_url)
 
-                    await ctx.send(f"<{decoded_url}>")
+                    await ctx.send(f"{decoded_url}")
                 else:
                     await ctx.send("No results found.")
             except Exception as e:

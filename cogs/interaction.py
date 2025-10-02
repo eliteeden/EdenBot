@@ -295,39 +295,44 @@ class InteractionCog(commands.Cog):
                     else:
                         await ctx.send("No results found")
 
-    @commands.command(name="bing")
+    @commands.command(name="bing", aliases=["ddg", "edge", "duckduckgo"])
     async def bing(self, ctx, *, query: str):
         """Searches DuckDuckGo and returns the first result with a clean link."""
-        url = f"https://html.duckduckgo.com/html/?q={query}"
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        async with ctx.typing():
+            url = f"https://html.duckduckgo.com/html/?q={query}"
+            headers = {'User-Agent': 'Mozilla/5.0'}
 
-        try:
-            response = requests.get(url, headers=headers)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            results = soup.find_all('a', class_='result__a')
+            try:
+                response = requests.get(url, headers=headers)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                results = soup.find_all('a', class_='result__a')
 
-            if results:
-                first_result = results[0]
-                title = first_result.text
-                raw_link = first_result['href']
+                if any(banned_word in query.lower() for banned_word in banned_words):
+                    await ctx.send("Your search contains banned words and cannot be processed.")
+                    return
 
-                # Decode DuckDuckGo redirect link
-                parsed = urllib.parse.urlparse(raw_link)
-                query_params = urllib.parse.parse_qs(parsed.query)
-                clean_url = query_params.get('uddg', [''])[0]
-                decoded_url = urllib.parse.unquote(clean_url)
+                if results:
+                    first_result = results[0]
+                    title = first_result.text
+                    raw_link = first_result['href']
 
-                await ctx.send(f"🔎 **{title}**\n<{decoded_url}>")
-            else:
-                await ctx.send("No results found.")
-        except Exception as e:
-            await ctx.send(f"Error: {e}")
+                    # Decode DuckDuckGo redirect link
+                    parsed = urllib.parse.urlparse(raw_link)
+                    query_params = urllib.parse.parse_qs(parsed.query)
+                    clean_url = query_params.get('uddg', [''])[0]
+                    decoded_url = urllib.parse.unquote(clean_url)
 
+                    await ctx.send(f"<{decoded_url}>")
+                else:
+                    await ctx.send("No results found.")
+            except Exception as e:
+                await ctx.send(f"Error: {e}")
 
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def wiki(self, ctx: commands.Context, *, search_msg: str):
         wiki_sites = ["https://en.wikipedia.org/wiki/", "fandom.com"]
+        global banned_words
         banned_words = [
             "milf",
             "porn",

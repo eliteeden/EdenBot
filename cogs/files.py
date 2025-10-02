@@ -65,7 +65,7 @@ class FilesCog(commands.Cog):
         user_id = str(ctx.author.id)
         if user_id not in self.backlog:
             self.backlog[user_id] = []
-        self.backlog[user_id].append(item)
+        self.backlog[user_id].append(item.capitalize())
         save_backlog(self.backlog)
         await ctx.send(f"✅ Added to your backlog: `{item}`")
 

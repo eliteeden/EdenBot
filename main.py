@@ -52,6 +52,9 @@ EXEMPT_COMMANDS = [
     "ban",
     "mute",
     "snipe",
+    "afk",
+    "bing",
+    "rank"
 ]
 
 

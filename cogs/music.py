@@ -26,8 +26,16 @@ class MusicCog(commands.Cog):
         """Joins the voice channel."""
         if ctx.author.voice:
             channel = ctx.author.voice.channel
-            self.voice_clients[ctx.guild.id] = await channel.connect()
-            await ctx.send(f"🎶 Joined {channel.name}")
+            existing_vc = self.get_voice_client(ctx)
+            if existing_vc and existing_vc.is_connected():
+                await ctx.send("Already connected to a voice channel.")
+                return
+            try:
+                vc = await channel.connect()
+                self.voice_clients[ctx.guild.id] = vc
+                await ctx.send(f"🎶 Joined {channel.name}")
+            except Exception as e:
+                await ctx.send(f"❌ Failed to join: {e}")
         else:
             await ctx.send("You're not in a voice channel!")
 
@@ -53,18 +61,22 @@ class MusicCog(commands.Cog):
         queue = self.get_queue(ctx)
         vc = self.get_voice_client(ctx)
 
+        if not vc or not vc.is_connected():
+            await ctx.send("❌ Not connected to a voice channel.")
+            return
+
         if not queue:
-            await ctx.send("Queue is empty.")
+            await ctx.send("Queue is empty. Staying in channel.")
             return
 
         self.get_skip_votes(ctx).clear()
         self.currents[ctx.guild.id] = queue.pop(0)
 
         ydl_opts = {
-            'format': 'bestaudio',
+            'format': 'bestaudio/best',
             'quiet': True,
             'default_search': 'auto',
-            'extract_flat': 'in_playlist',
+            'noplaylist': True,
         }
 
         try:
@@ -83,13 +95,16 @@ class MusicCog(commands.Cog):
                 print(f"Error: {error}")
             asyncio.run_coroutine_threadsafe(self._play_next(ctx), self.bot.loop)
 
-        source = discord.FFmpegPCMAudio(
-            stream_url,
-            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-            options="-vn"
-        )
-        vc.play(source, after=after_playing)
-        await ctx.send(f"▶️ Now playing: {title}")
+        try:
+            source = discord.FFmpegPCMAudio(
+                stream_url,
+                before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+                options="-vn"
+            )
+            vc.play(source, after=after_playing)
+            await ctx.send(f"▶️ Now playing: {title}")
+        except Exception as e:
+            await ctx.send(f"❌ Playback failed: {e}")
 
     @commands.command()
     async def skip(self, ctx):

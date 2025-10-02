@@ -69,19 +69,19 @@ class MusicCog(commands.Cog):
         self.bot.tree.copy_global_to(guild=MY_GUILD)
         await self.bot.tree.sync(guild=MY_GUILD)
 
-.command(name="join", description="Join your voice channel")
-.guilds(MY_GUILD)
+    @commands.command(name="join", description="Join your voice channel")
+    @commands.guilds(MY_GUILD)
     async def join(self, interaction: discord.Interaction):
         vc = await self._connect(interaction)
         if vc:
             await interaction.response.send_message(f"🎶 Joined {vc.channel.name}")
 
-.command(
+    @commands.command(
         name="play",
         description="Stream audio from YouTube (URL or search term)",
     )
-.describe(url="YouTube link or search keywords")
-.guilds(MY_GUILD)
+    @commands.describe(url="YouTube link or search keywords")
+    @commands.guilds(MY_GUILD)
     async def play(self, interaction: discord.Interaction, url: str):
         # 1) Connect or early‐exit
         vc = await self._connect(interaction)
@@ -101,8 +101,8 @@ class MusicCog(commands.Cog):
         vc.play(source, after=lambda err: print(f"Player error: {err}") if err else None)
         await interaction.followup.send(f"▶️ Now playing **{source.title}**")
 
-.command(name="leave", description="Disconnect from voice")
-.guilds(MY_GUILD)
+    @commands.command(name="leave", description="Disconnect from voice")
+    @commands.guilds(MY_GUILD)
     async def leave(self, interaction: discord.Interaction):
         if self.voice_client and self.voice_client.is_connected():
             await self.voice_client.disconnect()

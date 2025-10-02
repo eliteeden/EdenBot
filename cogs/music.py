@@ -5,7 +5,6 @@ import discord
 import asyncio
 import yt_dlp
 from discord.ext import commands
-from discord import app_commands
 from dotenv import load_dotenv
 
 MY_GUILD = discord.Object(id=963743538212900904)
@@ -70,19 +69,19 @@ class MusicCog(commands.Cog):
         self.bot.tree.copy_global_to(guild=MY_GUILD)
         await self.bot.tree.sync(guild=MY_GUILD)
 
-    @app_commands.command(name="join", description="Join your voice channel")
-    @app_commands.guilds(MY_GUILD)
+.command(name="join", description="Join your voice channel")
+.guilds(MY_GUILD)
     async def join(self, interaction: discord.Interaction):
         vc = await self._connect(interaction)
         if vc:
             await interaction.response.send_message(f"🎶 Joined {vc.channel.name}")
 
-    @app_commands.command(
+.command(
         name="play",
         description="Stream audio from YouTube (URL or search term)",
     )
-    @app_commands.describe(url="YouTube link or search keywords")
-    @app_commands.guilds(MY_GUILD)
+.describe(url="YouTube link or search keywords")
+.guilds(MY_GUILD)
     async def play(self, interaction: discord.Interaction, url: str):
         # 1) Connect or early‐exit
         vc = await self._connect(interaction)
@@ -102,8 +101,8 @@ class MusicCog(commands.Cog):
         vc.play(source, after=lambda err: print(f"Player error: {err}") if err else None)
         await interaction.followup.send(f"▶️ Now playing **{source.title}**")
 
-    @app_commands.command(name="leave", description="Disconnect from voice")
-    @app_commands.guilds(MY_GUILD)
+.command(name="leave", description="Disconnect from voice")
+.guilds(MY_GUILD)
     async def leave(self, interaction: discord.Interaction):
         if self.voice_client and self.voice_client.is_connected():
             await self.voice_client.disconnect()

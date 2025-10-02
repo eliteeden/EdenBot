@@ -1,150 +1,120 @@
+# cogs/music.py
+
+import os
 import discord
-from discord.ext import commands
 import asyncio
 import yt_dlp
+from discord.ext import commands
+from discord import app_commands
+from dotenv import load_dotenv
+
+load_dotenv()
+GUILD_ID = int(os.getenv("GUILD_ID"))
+MY_GUILD = discord.Object(id=GUILD_ID)
+
+ytdl_opts = {
+    "format": "bestaudio/best",
+    "quiet": True,
+    "default_search": "auto",
+    "noplaylist": True,
+}
+ffmpeg_opts = {
+    "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+    "options": "-vn",
+}
+ytdl = yt_dlp.YoutubeDL(ytdl_opts)
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+        self.data  = data
+        self.title = data.get("title")
+
+    @classmethod
+    async def from_url(cls, url: str, *, loop=None, stream=True):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(
+            None, lambda: ytdl.extract_info(url, download=not stream)
+        )
+        if "entries" in data:
+            data = data["entries"][0]
+        filename = data["url"] if stream else ytdl.prepare_filename(data)
+        source   = discord.FFmpegPCMAudio(filename, **ffmpeg_opts)
+        return cls(source, data=data)
 
 class MusicCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.voice_clients = {}  # Per-guild voice clients
-        self.queues = {}         # Per-guild queues
-        self.currents = {}       # Per-guild current track
-        self.skip_votes = {}     # Per-guild skip votes
-        self.skip_threshold = 2  # Default number of votes to skip
+        self.voice_client: discord.VoiceClient | None = None
 
-    def get_voice_client(self, ctx):
-        return self.voice_clients.get(ctx.guild.id)
-
-    def get_queue(self, ctx):
-        return self.queues.setdefault(ctx.guild.id, [])
-
-    def get_skip_votes(self, ctx):
-        return self.skip_votes.setdefault(ctx.guild.id, set())
-
-    @commands.command()
-    async def join(self, ctx):
-        """Joins the voice channel and returns the voice client."""
-        if ctx.author.voice:
-            channel = ctx.author.voice.channel
-            existing_vc = self.get_voice_client(ctx)
-            if existing_vc and existing_vc.is_connected():
-                await ctx.send("Already connected to a voice channel.")
-                return existing_vc
-            try:
-                vc = await channel.connect()
-                self.voice_clients[ctx.guild.id] = vc
-                await ctx.send(f"🎶 Joined {channel.name}")
-                return vc
-            except Exception as e:
-                await ctx.send(f"❌ Failed to join: {e}")
-                return None
-        else:
-            await ctx.send("You're not in a voice channel!")
-            return None
-            
-    @commands.command()
-    async def play(self, ctx, *, url: str):
-        """Plays a song or playlist from YouTube or Spotify."""
-        vc = self.get_voice_client(ctx)
-        if not vc or not vc.is_connected():
-            vc = await self.join(ctx)
-
-        if not vc or not vc.is_connected():
-            await ctx.send("❌ Could not connect to voice channel.")
-            return
-
-        self.get_queue(ctx).append(url)
-        await ctx.send(f"🎵 Added to queue: {url}")
-
-        if not vc.is_playing():
-            await self._play_next(ctx)
-            
-    async def _play_next(self, ctx):
-        queue = self.get_queue(ctx)
-        vc = self.get_voice_client(ctx)
-
-        if not vc or not vc.is_connected():
-            await ctx.send("❌ Not connected to a voice channel.")
-            return
-
-        if not queue:
-            await ctx.send("Queue is empty. Staying in channel.")
-            return
-
-        self.get_skip_votes(ctx).clear()
-        self.currents[ctx.guild.id] = queue.pop(0)
-
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'quiet': True,
-            'default_search': 'auto',
-            'noplaylist': True,
-        }
-
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(self.currents[ctx.guild.id], download=False)
-                if 'entries' in info:
-                    info = info['entries'][0]
-                stream_url = info['url']
-                title = info.get('title', 'Unknown')
-        except Exception as e:
-            await ctx.send(f"❌ Failed to extract audio: {e}")
-            return
-
-        def after_playing(error):
-            if error:
-                print(f"Error: {error}")
-            asyncio.run_coroutine_threadsafe(self._play_next(ctx), self.bot.loop)
-
-        try:
-            source = discord.FFmpegPCMAudio(
-                stream_url,
-                before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-                options="-vn"
+    async def _connect(self, interaction: discord.Interaction) -> discord.VoiceClient | None:
+        """Helper: connect to the user's VC, or return existing."""
+        channel = getattr(interaction.user.voice, "channel", None)
+        if not channel:
+            await interaction.response.send_message(
+                "You must be in a voice channel.", ephemeral=True
             )
-            vc.play(source, after=after_playing)
-            await ctx.send(f"▶️ Now playing: {title}")
+            return None
+
+        if self.voice_client and self.voice_client.is_connected():
+            return self.voice_client
+
+        try:
+            vc = await channel.connect()
+            self.voice_client = vc
+            return vc
         except Exception as e:
-            await ctx.send(f"❌ Playback failed: {e}")
+            await interaction.response.send_message(f"❌ Could not join: {e}")
+            return None
 
-    @commands.command()
-    async def skip(self, ctx):
-        """Votes to skip the current song."""
-        user_id = ctx.author.id
-        votes = self.get_skip_votes(ctx)
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.bot.tree.copy_global_to(guild=MY_GUILD)
+        await self.bot.tree.sync(guild=MY_GUILD)
 
-        if user_id in votes:
-            await ctx.send("You've already voted to skip.")
+    @app_commands.command(name="join", description="Join your voice channel")
+    @app_commands.guilds(MY_GUILD)
+    async def join(self, interaction: discord.Interaction):
+        vc = await self._connect(interaction)
+        if vc:
+            await interaction.response.send_message(f"🎶 Joined {vc.channel.name}")
+
+    @app_commands.command(
+        name="play",
+        description="Stream audio from YouTube (URL or search term)",
+    )
+    @app_commands.describe(url="YouTube link or search keywords")
+    @app_commands.guilds(MY_GUILD)
+    async def play(self, interaction: discord.Interaction, url: str):
+        # 1) Connect or early‐exit
+        vc = await self._connect(interaction)
+        if not vc:
             return
 
-        votes.add(user_id)
-        count = len(votes)
-        await ctx.send(f"⏭️ Skip vote added ({count}/{self.skip_threshold})")
+        # 2) Acknowledge long op
+        await interaction.response.defer()
 
-        if count >= self.skip_threshold:
-            await ctx.send("⏩ Skipping song!")
-            vc = self.get_voice_client(ctx)
-            if vc and vc.is_playing():
-                vc.stop()
+        # 3) Fetch stream
+        try:
+            source = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+        except Exception as e:
+            return await interaction.followup.send(f"❌ Failed to load audio: {e}")
 
-    @commands.command()
-    async def setskip(self, ctx, threshold: int):
-        """Sets the number of votes needed to skip."""
-        self.skip_threshold = threshold
-        await ctx.send(f"✅ Skip threshold set to {threshold}")
+        # 4) Play & report
+        vc.play(source, after=lambda err: print(f"Player error: {err}") if err else None)
+        await interaction.followup.send(f"▶️ Now playing **{source.title}**")
 
-    @commands.command()
-    async def leave(self, ctx):
-        """Leaves the voice channel."""
-        vc = self.get_voice_client(ctx)
-        if vc:
-            await vc.disconnect()
-            self.voice_clients[ctx.guild.id] = None
-            await ctx.send("👋 Left the voice channel.")
+    @app_commands.command(name="leave", description="Disconnect from voice")
+    @app_commands.guilds(MY_GUILD)
+    async def leave(self, interaction: discord.Interaction):
+        if self.voice_client and self.voice_client.is_connected():
+            await self.voice_client.disconnect()
+            self.voice_client = None
+            await interaction.response.send_message("👋 Left the voice channel.")
         else:
-            await ctx.send("I'm not in a voice channel.")
+            await interaction.response.send_message(
+                "I’m not connected to any voice channel.", ephemeral=True
+            )
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(MusicCog(bot))
-    print("MusicCog has been loaded successfully")

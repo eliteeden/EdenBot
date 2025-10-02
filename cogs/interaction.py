@@ -9,6 +9,7 @@ from discord.ext import commands
 from discord.utils import utcnow
 from googlesearch import search
 import math
+import urllib.parse
 import asyncio
 from bs4 import BeautifulSoup
 import random
@@ -296,7 +297,7 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name="bing")
     async def bing(self, ctx, *, query: str):
-        """Searches DuckDuckGo and returns the first result."""
+        """Searches DuckDuckGo and returns the first result with a clean link."""
         url = f"https://html.duckduckgo.com/html/?q={query}"
         headers = {'User-Agent': 'Mozilla/5.0'}
 
@@ -308,12 +309,20 @@ class InteractionCog(commands.Cog):
             if results:
                 first_result = results[0]
                 title = first_result.text
-                link = first_result['href']
-                await ctx.send(f"🔎 **{title}**\n<{link}>")
+                raw_link = first_result['href']
+
+                # Decode DuckDuckGo redirect link
+                parsed = urllib.parse.urlparse(raw_link)
+                query_params = urllib.parse.parse_qs(parsed.query)
+                clean_url = query_params.get('uddg', [''])[0]
+                decoded_url = urllib.parse.unquote(clean_url)
+
+                await ctx.send(f"🔎 **{title}**\n<{decoded_url}>")
             else:
                 await ctx.send("No results found.")
         except Exception as e:
             await ctx.send(f"Error: {e}")
+
 
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")

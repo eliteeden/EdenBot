@@ -7,7 +7,7 @@ from discord.ext import commands
 import asyncio
 import yt_dlp
 
-class Music(commands.Cog):
+class MusicCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.queue = []
@@ -97,5 +97,5 @@ class Music(commands.Cog):
 
 async def setup(bot):
     """Function to load the cog"""
-    bot.add_cog(Music(bot))
+    bot.add_cog(MusicCog(bot))
     print("MusicCog has been loaded successfully")

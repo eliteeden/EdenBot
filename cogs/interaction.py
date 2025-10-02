@@ -294,6 +294,27 @@ class InteractionCog(commands.Cog):
                     else:
                         await ctx.send("No results found")
 
+    @commands.command(name="bing")
+    async def bing(self, ctx, *, query: str):
+        """Searches DuckDuckGo and returns the first result."""
+        url = f"https://html.duckduckgo.com/html/?q={query}"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+
+        try:
+            response = requests.get(url, headers=headers)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            results = soup.find_all('a', class_='result__a')
+
+            if results:
+                first_result = results[0]
+                title = first_result.text
+                link = first_result['href']
+                await ctx.send(f"🔎 **{title}**\n<{link}>")
+            else:
+                await ctx.send("No results found.")
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
+
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def wiki(self, ctx: commands.Context, *, search_msg: str):

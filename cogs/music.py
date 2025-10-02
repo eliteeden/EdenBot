@@ -8,9 +8,7 @@ from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
 
-load_dotenv()
-GUILD_ID = int(os.getenv("GUILD_ID"))
-MY_GUILD = discord.Object(id=GUILD_ID)
+MY_GUILD = discord.Object(id=963743538212900904)
 
 ytdl_opts = {
     "format": "bestaudio/best",

@@ -23,31 +23,33 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     async def join(self, ctx):
-        """Joins the voice channel."""
+        """Joins the voice channel and returns the voice client."""
         if ctx.author.voice:
             channel = ctx.author.voice.channel
             existing_vc = self.get_voice_client(ctx)
             if existing_vc and existing_vc.is_connected():
                 await ctx.send("Already connected to a voice channel.")
-                return
+                return existing_vc
             try:
                 vc = await channel.connect()
                 self.voice_clients[ctx.guild.id] = vc
                 await ctx.send(f"🎶 Joined {channel.name}")
+                return vc
             except Exception as e:
                 await ctx.send(f"❌ Failed to join: {e}")
+                return None
         else:
             await ctx.send("You're not in a voice channel!")
-
+            return None
+            
     @commands.command()
     async def play(self, ctx, *, url: str):
         """Plays a song or playlist from YouTube or Spotify."""
         vc = self.get_voice_client(ctx)
         if not vc or not vc.is_connected():
-            await self.join(ctx)
-            vc = self.get_voice_client(ctx)
+            vc = await self.join(ctx)
 
-        if not vc:
+        if not vc or not vc.is_connected():
             await ctx.send("❌ Could not connect to voice channel.")
             return
 
@@ -56,7 +58,7 @@ class MusicCog(commands.Cog):
 
         if not vc.is_playing():
             await self._play_next(ctx)
-
+            
     async def _play_next(self, ctx):
         queue = self.get_queue(ctx)
         vc = self.get_voice_client(ctx)

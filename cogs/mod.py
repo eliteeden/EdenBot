@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks 
 from discord import Member, User
 import datetime
 import asyncio
@@ -9,6 +9,21 @@ import os
 
 from sympy import true
 from constants import ROLES, CHANNELS
+
+
+REPEAT_FILE = "repeat_data.json"
+
+# Load or initialize repeat data
+if os.path.exists(REPEAT_FILE):
+    with open(REPEAT_FILE, "r") as f:
+        repeat_data = json.load(f)
+else:
+    repeat_data = {}
+
+def save_repeat_data(data):
+    with open(REPEAT_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
 
 # Initialize the report dictionary
 if os.path.exists("reports.json"):
@@ -24,6 +39,7 @@ class ModCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.snipe_messages = {}
+        self.active_loops = {}
 
     @commands.command(aliases=["timeout"])
     @commands.has_permissions(moderate_members=True)
@@ -137,6 +153,56 @@ class ModCog(commands.Cog):
         await ctx.send(
             f"{member.display_name}'s roles: {'\n'.join(roles)}\n**{member.display_name} has {len(roles)} roles**"
         )
+
+    @commands.command(aliases=["parrot", 'inform'])
+    @commands.has_permissions(moderate_members=True)
+    async def repeat(self, ctx, channel: discord.TextChannel = None, interval: int = None, *, msg_content: str = None):
+        if channel is None:
+            channel = ctx.channel
+
+        channel_id = str(channel.id)
+
+        if channel_id in self.active_loops:
+            await ctx.send("A repeating message is already active in this channel.")
+            return
+
+        @tasks.loop(seconds=interval)
+        async def repeater_loop():
+            await channel.send(msg_content)
+
+        repeater_loop.start()
+        self.active_loops[channel_id] = repeater_loop
+
+        repeat_data[channel_id] = {
+            "guild_id": ctx.guild.id,
+            "interval": interval,
+            "msg_content": msg_content
+        }
+        save_repeat_data(repeat_data)
+
+        await ctx.send(f"Started repeating message every {interval} seconds.")
+
+    @commands.command(aliases=['uninform', 'unrepeat'])
+    @commands.has_permissions(moderate_members=True)
+    async def stoprepeat(self, ctx, text_channel: discord.TextChannel = None): 
+        if text_channel is None:
+            text_channel = ctx.channel
+
+        channel_id = str(text_channel.id)
+
+        if channel_id not in self.active_loops:
+            await ctx.send("No repeating message is active in this channel.")
+            return
+
+        self.active_loops[channel_id].cancel()
+        del self.active_loops[channel_id]
+
+        if channel_id in repeat_data:
+            del repeat_data[channel_id]
+            save_repeat_data(repeat_data)
+
+        await ctx.send("Repeating message stopped.")
+
 
     @commands.command()
     @commands.has_permissions(ban_members=True)

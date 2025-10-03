@@ -156,7 +156,7 @@ class ModCog(commands.Cog):
 
     @commands.command(aliases=["parrot", 'inform'])
     @commands.has_permissions(moderate_members=True)
-    async def repeat(self, ctx, interval: int, *, msg_content: str, channel: discord.TextChannel = None):
+    async def repeat(self, ctx, interval: str, *, msg_content: str, channel: discord.TextChannel = None):
         if channel is None:
             channel = ctx.channel
 
@@ -165,8 +165,19 @@ class ModCog(commands.Cog):
         if channel_id in self.active_loops:
             await ctx.send("A repeating message is already active in this channel.")
             return
-
-        @tasks.loop(hours=interval)
+        # Convert duration string to seconds
+        time_units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+        try:
+            unit = interval[-1]
+            text_unit = interval[1]
+            value = int(interval[:-1])
+            seconds = value * time_units[unit]
+        except (ValueError, KeyError):
+            await ctx.send(
+                "Invalid duration format. Use formats like `10m`, `2h`, `1d`."
+            )
+            return
+        @tasks.loop(seconds=seconds)
         async def repeater_loop():
             await channel.send(msg_content)
 
@@ -180,7 +191,7 @@ class ModCog(commands.Cog):
         }
         save_repeat_data(repeat_data)
 
-        await ctx.send(f"Started repeating message every {interval} seconds.")
+        await ctx.send(f"Started repeating message every {interval}{time_units[text_unit]}.")
 
     @commands.command(aliases=['uninform', 'unrepeat'])
     @commands.has_permissions(moderate_members=True)

@@ -156,7 +156,7 @@ class ModCog(commands.Cog):
 
     @commands.command(aliases=["parrot", 'inform'])
     @commands.has_permissions(moderate_members=True)
-    async def repeat(self, ctx, channel: discord.TextChannel = None, interval: int = None, *, msg_content: str = None):
+    async def repeat(self, ctx, interval: int, *, msg_content: str, channel: discord.TextChannel = None):
         if channel is None:
             channel = ctx.channel
 
@@ -166,7 +166,7 @@ class ModCog(commands.Cog):
             await ctx.send("A repeating message is already active in this channel.")
             return
 
-        @tasks.loop(seconds=interval)
+        @tasks.loop(hours=interval)
         async def repeater_loop():
             await channel.send(msg_content)
 

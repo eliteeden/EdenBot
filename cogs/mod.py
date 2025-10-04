@@ -364,6 +364,69 @@ class ModCog(commands.Cog):
         await ctx.send("Slow-mode is off!")
 
 
+    @commands.command(aliases=["parrot", 'inform'])
+    @commands.has_permissions(moderate_members=True)
+    async def repeat(self, ctx, interval: str, *, msg_content: str, channel: discord.TextChannel = None):
+        if channel is None:
+            channel = ctx.channel
+
+        channel_id = str(channel.id)
+
+        if channel_id in self.active_loops:
+            await ctx.send("A repeating message is already active in this channel.")
+            return
+        # Convert duration string to seconds
+        time_units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+        try:
+            unit = interval[-1]
+            value = int(interval[:-1])
+            seconds = value * time_units[unit]
+        except (ValueError, KeyError):
+            await ctx.send(
+                "Invalid duration format. Use formats like `10m`, `2h`, `1d`."
+            )
+            return
+        @tasks.loop(seconds=seconds)
+        async def repeater_loop():
+            await channel.send(msg_content)
+
+        repeater_loop.start()
+        self.active_loops[channel_id] = repeater_loop
+
+        repeat_data[channel_id] = {
+            "guild_id": ctx.guild.id,
+            "interval": interval,
+            "msg_content": msg_content
+        }
+        save_repeat_data(repeat_data)
+
+        await ctx.send(f"Started repeating message every {interval}.")
+
+    @commands.command(aliases=['uninform', 'unrepeat'])
+    @commands.has_permissions(moderate_members=True)
+    async def stoprepeat(self, ctx, text_channel: discord.TextChannel = None): 
+        if text_channel is None:
+            text_channel = ctx.channel
+
+        channel_id = str(text_channel.id)
+
+        if channel_id not in repeat_data:
+            await ctx.send("No repeating message is active in this channel.")
+            return
+
+        # Try to cancel the loop if it's running
+        loop = self.active_loops.get(channel_id)
+        if loop:
+            loop.cancel()
+            del self.active_loops[channel_id]
+
+        # Remove from repeat_data and save
+        del repeat_data[channel_id]
+        save_repeat_data(repeat_data)
+
+        await ctx.send("Repeating message stopped.")
+
+
 async def setup(bot):
     await bot.add_cog(ModCog(bot))
     print("ModCog has been loaded successfully.")

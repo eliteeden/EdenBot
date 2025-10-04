@@ -190,7 +190,7 @@ class ModCog(commands.Cog):
         }
         save_repeat_data(repeat_data)
 
-        await ctx.send(f"Started repeating message every {interval}{unit}.")
+        await ctx.send(f"Started repeating message every {interval}.")
 
     @commands.command(aliases=['uninform', 'unrepeat'])
     @commands.has_permissions(moderate_members=True)

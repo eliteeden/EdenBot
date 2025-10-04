@@ -169,7 +169,6 @@ class ModCog(commands.Cog):
         time_units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
         try:
             unit = interval[-1]
-            text_unit = interval[1]
             value = int(interval[:-1])
             seconds = value * time_units[unit]
         except (ValueError, KeyError):
@@ -191,7 +190,7 @@ class ModCog(commands.Cog):
         }
         save_repeat_data(repeat_data)
 
-        await ctx.send(f"Started repeating message every {interval}{time_units[text_unit]}.")
+        await ctx.send(f"Started repeating message every {interval}{unit}.")
 
     @commands.command(aliases=['uninform', 'unrepeat'])
     @commands.has_permissions(moderate_members=True)

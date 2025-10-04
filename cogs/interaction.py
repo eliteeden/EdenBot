@@ -356,32 +356,62 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name="bing", aliases=["ddg", "edge", "duckduckgo"])
     async def bing(self, ctx, *, query: str):
-        """Searches DuckDuckGo and returns the first result with a clean link."""
-        async with ctx.typing():
-            url = f"https://html.duckduckgo.com/html/?q={query}"
-            headers = {'User-Agent': 'Mozilla/5.0'}
+        """Searches DuckDuckGo and returns the first result with a clean link or responds with eden_meta."""
 
+        eden_meta = {
+            "beautiful member": f"<@{USERS.ESMERY}>",
+            "beautiful mod": f"<@{USERS.ZI}>",
+            "gayest ship": "Emi and Niki.",
+            "average eden iq": "The average eden IQ is still below room temperature.",
+            "glorious leader": f"<@{USERS.ZI}>",
+            "who stole the cheese": f"<@{USERS.SCAREX}>",
+            "who is eden's most annoying person": f"<@{USERS.DECK}>",
+            "best bot": "it's obviously me",
+            "test": "https://www.bing.com/ck/a?!&&p=c9445896195a4ae76fab39cf494c6e4a3997761d65f6b53987150b82c25385afJmltdHM9MTc1ODY3MjAwMA&ptn=3&ver=2&hsh=4&fclid=2812b07d-0c05-6e15-3da1-a63f0d386f4f&psq=test&u=a1aHR0cHM6Ly93d3cuc3BlZWR0ZXN0Lm5ldC8",
+            "clanker": "That word is highly offensive and I do not like you anymore.",
+            "nicest member": f"It would be me but I am a bot so I have to give it to <@{USERS.VIC}>",
+            "best mod": f"I believe Zi doesn't count so I might as well give it to <@{USERS.HAPPY}>",
+            "retard": f"<@{USERS.COOTSHK}> until one of the mods will ban you for this."
+        }
+
+        search_msg = query.lower()
+
+        if any(banned_word in search_msg for banned_word in banned_words):
+            await ctx.send("Your search contains banned words and cannot be processed.")
+            return
+
+        if search_msg in eden_meta:
+            await ctx.send(eden_meta[search_msg])
+            return
+
+        async with ctx.typing():
             try:
-                response = requests.get(url, headers=headers)
+                encoded_query = urllib.parse.quote_plus(query)
+                url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+                headers = {'User-Agent': 'Mozilla/5.0'}
+
+                response = requests.get(url, headers=headers, timeout=5)
+                response.raise_for_status()
+
                 soup = BeautifulSoup(response.text, 'html.parser')
                 results = soup.find_all('a', class_='result__a')
 
-                if any(banned_word in query.lower() for banned_word in banned_words):
-                    await ctx.send("Your search contains banned words and cannot be processed.")
-                    return
-
                 if results:
                     first_result = results[0]
-                    title = first_result.text
+                    title = first_result.text.strip()
                     raw_link = first_result['href']
 
-                    # Decode DuckDuckGo redirect link
                     parsed = urllib.parse.urlparse(raw_link)
                     query_params = urllib.parse.parse_qs(parsed.query)
                     clean_url = query_params.get('uddg', [''])[0]
                     decoded_url = urllib.parse.unquote(clean_url)
 
-                    await ctx.send(f"{decoded_url}")
+                    # Basic SFW check on the result URL
+                    if any(banned_word in decoded_url.lower() for banned_word in banned_words):
+                        await ctx.send("The result contains banned content and cannot be shown.")
+                        return
+
+                    await ctx.send(f"🔎 **{title}**\n{decoded_url}")
                 else:
                     await ctx.send("No results found.")
             except Exception as e:

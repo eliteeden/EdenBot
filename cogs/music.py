@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from yt_dlp import YoutubeDL
+from bs4 import BeautifulSoup
 import subprocess
 import os
 import asyncio

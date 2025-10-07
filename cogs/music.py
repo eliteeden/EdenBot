@@ -4,13 +4,18 @@ from yt_dlp import YoutubeDL
 import subprocess
 import os
 import asyncio
+import aiohttp
+from dotenv import load_dotenv
 
 class MusicCog(commands.Cog):
+    load_dotenv()
+    
     def __init__(self, bot):
         self.bot = bot
+        self.GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
         self.queue = []
         self.skip_votes = set()
-        self.skip_threshold = 3
+        self.skip_threshold = 1
         self.current_track = None
 
     def track_finished(self, error):
@@ -33,7 +38,7 @@ class MusicCog(commands.Cog):
                 return vc
         return None
 
-    @commands.command()
+    @commands.command(aliases=["vc", "join"])
     async def connect(self, ctx):
         if ctx.author.voice is None:
             return await ctx.send("⚠️ You are not connected to a voice channel.")
@@ -51,46 +56,50 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     async def play(self, ctx, *, link: str):
-        if not ctx.author.voice:
-            return await ctx.send("⚠️ You must be in a voice channel.")
-        if not ctx.voice_client:
-            await ctx.author.voice.channel.connect()
+        async with ctx.typing():
+            if not ctx.author.voice:
+                return await ctx.send("⚠️ You must be in a voice channel.")
+            if not ctx.voice_client:
+                await ctx.author.voice.channel.connect()
 
-        source = None
-        title = "Unknown Title"
+            source = None
+            title = "Unknown Title"
 
-        if "spotify.com" in link:
-            await ctx.send("🎧 Processing Spotify link...")
-            try:
-                subprocess.run(["spotdl", link], check=True)
-                for file in os.listdir():
-                    if file.endswith(".mp3"):
-                        source = discord.FFmpegPCMAudio(file)
-                        title = file
-                        break
-                else:
-                    return await ctx.send("❌ Could not find downloaded Spotify track.")
-            except Exception as e:
-                return await ctx.send(f"❌ Error with Spotify link: `{str(e)}`")
-        else:
-            await ctx.send("🎧 Processing YouTube link...")
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'quiet': True,
-                'default_search': 'auto'
-            }
-            try:
-                with YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(link, download=False)
-                    audio_url = info['url']
-                    title = info.get('title', 'Unknown Title')
-                    source = discord.FFmpegPCMAudio(audio_url)
-            except Exception as e:
-                return await ctx.send(f"❌ Error with YouTube link: `{str(e)}`")
+            if "spotify.com" in link:
+                await ctx.send("🎧 Processing Spotify playlist...")
+                try:
+                    subprocess.run(["spotdl", link, "--output", "downloads"], check=True)
+                    downloaded = [f for f in os.listdir("downloads") if f.endswith(".mp3")]
+                    if not downloaded:
+                        return await ctx.send("❌ No tracks found in playlist.")
+                    
+                    for file in downloaded:
+                        path = os.path.join("downloads", file)
+                        track = discord.FFmpegPCMAudio(path)
+                        self.add_track(discord.PCMVolumeTransformer(track, volume=1.0))
+                    await ctx.send(f"📥 Queued {len(downloaded)} tracks from playlist.")
+                except Exception as e:
+                    return await ctx.send(f"❌ Error with Spotify playlist: `{str(e)}`")
 
-        if source:
-            self.add_track(discord.PCMVolumeTransformer(source, volume=1.0))
-            await ctx.send(f"▶️ Queued: **{title}**")
+            else:
+                await ctx.send("🎧 Processing YouTube link...")
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'quiet': True,
+                    'default_search': 'auto'
+                }
+                try:
+                    with YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(link, download=False)
+                        audio_url = info['url']
+                        title = info.get('title', 'Unknown Title')
+                        source = discord.FFmpegPCMAudio(audio_url)
+                except Exception as e:
+                    return await ctx.send(f"❌ Error with YouTube link: `{str(e)}`")
+
+            if source:
+                self.add_track(discord.PCMVolumeTransformer(source, volume=1.0))
+                await ctx.send(f"▶️ Queued: **{title}**")
 
     @commands.command()
     async def skip(self, ctx):
@@ -120,7 +129,7 @@ class MusicCog(commands.Cog):
     async def queue(self, ctx):
         if not self.queue:
             return await ctx.send("📭 The queue is empty.")
-        msg = "\n".join([f"{i+1}. {str(track)}" for i, track in enumerate(self.queue)])
+        msg = "\n".join([f"{i+1}. {str(track)}" for i, track in enumerate(self.queue()))])
         await ctx.send(f"📜 Current Queue:\n{msg}")
 
     @commands.command()
@@ -135,5 +144,81 @@ class MusicCog(commands.Cog):
             ctx.voice_client.resume()
             await ctx.send("▶️ Resumed playback.")
 
+    @commands.command(aliases=["ll", "lyrics"])
+    async def song(self, ctx, *, query: str):
+        """Fetch song lyrics from Genius (format: Song Title - Artist)"""
+        try:
+            async with ctx.typing():
+                if "-" not in query:
+                    return await ctx.send("Please use the format: `Song Title - Artist`")
+
+                title, artist = map(str.strip, query.split("-", 1))
+                search_query = f"{title} {artist}"
+
+                headers = {"Authorization": f"Bearer {self.GENIUS_API_TOKEN}"}
+
+                async with aiohttp.ClientSession() as session:
+                    # Search for the song
+                    search_url = f"https://api.genius.com/search?q={search_query}"
+                    async with session.get(search_url, headers=headers) as resp:
+                        if resp.status != 200:
+                            return await ctx.send("Could not search Genius.")
+                        data = await resp.json()
+                        hits = data["response"]["hits"]
+                        if not hits:
+                            return await ctx.send("No lyrics found.")
+                        song_url = hits[0]["result"]["url"]
+
+                    # Scrape the lyrics
+                    async with session.get(song_url) as song_resp:
+                        html = await song_resp.text()
+                        soup = BeautifulSoup(html, "lxml")
+                        containers = soup.find_all(
+                            "div", attrs={"data-lyrics-container": "true"}
+                        )
+                        lyrics_lines = []
+
+                        for tag in containers:
+                            for element in tag.stripped_strings:
+                                lyrics_lines.append(element)
+
+                        lyrics = "\n".join(lyrics_lines)
+
+                if not lyrics:
+                    return await ctx.send("Lyrics not found on the page.")
+
+                # Split lyrics into lines and group into chunks under 1024 characters
+                lines = lyrics.split("\n")
+                chunks = []
+                current_chunk = ""
+
+                for line in lines:
+                    if len(current_chunk) + len(line) + 1 <= 1024:
+                        current_chunk += line + "\n"
+                    else:
+                        chunks.append(current_chunk.strip())
+                        current_chunk = line + "\n"
+
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+
+                # Send lyrics in embed chunks
+                for i, chunk in enumerate(chunks):
+                    embed = discord.Embed(
+                        title=(
+                            f"{title} - {artist}"
+                            if i == 0
+                            else f"{title} - {artist} (Part {i+1})"
+                        ),
+                        description=chunk,
+                        color=discord.Color.blurple(),
+                    )
+                    await ctx.send(embed=embed)
+
+        except Exception as e:
+            await ctx.send(f"An error occurred: `{e}`")
+
+
 async def setup(bot):
     await bot.add_cog(MusicCog(bot))
+    print("Music cog has been loaded")

@@ -107,7 +107,7 @@ class MusicCog(commands.Cog):
                     return await ctx.send(f"❌ Error with YouTube link: `{str(e)}`")
 
             if source:
-                self.add_track(discord.PCMVolumeTransformer(source, volume=1.0))
+                self.queue.append((title, discord.PCMVolumeTransformer(source, volume=1.0)))
                 await ctx.send(f"▶️ Queued: **{title}**")
 
     @commands.command()

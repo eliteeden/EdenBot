@@ -1,39 +1,38 @@
 import discord
 from discord.ext import commands
 from yt_dlp import YoutubeDL
-from bs4 import BeautifulSoup
 import subprocess
 import os
-import asyncio
 import aiohttp
 from dotenv import load_dotenv
+from bs4 import BeautifulSoup
 
 class MusicCog(commands.Cog):
-    load_dotenv()
-    
     def __init__(self, bot):
-        self.bot = bot
+        load_dotenv()
+    
         self.GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
-        self.queue = []
+
+        self.bot = bot
+        self.queue = []  # List of (title, audio_source)
         self.skip_votes = set()
-        self.skip_threshold = 1
+        self.skip_threshold = 3
         self.current_track = None
 
     def track_finished(self, error):
         self.skip_votes.clear()
         if self.queue:
             self.current_track = self.queue.pop(0)
-            self.voice_client.play(self.current_track, after=self.track_finished)
+            self.voice_client.play(self.current_track[1], after=self.track_finished)
 
-    def add_track(self, track: discord.AudioSource):
-        self.queue.append(track)
+    def add_track(self, title, source):
+        self.queue.append((title, discord.PCMVolumeTransformer(source, volume=1.0)))
         if not self.voice_client.is_playing():
             self.current_track = self.queue.pop(0)
-            self.voice_client.play(self.current_track, after=self.track_finished)
+            self.voice_client.play(self.current_track[1], after=self.track_finished)
 
     @property
     def voice_client(self):
-        # Get the first connected voice client
         for vc in self.bot.voice_clients:
             if vc.is_connected():
                 return vc
@@ -43,16 +42,11 @@ class MusicCog(commands.Cog):
     async def connect(self, ctx):
         if ctx.author.voice is None:
             return await ctx.send("⚠️ You are not connected to a voice channel.")
-
         try:
             await ctx.author.voice.channel.connect(timeout=30, self_deaf=True)
             await ctx.send("✅ Connected to the voice channel.")
-        except asyncio.TimeoutError:
-            await ctx.send("❌ Connection timed out. Discord may be slow or unstable.")
-        except asyncio.CancelledError:
-            await ctx.send("❌ Connection was cancelled. Try again shortly.")
         except Exception as e:
-            await ctx.send(f"❌ Unexpected error: `{str(e)}`")
+            await ctx.send(f"❌ Connection failed: `{str(e)}`")
 
     @commands.command()
     async def disconnect(self, ctx):
@@ -75,21 +69,19 @@ class MusicCog(commands.Cog):
             title = "Unknown Title"
 
             if "spotify.com" in link:
-                await ctx.send("🎧 Processing Spotify playlist...")
+                await ctx.send("🎧 Processing Spotify link...")
                 try:
                     subprocess.run(["spotdl", link, "--output", "downloads"], check=True)
                     downloaded = [f for f in os.listdir("downloads") if f.endswith(".mp3")]
                     if not downloaded:
-                        return await ctx.send("❌ No tracks found in playlist.")
-                    
+                        return await ctx.send("❌ No tracks found.")
                     for file in downloaded:
                         path = os.path.join("downloads", file)
-                        track = discord.FFmpegPCMAudio(path)
-                        self.add_track(discord.PCMVolumeTransformer(track, volume=1.0))
-                    await ctx.send(f"📥 Queued {len(downloaded)} tracks from playlist.")
+                        audio = discord.FFmpegPCMAudio(path)
+                        self.add_track(file, audio)
+                    await ctx.send(f"📥 Queued {len(downloaded)} Spotify track(s).")
                 except Exception as e:
-                    return await ctx.send(f"❌ Error with Spotify playlist: `{str(e)}`")
-
+                    return await ctx.send(f"❌ Spotify error: `{str(e)}`")
             else:
                 await ctx.send("🎧 Processing YouTube link...")
                 ydl_opts = {
@@ -103,30 +95,24 @@ class MusicCog(commands.Cog):
                         audio_url = info['url']
                         title = info.get('title', 'Unknown Title')
                         source = discord.FFmpegPCMAudio(audio_url)
+                        self.add_track(title, source)
+                        await ctx.send(f"▶️ Queued: **{title}**")
                 except Exception as e:
-                    return await ctx.send(f"❌ Error with YouTube link: `{str(e)}`")
-
-            if source:
-                self.queue.append((title, discord.PCMVolumeTransformer(source, volume=1.0)))
-                await ctx.send(f"▶️ Queued: **{title}**")
+                    return await ctx.send(f"❌ YouTube error: `{str(e)}`")
 
     @commands.command()
     async def skip(self, ctx):
         vc = ctx.voice_client
         if not vc or not vc.is_playing():
             return await ctx.send("⚠️ Nothing is playing.")
-
         if ctx.author.id in self.skip_votes:
             return await ctx.send("🗳️ You already voted to skip.")
-
         self.skip_votes.add(ctx.author.id)
-        votes = len(self.skip_votes)
-
-        if votes >= self.skip_threshold:
+        if len(self.skip_votes) >= self.skip_threshold:
             vc.stop()
             await ctx.send("⏭️ Track skipped by vote!")
         else:
-            await ctx.send(f"🗳️ Skip vote added ({votes}/{self.skip_threshold}).")
+            await ctx.send(f"🗳️ Skip vote added ({len(self.skip_votes)}/{self.skip_threshold}).")
 
     @commands.command(aliases=["skips"])
     @commands.has_permissions(manage_guild=True)

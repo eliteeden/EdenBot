@@ -133,15 +133,13 @@ class MusicCog(commands.Cog):
     async def set_skip_threshold(self, ctx, threshold: int):
         self.skip_threshold = max(1, threshold)
         await ctx.send(f"🔧 Skip threshold set to {self.skip_threshold} votes.")
-        
+
     @commands.command()
     async def queue(self, ctx):
         if not self.queue:
             return await ctx.send("📭 The queue is empty.")
-        
         msg = "\n".join([f"{i+1}. `{title}`" for i, (title, _) in enumerate(self.queue)])
-        await ctx.send(f"📜 Current Queue:\n{msg}")
-
+        await ctx.send(f"📜 **Current Queue:**\n{msg}")
 
     @commands.command()
     async def pause(self, ctx):

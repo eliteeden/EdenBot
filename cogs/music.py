@@ -129,7 +129,7 @@ class MusicCog(commands.Cog):
     async def queue(self, ctx):
         if not self.queue:
             return await ctx.send("📭 The queue is empty.")
-        msg = "\n".join([f"{i+1}. {str(track)}" for i, track in enumerate(self.queue)))])
+        msg = "\n".join([f"{i+1}. `{str(track)}`" for i, track in enumerate(self.queue)])
         await ctx.send(f"📜 Current Queue:\n{msg}")
 
     @commands.command()

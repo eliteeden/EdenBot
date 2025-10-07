@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
-from typing import Optional
+from yt_dlp import YoutubeDL
+import subprocess
+import os
 import asyncio
 
 class CustomVoiceClient(discord.VoiceClient):
@@ -42,14 +44,51 @@ class MusicCog(commands.Cog):
         await ctx.voice_client.disconnect()
         await ctx.send("👋 Disconnected.")
 
-    @commands.command()
-    async def play(self, ctx: commands.Context, file: str):
-        if ctx.voice_client is None:
-            await ctx.author.voice.channel.connect(cls=CustomVoiceClient)
 
-        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f"music/{file}.mp3"))
-        ctx.voice_client.add_track(source)
-        await ctx.send(f"🎵 Added `{file}` to the queue.")
+    @commands.command()
+    async def play(self, ctx, *, link: str):
+        if not ctx.author.voice:
+            await ctx.send("⚠️ You must be in a voice channel.")
+            return
+
+        if not ctx.voice_client:
+            await ctx.author.voice.channel.connect()
+
+        # Determine link type
+        if "spotify.com" in link:
+            await ctx.send("🎧 Processing Spotify link...")
+            try:
+                subprocess.run(["spotdl", link], check=True)
+                # Find the downloaded file
+                for file in os.listdir():
+                    if file.endswith(".mp3"):
+                        audio_file = file
+                        break
+                else:
+                    await ctx.send("❌ Could not find downloaded Spotify track.")
+                    return
+                source = discord.FFmpegPCMAudio(audio_file)
+                ctx.voice_client.play(source)
+                await ctx.send(f"▶️ Now playing: {audio_file}")
+            except Exception as e:
+                await ctx.send(f"❌ Error with Spotify link: `{str(e)}`")
+        else:
+            await ctx.send("🎧 Processing YouTube link...")
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'quiet': True,
+                'default_search': 'auto'
+            }
+            try:
+                with YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(link, download=False)
+                    audio_url = info['url']
+                    title = info.get('title', 'Unknown Title')
+                source = discord.FFmpegPCMAudio(audio_url)
+                ctx.voice_client.play(source)
+                await ctx.send(f"▶️ Now playing: **{title}**")
+            except Exception as e:
+                await ctx.send(f"❌ Error with YouTube link: `{str(e)}`")
 
     @commands.command()
     async def pause(self, ctx: commands.Context):

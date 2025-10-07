@@ -9,9 +9,12 @@ class CustomVoiceClient(discord.VoiceClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queue = []
+        self.skip_votes = set()
+        self.skip_threshold = 3  # default number of votes required
 
     def track_finished(self, error):
         self.queue.pop(0)
+        self.skip_votes.clear()
         if self.queue:
             self.play(self.queue[0], after=self.track_finished)
 
@@ -21,10 +24,12 @@ class CustomVoiceClient(discord.VoiceClient):
             self.play(track, after=self.track_finished)
 
     def skip_track(self):
+        self.skip_votes.clear()
         if self.is_playing():
             self.stop()
         elif self.queue:
             self.queue.pop(0)
+
 
 class MusicCog(commands.Cog):
     def __init__(self, bot):
@@ -91,6 +96,43 @@ class MusicCog(commands.Cog):
                 await ctx.send(f"❌ Error with YouTube link: `{str(e)}`")
 
     @commands.command()
+    async def skip(self, ctx: commands.Context):
+        vc = ctx.voice_client
+        if not vc or not vc.is_playing():
+            return await ctx.send("⚠️ Nothing is playing.")
+
+        if ctx.author.id in vc.skip_votes:
+            return await ctx.send("🗳️ You already voted to skip.")
+
+        vc.skip_votes.add(ctx.author.id)
+        votes = len(vc.skip_votes)
+        required = vc.skip_threshold
+
+        if votes >= required:
+            vc.skip_track()
+            await ctx.send("⏭️ Track skipped by vote!")
+        else:
+            await ctx.send(f"🗳️ Skip vote added ({votes}/{required}).")
+
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def set_skip_threshold(self, ctx: commands.Context, threshold: int):
+        vc = ctx.voice_client
+        if not vc:
+            return await ctx.send("⚠️ Bot is not connected to a voice channel.")
+        vc.skip_threshold = max(1, threshold)
+        await ctx.send(f"🔧 Skip threshold set to {vc.skip_threshold} votes.")
+
+    @commands.command()
+    async def queue(self, ctx: commands.Context):
+        vc = ctx.voice_client
+        if not vc or not vc.queue:
+            return await ctx.send("📭 The queue is empty.")
+        msg = "\n".join([f"{i+1}. {str(track)}" for i, track in enumerate(vc.queue)])
+        await ctx.send(f"📜 Current Queue:\n{msg}")
+
+
+    @commands.command()
     async def pause(self, ctx: commands.Context):
         if ctx.voice_client and ctx.voice_client.is_playing():
             ctx.voice_client.pause()
@@ -102,11 +144,6 @@ class MusicCog(commands.Cog):
             ctx.voice_client.resume()
             await ctx.send("▶️ Resumed playback.")
 
-    @commands.command()
-    async def skip(self, ctx: commands.Context):
-        if ctx.voice_client:
-            ctx.voice_client.skip_track()
-            await ctx.send("⏭️ Skipped track.")
 
     @commands.command()
     async def volume(self, ctx: commands.Context, volume: int):

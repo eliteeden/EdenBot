@@ -1,4 +1,4 @@
-from curses.panel import bottom_panel
+
 import discord
 from discord.ext import commands
 import asyncio

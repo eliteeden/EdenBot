@@ -1,129 +1,79 @@
 import discord
 from discord.ext import commands
+from typing import Optional
 import asyncio
-from yt_dlp import YoutubeDL
 
-from typing import Dict, cast
+class CustomVoiceClient(discord.VoiceClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.queue = []
 
+    def track_finished(self, error):
+        self.queue.pop(0)
+        if self.queue:
+            self.play(self.queue[0], after=self.track_finished)
 
+    def add_track(self, track: discord.AudioSource):
+        self.queue.append(track)
+        if len(self.queue) == 1:
+            self.play(track, after=self.track_finished)
+
+    def skip_track(self):
+        if self.is_playing():
+            self.stop()
+        elif self.queue:
+            self.queue.pop(0)
 
 class MusicCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-                
-        self.ydl_opts: Dict[str, object] = {
-            'format': 'bestaudio/best',
-            'noplaylist': True,
-            'quiet': True,
-            'default_search': 'auto'
-        }
-
-        self.ffmpeg_options: Dict[str, str] = {
-            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'options': '-vn'
-        }
-            
 
     @commands.command()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def join(self, ctx):
-        print("[join] Command triggered")
-        if ctx.author.voice:
-            channel = ctx.author.voice.channel
-            print(f"[join] Author is in channel: {channel.name}")
-            if ctx.voice_client and ctx.voice_client.is_connected():
-                print("[join] Bot is already connected")
-                await ctx.send(f"✅ Already connected to `{channel.name}`.")
-            else:
-                try:
-                    await channel.connect()
-                    await asyncio.sleep(1)
-                    print("[join] Bot connected successfully")
-                    await ctx.send(f"🎶 Joined `{channel.name}`!")
-                except Exception as e:
-                    print(f"[join] Connection error: {e}")
-                    await ctx.send(f"❌ Failed to join: `{str(e)}`")
-        else:
-            print("[join] Author not in voice channel")
-            await ctx.send("⚠️ You need to be in a voice channel first!")
+    async def connect(self, ctx: commands.Context):
+        if ctx.author.voice is None:
+            return await ctx.send("⚠️ You are not connected to a voice channel.")
+        await ctx.author.voice.channel.connect(cls=CustomVoiceClient)
+        await ctx.send("✅ Connected to the voice channel.")
 
     @commands.command()
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def leave(self, ctx):
-        print("[leave] Command triggered")
+    async def disconnect(self, ctx: commands.Context):
+        if ctx.voice_client is None:
+            return await ctx.send("⚠️ I'm not connected to any voice channel.")
+        await ctx.voice_client.disconnect()
+        await ctx.send("👋 Disconnected.")
+
+    @commands.command()
+    async def play(self, ctx: commands.Context, file: str):
+        if ctx.voice_client is None:
+            await ctx.author.voice.channel.connect(cls=CustomVoiceClient)
+
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f"music/{file}.mp3"))
+        ctx.voice_client.add_track(source)
+        await ctx.send(f"🎵 Added `{file}` to the queue.")
+
+    @commands.command()
+    async def pause(self, ctx: commands.Context):
+        if ctx.voice_client and ctx.voice_client.is_playing():
+            ctx.voice_client.pause()
+            await ctx.send("⏸️ Paused playback.")
+
+    @commands.command()
+    async def resume(self, ctx: commands.Context):
+        if ctx.voice_client and ctx.voice_client.is_paused():
+            ctx.voice_client.resume()
+            await ctx.send("▶️ Resumed playback.")
+
+    @commands.command()
+    async def skip(self, ctx: commands.Context):
         if ctx.voice_client:
-            try:
-                await ctx.voice_client.disconnect()
-                print("[leave] Bot disconnected successfully")
-                await ctx.send("👋 Disconnected from the voice channel!")
-            except Exception as e:
-                print(f"[leave] Disconnect error: {e}")
-                await ctx.send(f"❌ Failed to disconnect: `{str(e)}`")
-        else:
-            print("[leave] Bot not in voice channel")
-            await ctx.send("⚠️ I'm not in a voice channel!")
+            ctx.voice_client.skip_track()
+            await ctx.send("⏭️ Skipped track.")
 
     @commands.command()
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def play(self, ctx, *, url: str):
-        print("[play] Command triggered")
-        if not ctx.author.voice:
-            print("[play] Author not in voice channel")
-            await ctx.send("⚠️ You must be in a voice channel to use this command.")
-            return
+    async def volume(self, ctx: commands.Context, volume: int):
+        if ctx.voice_client and ctx.voice_client.source:
+            ctx.voice_client.source.volume = volume / 100
+            await ctx.send(f"🔊 Volume set to {volume}%.")
 
-        if not ctx.voice_client or not ctx.voice_client.is_connected():
-            try:
-                print("[play] Bot not connected, attempting to connect")
-                await ctx.author.voice.channel.connect()
-                await asyncio.sleep(1)
-                print("[play] Bot connected successfully")
-            except Exception as e:
-                print(f"[play] Connection error: {e}")
-                await ctx.send(f"❌ Failed to connect: `{str(e)}`")
-                return
-
-        ffmpeg_options = {
-            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'options': '-vn'
-        }
-
-        ydl_opts = cast(dict[str, object], {
-            'format': 'bestaudio/best',
-            'noplaylist': True,
-            'quiet': True,
-            'default_search': 'auto',
-            'extract_flat': False
-        })
-
-        try:
-            print(f"[play] Extracting audio from URL: {url}")
-            with YoutubeDL(self.ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                audio_url = info['url']
-                title = info.get('title', 'Unknown Title')
-                print(f"[play] Extracted audio: {title}")
-        except Exception as e:
-            print(f"[play] Extraction error: {e}")
-            await ctx.send(f"❌ Error extracting audio: `{str(e)}`")
-            return
-
-        try:
-            print("[play] Attempting to play audio")
-            ctx.voice_client.stop()
-            ctx.voice_client.play(discord.FFmpegPCMAudio(audio_url, **self.ffmpeg_options))
-            await ctx.send(f"▶️ Now playing: **{title}**")
-            await asyncio.sleep(2)
-            if not ctx.voice_client.is_playing():
-                print("[play] Playback failed or silent")
-                await ctx.send("⚠️ Something went wrong—no audio is playing.")
-            else:
-                print("[play] Playback started successfully")
-        except Exception as e:
-            print(f"[play] Playback error: {e}")
-            await ctx.send(f"❌ Error playing audio: `{str(e)}`")
-
-# Setup function
 async def setup(bot: commands.Bot):
     await bot.add_cog(MusicCog(bot))
-    print("[MusicCog] Cog loaded")

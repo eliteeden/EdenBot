@@ -128,7 +128,7 @@ class MusicCog(commands.Cog):
         else:
             await ctx.send(f"🗳️ Skip vote added ({votes}/{self.skip_threshold}).")
 
-    @commands.command()
+    @commands.command(aliases=["skips"])
     @commands.has_permissions(manage_guild=True)
     async def set_skip_threshold(self, ctx, threshold: int):
         self.skip_threshold = max(1, threshold)
@@ -138,6 +138,7 @@ class MusicCog(commands.Cog):
     async def queue(self, ctx):
         if not self.queue:
             return await ctx.send("📭 The queue is empty.")
+        self.queue.append((title, discord.FFmpegPCMAudio(audio_url)))
         msg = "\n".join([f"{i+1}. `{str(track)}`" for i, track in enumerate(self.queue)])
         await ctx.send(f"📜 Current Queue:\n{msg}")
 

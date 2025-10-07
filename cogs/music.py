@@ -94,7 +94,12 @@ class MusicCog(commands.Cog):
                         info = ydl.extract_info(link, download=False)
                         audio_url = info['url']
                         title = info.get('title', 'Unknown Title')
-                        source = discord.FFmpegPCMAudio(audio_url)
+                        source = discord.FFmpegPCMAudio(
+                            audio_url,
+                            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+                            options="-vn"
+                        )
+
                         self.add_track(title, source)
                         await ctx.send(f"▶️ Queued: **{title}**")
                 except Exception as e:

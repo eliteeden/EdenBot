@@ -39,12 +39,20 @@ class MusicCog(commands.Cog):
                 return vc
         return None
 
-    @commands.command(aliases=["vc", "join"])
+    @commands.command()
     async def connect(self, ctx):
         if ctx.author.voice is None:
             return await ctx.send("⚠️ You are not connected to a voice channel.")
-        await ctx.author.voice.channel.connect()
-        await ctx.send("✅ Connected to the voice channel.")
+
+        try:
+            await ctx.author.voice.channel.connect(timeout=30, self_deaf=True)
+            await ctx.send("✅ Connected to the voice channel.")
+        except asyncio.TimeoutError:
+            await ctx.send("❌ Connection timed out. Discord may be slow or unstable.")
+        except asyncio.CancelledError:
+            await ctx.send("❌ Connection was cancelled. Try again shortly.")
+        except Exception as e:
+            await ctx.send(f"❌ Unexpected error: `{str(e)}`")
 
     @commands.command()
     async def disconnect(self, ctx):

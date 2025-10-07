@@ -139,7 +139,7 @@ class MusicCog(commands.Cog):
         if not self.queue:
             return await ctx.send("📭 The queue is empty.")
         self.queue.append((title, discord.FFmpegPCMAudio(audio_url)))
-        msg = "\n".join([f"{i+1}. `{str(track)}`" for i, track in enumerate(self.queue)])
+        msg = "\n".join([f"{i+1}. `{title}`" for i, (title, _) in enumerate(self.queue)])
         await ctx.send(f"📜 Current Queue:\n{msg}")
 
     @commands.command()

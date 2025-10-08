@@ -575,6 +575,21 @@ class InteractionCog(commands.Cog):
         else:
             await ctx.send(embed=embed)
 
+
+    @commands.command(aliases=["ht"])
+    async def hammertime(self, ctx):
+        """Generates a Hammertime link for the current UTC time."""
+        # Get current UTC time
+        utc_time = datetime.now()
+        iso_time = utc_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        encoded_time = urllib.parse.quote(iso_time)
+
+        # Generate Hammertime link
+        hammertime_url = f"https://hammertime.cyou/s/{encoded_time}"
+
+        await ctx.send(f"The time is `{iso_time}` UTC:\n{hammertime_url}")
+
+
     @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def getmods(self, ctx: commands.Context, chosen_role: discord.Role = None):

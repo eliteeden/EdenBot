@@ -578,7 +578,7 @@ class InteractionCog(commands.Cog):
     @commands.command(aliases=["ht"])
     async def hammertime(self, ctx, time: str, timezone: str):
         """
-        Generates a Hammertime link from user-provided time and timezone.
+        Converts user time + timezone into a Discord timestamp.
         Time format: 'HH:MM' or 'YYYY-MM-DD HH:MM'
         Timezone format: 'America/New_York', etc.
         """
@@ -586,24 +586,30 @@ class InteractionCog(commands.Cog):
             # Try full datetime first
             try:
                 local_time = datetime.strptime(time, "%Y-%m-%d %H:%M")
+                full = True
             except ValueError:
-                # If only time is provided, use today's date
                 today = datetime.now()
                 local_time = datetime.strptime(f"{today.strftime('%Y-%m-%d')} {time}", "%Y-%m-%d %H:%M")
+                full = False
 
             # Localize and convert to UTC
             local_tz = pytz.timezone(timezone)
             localized_time = local_tz.localize(local_time)
             utc_time = localized_time.astimezone(pytz.utc)
-            iso_time = utc_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-            encoded_time = urllib.parse.quote(iso_time)
 
-            # Generate Hammertime link
-            hammertime_url = f"https://hammertime.cyou/s/{encoded_time}"
+            # Convert to UNIX timestamp
+            unix_timestamp = int(utc_time.timestamp())
 
-            await ctx.send(f"`{localized_time.strftime('%A, %d %B %Y, %H:%M %Z')}`:\n{hammertime_url}")
+            # Format Discord timestamp
+            if full:
+                full_format = f"<t:{unix_timestamp}:F>"
+            else:
+                full_format = f"<t:{unix_timestamp}:t>"
+
+            await ctx.send(f"Time:\nFull: {full_format}")
         except Exception as e:
-            await ctx.send(f"Error: {e}\nUse time like `13:45` or `2025-10-08 13:45`, and a valid timezone like `America/New_York`.")
+            await ctx.send(f"❌ Error: {e}\nUse time like `13:45` or `2025-10-08 13:45`, and a valid timezone like `America/New_York`.")
+
 
     @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)

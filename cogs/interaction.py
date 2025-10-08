@@ -3,6 +3,7 @@ import os
 from typing import Optional
 import discord
 from discord import Embed, Member
+from dateutil import parser
 import aiohttp
 from discord import File
 from discord.ext import commands
@@ -583,30 +584,33 @@ class InteractionCog(commands.Cog):
         Timezone format: 'America/New_York', etc.
         """
         try:
-            # Try full datetime first
+            # Try parsing the time string
             try:
-                local_time = datetime.strptime(time, "%Y-%m-%d %H:%M")
-                full = True
-            except ValueError:
+                parsed_time = parser.parse(time, fuzzy=False)
+            except Exception:
+                await ctx.send("❌ Invalid time format. Use `HH:MM` or `YYYY-MM-DD HH:MM`.")
+                return
+
+            # If no date is provided, assume today
+            if parsed_time.year == 1900:
                 today = datetime.now()
-                local_time = datetime.strptime(f"{today.strftime('%Y-%m-%d')} {time}", "%Y-%m-%d %H:%M")
-                full = False
+                parsed_time = parsed_time.replace(year=today.year, month=today.month, day=today.day)
+                tag_type = "t"
+            else:
+                tag_type = "F"
 
             # Localize and convert to UTC
             local_tz = pytz.timezone(timezone)
-            localized_time = local_tz.localize(local_time)
+            localized_time = local_tz.localize(parsed_time)
             utc_time = localized_time.astimezone(pytz.utc)
 
             # Convert to UNIX timestamp
             unix_timestamp = int(utc_time.timestamp())
 
             # Format Discord timestamp
-            if full:
-                full_format = f"<t:{unix_timestamp}:F>"
-            else:
-                full_format = f"<t:{unix_timestamp}:t>"
+            discord_timestamp = f"<t:{unix_timestamp}:{tag_type}>"
+            await ctx.send(f"{discord_timestamp}")
 
-            await ctx.send(f"Time:\nFull: {full_format}")
         except Exception as e:
             await ctx.send(f"❌ Error: {e}\nUse time like `13:45` or `2025-10-08 13:45`, and a valid timezone like `America/New_York`.")
 

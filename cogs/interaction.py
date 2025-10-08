@@ -575,20 +575,35 @@ class InteractionCog(commands.Cog):
         else:
             await ctx.send(embed=embed)
 
-
     @commands.command(aliases=["ht"])
-    async def hammertime(self, ctx):
-        """Generates a Hammertime link for the current UTC time."""
-        # Get current UTC time
-        utc_time = datetime.now()
-        iso_time = utc_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-        encoded_time = urllib.parse.quote(iso_time)
+    async def hammertime(self, ctx, time: str, timezone: str):
+        """
+        Generates a Hammertime link from user-provided time and timezone.
+        Time format: 'HH:MM' or 'YYYY-MM-DD HH:MM'
+        Timezone format: 'America/New_York', etc.
+        """
+        try:
+            # Try full datetime first
+            try:
+                local_time = datetime.strptime(time, "%Y-%m-%d %H:%M")
+            except ValueError:
+                # If only time is provided, use today's date
+                today = datetime.now()
+                local_time = datetime.strptime(f"{today.strftime('%Y-%m-%d')} {time}", "%Y-%m-%d %H:%M")
 
-        # Generate Hammertime link
-        hammertime_url = f"https://hammertime.cyou/s/{encoded_time}"
+            # Localize and convert to UTC
+            local_tz = pytz.timezone(timezone)
+            localized_time = local_tz.localize(local_time)
+            utc_time = localized_time.astimezone(pytz.utc)
+            iso_time = utc_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            encoded_time = urllib.parse.quote(iso_time)
 
-        await ctx.send(f"The time is `{iso_time}` UTC:\n{hammertime_url}")
+            # Generate Hammertime link
+            hammertime_url = f"https://hammertime.cyou/s/{encoded_time}"
 
+            await ctx.send(f"`{localized_time.strftime('%A, %d %B %Y, %H:%M %Z')}`:\n{hammertime_url}")
+        except Exception as e:
+            await ctx.send(f"Error: {e}\nUse time like `13:45` or `2025-10-08 13:45`, and a valid timezone like `Africa/Lagos`.")
 
     @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)

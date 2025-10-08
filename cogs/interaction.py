@@ -603,7 +603,7 @@ class InteractionCog(commands.Cog):
 
             await ctx.send(f"`{localized_time.strftime('%A, %d %B %Y, %H:%M %Z')}`:\n{hammertime_url}")
         except Exception as e:
-            await ctx.send(f"Error: {e}\nUse time like `13:45` or `2025-10-08 13:45`, and a valid timezone like `Africa/Lagos`.")
+            await ctx.send(f"Error: {e}\nUse time like `13:45` or `2025-10-08 13:45`, and a valid timezone like `America/New_York`.")
 
     @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)

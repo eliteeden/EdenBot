@@ -3,6 +3,7 @@ from discord.ext import commands
 from yt_dlp import YoutubeDL
 import subprocess
 import os
+import asyncio
 import aiohttp
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
@@ -59,52 +60,116 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     async def play(self, ctx, *, link: str):
-        async with ctx.typing():
-            if not ctx.author.voice:
-                return await ctx.send("⚠️ You must be in a voice channel.")
-            if not ctx.voice_client:
-                await ctx.author.voice.channel.connect()
+        """Plays a song from YouTube or Spotify, with parallel Spotify playlist processing and embed messages"""
+        if not ctx.author.voice:
+            embed = discord.Embed(
+                title="⚠️ Voice Channel Required",
+                description="You must be in a voice channel to use this command.",
+                color=discord.Color.red()
+            )
+            return await ctx.send(embed=embed)
 
-            source = None
-            title = "Unknown Title"
+        if not ctx.voice_client:
+            await ctx.author.voice.channel.connect()
 
-            if "spotify.com" in link:
-                await ctx.send("🎧 Processing Spotify link...")
-                try:
-                    subprocess.run(["spotdl", link, "--output", "downloads"], check=True)
-                    downloaded = [f for f in os.listdir("downloads") if f.endswith(".mp3")]
-                    if not downloaded:
-                        return await ctx.send("❌ No tracks found.")
-                    for file in downloaded:
-                        path = os.path.join("downloads", file)
-                        audio = discord.FFmpegPCMAudio(path)
-                        self.add_track(file, audio)
-                    await ctx.send(f"📥 Queued {len(downloaded)} Spotify track(s).")
-                except Exception as e:
-                    return await ctx.send(f"❌ Spotify error: `{str(e)}`")
-            else:
-                await ctx.send("🎧 Processing YouTube link...")
-                ydl_opts = {
-                    'format': 'bestaudio/best',
-                    'quiet': True,
-                    'default_search': 'auto'
-                }
-                try:
-                    with YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(link, download=False)
-                        audio_url = info['url']
-                        title = info.get('title', 'Unknown Title')
-                        source = discord.FFmpegPCMAudio(
-                            audio_url,
-                            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-                            options="-vn"
-                        )
+        voice_client = ctx.voice_client
+        downloads_dir = "downloads"
+        os.makedirs(downloads_dir, exist_ok=True)
 
-                        self.add_track(title, source)
-                        await ctx.send(f"▶️ Queued: **{title}**")
-                except Exception as e:
-                    return await ctx.send(f"❌ YouTube error: `{str(e)}`")
+        if "spotify.com" in link:
+            embed = discord.Embed(
+                title="🎧 Spotify Processing",
+                description="Processing Spotify link...",
+                color=discord.Color.green()
+            )
+            await ctx.send(embed=embed)
 
+            async def download_spotify():
+                proc = await asyncio.create_subprocess_exec(
+                    "spotdl", link, "--output", downloads_dir,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                await proc.communicate()
+
+            try:
+                await download_spotify()
+                downloaded = [f for f in os.listdir(downloads_dir) if f.endswith(".mp3")]
+                if not downloaded:
+                    embed = discord.Embed(
+                        title="❌ No Tracks Found",
+                        description="No MP3 files were downloaded from the Spotify link.",
+                        color=discord.Color.red()
+                    )
+                    return await ctx.send(embed=embed)
+
+                # Play first track immediately
+                first_path = os.path.join(downloads_dir, downloaded[0])
+                voice_client.stop()
+                voice_client.play(discord.FFmpegPCMAudio(first_path))
+
+                # Queue the rest
+                for file in downloaded[1:]:
+                    path = os.path.join(downloads_dir, file)
+                    audio = discord.FFmpegPCMAudio(path)
+                    self.add_track(file, audio)
+
+                embed = discord.Embed(
+                    title="📥 Spotify Tracks Queued",
+                    description=f"Now playing: `{downloaded[0]}`\nQueued {len(downloaded) - 1} more track(s).",
+                    color=discord.Color.green()
+                )
+                await ctx.send(embed=embed)
+            except Exception as e:
+                embed = discord.Embed(
+                    title="❌ Spotify Error",
+                    description=f"`{str(e)}`",
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=embed)
+
+        else:
+            embed = discord.Embed(
+                title="🎧 YouTube Processing",
+                description="Processing YouTube link...",
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
+
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'quiet': True,
+                'default_search': 'auto'
+            }
+
+            try:
+                with YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(link, download=False)
+                    audio_url = info['url']
+                    title = info.get('title', 'Unknown Title')
+                    source = discord.FFmpegPCMAudio(
+                        audio_url,
+                        before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+                        options="-vn"
+                    )
+
+                    voice_client.stop()
+                    voice_client.play(source)
+                    self.add_track(title, source)
+
+                    embed = discord.Embed(
+                        title="▶️ Now Playing",
+                        description=f"**{title}**",
+                        color=discord.Color.blue()
+                    )
+                    await ctx.send(embed=embed)
+            except Exception as e:
+                embed = discord.Embed(
+                    title="❌ YouTube Error",
+                    description=f"`{str(e)}`",
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=embed)
     @commands.command()
     async def skip(self, ctx):
         vc = ctx.voice_client

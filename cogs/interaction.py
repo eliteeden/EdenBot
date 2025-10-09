@@ -601,6 +601,7 @@ class InteractionCog(commands.Cog):
             
             if "GMT" in timezone:
                 timezone = "ETC/" + timezone
+                await ctx.author.send("This command uses TZDB so GMT-1 on the bot actually means GMT+1\nJust some hammertime shenanigans!")
 
             # Localize and convert to UTC
             local_tz = pytz.timezone(timezone)

@@ -30,6 +30,14 @@ FUDGE_FFMPEG_OPTIONS = {
     'options': '-vn'
 }
 
+def is_dj():
+    """Check for DJ role."""
+    def predicate(ctx):
+        role_names = [r.name for r in ctx.author.roles]
+        return ctx.author == ctx.guild.owner or "Administrator" in role_names or "Manage Guild" in role_names or "DJ" in role_names
+    return commands.check(predicate)
+
+
 class Track:
     """Holds metadata & audio source for a song."""
     __slots__ = ('title','url','webpage_url','duration','requester','source')
@@ -74,7 +82,7 @@ class MusicQueue:
 
 class MusicCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
-        self.bot    = bot
+        self.bot = bot
         self.queues = {}   # guild_id -> MusicQueue()
         self.dj_role_name = "DJ"  # default DJ role
 
@@ -91,13 +99,6 @@ class MusicCog(commands.Cog):
             await ctx.author.voice.channel.connect()
         elif ctx.voice_client.channel != ctx.author.voice.channel:
             await ctx.voice_client.move_to(ctx.author.voice.channel)
-
-    def is_dj():
-        """Check for DJ role."""
-        def predicate(ctx):
-            role_names = [r.name for r in ctx.author.roles]
-            return ctx.author == ctx.guild.owner or "Administrator" in role_names or "Manage Guild" in role_names or "DJ" in role_names
-        return commands.check(predicate)
 
     # ─── Core Playback Commands ────────────────────────────────────────────────
 

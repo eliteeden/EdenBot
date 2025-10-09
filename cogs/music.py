@@ -104,80 +104,132 @@ class MusicCog(commands.Cog):
 
     @commands.command(name="play")
     async def cmd_play(self, ctx, *, query: str):
-        """Play a track or playlist from any yt-dlp source."""
+        """Play from YouTube or Spotify (tracks & playlists) with embed feedback."""
+        # 1. Ensure user is in a voice channel
         try:
             await self.ensure_voice(ctx)
         except commands.CommandError as e:
             return await ctx.send(embed=discord.Embed(
-                title="⚠️ Voice Error", description=str(e), color=discord.Color.red()
+                title="⚠️ Voice Channel Required",
+                description=str(e),
+                color=discord.Color.red()
             ))
 
         voice = ctx.voice_client
         queue = self.get_queue(ctx.guild.id)
+        downloads_dir = "downloads"
+        os.makedirs(downloads_dir, exist_ok=True)
 
-        # Extract info (single or playlist)
+        # 2. Spotify link handling
+        if "spotify.com" in query:
+            start_embed = discord.Embed(
+                title="🎧 Spotify Processing",
+                description="Downloading track(s)…",
+                color=discord.Color.green()
+            )
+            await ctx.send(embed=start_embed)
+
+            try:
+                # Download entire playlist or single track
+                proc = await asyncio.create_subprocess_exec(
+                    "spotdl", query, "--output", downloads_dir,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await proc.communicate()
+
+                # spotdl writes downloaded filenames to stdout
+                output = stdout.decode() + stderr.decode()
+                downloaded = [f for f in os.listdir(downloads_dir) if f.endswith(".mp3")]
+
+                if not downloaded:
+                    raise RuntimeError("No MP3 files produced by spotdl.")
+
+                # Play first immediately
+                first_file = downloaded[0]
+                first_path = os.path.join(downloads_dir, first_file)
+                voice.stop()
+                voice.play(discord.FFmpegPCMAudio(first_path))
+
+                # Queue up the rest
+                for mp3 in downloaded[1:]:
+                    path = os.path.join(downloads_dir, mp3)
+                    src = discord.FFmpegPCMAudio(path)
+                    self.add_track(ctx.guild.id, mp3, src)
+
+                done_embed = discord.Embed(
+                    title="📥 Spotify Tracks Queued",
+                    description=(
+                        f"Now playing: `{first_file}`\n"
+                        f"Queued {len(downloaded)-1} more track(s)."
+                    ),
+                    color=discord.Color.green()
+                )
+                return await ctx.send(embed=done_embed)
+
+            except Exception as e:
+                err_msg = str(e)
+                # Detect DRM or other spotdl failures
+                if "DRM" in err_msg or "No MP3" in err_msg:
+                    desc = (
+                        "That Spotify link couldn’t be processed.\n"
+                        "Make sure it’s a public track or playlist."
+                    )
+                else:
+                    desc = f"`{err_msg}`"
+                error_embed = discord.Embed(
+                    title="❌ Spotify Error",
+                    description=desc,
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=error_embed)
+
+        # 3. Fallback to YouTube / yt-dlp
+        start_embed = discord.Embed(
+            title="🎧 YouTube Processing",
+            description="Extracting video info…",
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=start_embed)
+
         ytdl = YoutubeDL(YTDL_OPTS)
         try:
             info = ytdl.extract_info(query, download=False)
         except Exception as e:
             return await ctx.send(embed=discord.Embed(
                 title="❌ Extraction Error",
-                description=f"`{e}`", color=discord.Color.red()
+                description=f"`{e}`",
+                color=discord.Color.red()
             ))
 
-        entries = info.get('entries') or [info]
+        entries = info.get("entries") or [info]
         added = []
 
         for entry in entries:
-            # When yt-dlp returns a flat playlist entry, re-extract full info
-            if entry.get('url') and not entry.get('title'):
-                entry = ytdl.extract_info(entry['url'], download=False)
-
+            if entry.get("url") and not entry.get("title"):
+                entry = ytdl.extract_info(entry["url"], download=False)
             track = Track(entry, ctx.author)
             queue.add(track)
             added.append(track.title)
 
-        # If nothing is playing, start immediately
+        # Play or queue YouTube tracks
         if not voice.is_playing():
             next_track = queue.pop_next()
             voice.play(next_track.source, after=lambda e: asyncio.run_coroutine_threadsafe(
                 self.play_next(ctx), self.bot.loop))
-
             embed = discord.Embed(
                 title="▶️ Now Playing",
-                description=f"[{next_track.title}]({next_track.webpage_url})\n" +
-                            f"Requested by: {next_track.requester.mention}",
+                description=f"[{next_track.title}]({next_track.webpage_url})",
                 color=discord.Color.green()
             )
-            await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
                 title="➕ Added to Queue",
                 description="\n".join(f"`{i+1}. {t}`" for i, t in enumerate(added)),
                 color=discord.Color.blue()
             )
-            await ctx.send(embed=embed)
 
-    async def play_next(self, ctx):
-        """Callback to play next track in queue."""
-        queue = self.get_queue(ctx.guild.id)
-        if len(queue) == 0 and not queue.loop_track:
-            # if queue empty and not looping current
-            await ctx.voice_client.disconnect()
-            return
-
-        next_track = queue.pop_next()
-        ctx.voice_client.play(next_track.source, after=lambda e: asyncio.run_coroutine_threadsafe(
-            self.play_next(ctx), self.bot.loop))
-
-        embed = discord.Embed(
-            title="▶️ Now Playing",
-            description=f"[{next_track.title}]({next_track.webpage_url})\n" +
-                        f"Requested by: {next_track.requester.mention}",
-            color=discord.Color.green()
-        )
         await ctx.send(embed=embed)
-
     @commands.command()
     async def skip(self, ctx):
         """Skip current track (DJ only)."""

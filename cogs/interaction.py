@@ -577,7 +577,7 @@ class InteractionCog(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["ht"])
-    async def hammertime(self, ctx, time: str, timezone: str):
+    async def hammertime(self, ctx,timezone: str, *, time: str):
         """
         Converts user time + timezone into a Discord timestamp.
         Time format: 'HH:MM' or 'YYYY-MM-DD HH:MM'
@@ -598,6 +598,9 @@ class InteractionCog(commands.Cog):
                 tag_type = "t"
             else:
                 tag_type = "F"
+            
+            if "GMT" in timezone:
+                timezone = "ETC/" + timezone
 
             # Localize and convert to UTC
             local_tz = pytz.timezone(timezone)
@@ -612,7 +615,7 @@ class InteractionCog(commands.Cog):
             await ctx.send(f"{discord_timestamp}")
 
         except Exception as e:
-            await ctx.send(f"❌ Error: {e}\nUse time like `13:45` or `2025-10-08 13:45`, and a valid timezone like `America/New_York`.")
+            await ctx.send(f"❌ Error: {e}\nUse a valid timezone like `America/New_York`and a time like `13:45` or `2025-10-08 13:45`.")
 
 
     @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])

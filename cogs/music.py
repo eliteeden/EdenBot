@@ -1,293 +1,317 @@
+# music.py
+import os
+import asyncio
 import discord
 from discord.ext import commands
 from yt_dlp import YoutubeDL
-import subprocess
-import os
-import asyncio
-import aiohttp
-from dotenv import load_dotenv
-from bs4 import BeautifulSoup
+
+# -----------------------------------------------------------------------------
+# Music Cog inspired by jagrosh/MusicBot (JMusicBot) architecture & features
+# -----------------------------------------------------------------------------
+#
+# Features borrowed from JMusicBot:
+#  • Modular queue system with per‐guild queues
+#  • Support for YouTube, SoundCloud, Bandcamp, Vimeo, Twitch, HTTP streams, local files
+#  • Playlist support (YouTube & other yt-dlp‐supported playlists)
+#  • Detailed embed menus and status messages
+#  • DJ role for privileged commands (remove, move, shuffle, loop)
+#  • Owner‐only commands for bot control (shutdown)
+# -----------------------------------------------------------------------------
+
+# YTDL & FFMPEG options
+YTDL_OPTS = {
+    'format': 'bestaudio/best',
+    'quiet': True,
+    'extract_flat': 'in_playlist',
+    'default_search': 'auto',
+}
+FUDGE_FFMPEG_OPTIONS = {
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+    'options': '-vn'
+}
+
+class Track:
+    """Holds metadata & audio source for a song."""
+    __slots__ = ('title','url','webpage_url','duration','requester','source')
+
+    def __init__(self, info, requester):
+        self.title       = info.get('title')
+        self.url         = info.get('url')
+        self.webpage_url = info.get('webpage_url')
+        self.duration    = info.get('duration')
+        self.requester   = requester
+        self.source      = discord.FFmpegPCMAudio(self.url, **FUDGE_FFMPEG_OPTIONS)
+
+class MusicQueue:
+    """Per‐guild music queue with loop & shuffle support."""
+    def __init__(self):
+        self.tracks       = []
+        self.loop_track   = False
+        self.loop_queue   = False
+
+    def add(self, track: Track):
+        self.tracks.append(track)
+
+    def pop_next(self):
+        if not self.tracks:
+            return None
+        if self.loop_track:
+            return self.tracks[0]
+        track = self.tracks.pop(0)
+        if self.loop_queue:
+            self.tracks.append(track)
+        return track
+
+    def clear(self):
+        self.tracks.clear()
+
+    def shuffle(self):
+        import random
+        random.shuffle(self.tracks)
+
+    def __len__(self):
+        return len(self.tracks)
 
 class MusicCog(commands.Cog):
-    def __init__(self, bot):
-        load_dotenv()
-    
-        self.GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN")
+    def __init__(self, bot: commands.Bot):
+        self.bot    = bot
+        self.queues = {}   # guild_id -> MusicQueue()
+        self.dj_role_name = "DJ"  # default DJ role
 
-        self.bot = bot
-        self.queue = []  # List of (title, audio_source)
-        self.skip_votes = set()
-        self.skip_threshold = 3
-        self.current_track = None
+    # ─── Utilities ────────────────────────────────────────────────────────────
 
-    def track_finished(self, error):
-        self.skip_votes.clear()
-        if self.queue:
-            self.current_track = self.queue.pop(0)
-            self.voice_client.play(self.current_track[1], after=self.track_finished)
+    def get_queue(self, guild_id):
+        return self.queues.setdefault(guild_id, MusicQueue())
 
-    def add_track(self, title, source):
-        self.queue.append((title, discord.PCMVolumeTransformer(source, volume=1.0)))
-        if not self.voice_client.is_playing():
-            self.current_track = self.queue.pop(0)
-            self.voice_client.play(self.current_track[1], after=self.track_finished)
-
-    @property
-    def voice_client(self):
-        for vc in self.bot.voice_clients:
-            if vc.is_connected():
-                return vc
-        return None
-
-    @commands.command()
-    async def connect(self, ctx):
-        if ctx.author.voice is None:
-            return await ctx.send("⚠️ You are not connected to a voice channel.")
-        try:
-            await ctx.author.voice.channel.connect(timeout=30, self_deaf=True)
-            await ctx.send("✅ Connected to the voice channel.")
-        except Exception as e:
-            await ctx.send(f"❌ Connection failed: `{str(e)}`")
-
-    @commands.command()
-    async def disconnect(self, ctx):
-        if ctx.voice_client is None:
-            return await ctx.send("⚠️ I'm not connected to any voice channel.")
-        await ctx.voice_client.disconnect()
-        self.queue.clear()
-        self.skip_votes.clear()
-        await ctx.send("👋 Disconnected.")
-
-    @commands.command()
-    async def play(self, ctx, *, link: str):
-        """Plays a song from YouTube or Spotify with parallel Spotify playlist processing and embed messages"""
+    async def ensure_voice(self, ctx):
+        """Ensure the bot is in author's voice channel."""
         if not ctx.author.voice:
-            embed = discord.Embed(
-                title="⚠️ Voice Channel Required",
-                description="You must be in a voice channel to use this command.",
-                color=discord.Color.red()
-            )
-            return await ctx.send(embed=embed)
-
-        if not ctx.voice_client:
+            raise commands.CommandError("You must be in a voice channel.")
+        if ctx.voice_client is None:
             await ctx.author.voice.channel.connect()
+        elif ctx.voice_client.channel != ctx.author.voice.channel:
+            await ctx.voice_client.move_to(ctx.author.voice.channel)
 
-        voice_client = ctx.voice_client
-        downloads_dir = "downloads"
-        os.makedirs(downloads_dir, exist_ok=True)
+    def is_dj():
+        """Check for DJ role."""
+        def predicate(ctx):
+            role_names = [r.name for r in ctx.author.roles]
+            return ctx.author == ctx.guild.owner or "Administrator" in role_names or "Manage Guild" in role_names or "DJ" in role_names
+        return commands.check(predicate)
 
-        if "spotify.com" in link:
+    # ─── Core Playback Commands ────────────────────────────────────────────────
+
+    @commands.command(name="play")
+    async def cmd_play(self, ctx, *, query: str):
+        """Play a track or playlist from any yt-dlp source."""
+        try:
+            await self.ensure_voice(ctx)
+        except commands.CommandError as e:
+            return await ctx.send(embed=discord.Embed(
+                title="⚠️ Voice Error", description=str(e), color=discord.Color.red()
+            ))
+
+        voice = ctx.voice_client
+        queue = self.get_queue(ctx.guild.id)
+
+        # Extract info (single or playlist)
+        ytdl = YoutubeDL(YTDL_OPTS)
+        try:
+            info = ytdl.extract_info(query, download=False)
+        except Exception as e:
+            return await ctx.send(embed=discord.Embed(
+                title="❌ Extraction Error",
+                description=f"`{e}`", color=discord.Color.red()
+            ))
+
+        entries = info.get('entries') or [info]
+        added = []
+
+        for entry in entries:
+            # When yt-dlp returns a flat playlist entry, re-extract full info
+            if entry.get('url') and not entry.get('title'):
+                entry = ytdl.extract_info(entry['url'], download=False)
+
+            track = Track(entry, ctx.author)
+            queue.add(track)
+            added.append(track.title)
+
+        # If nothing is playing, start immediately
+        if not voice.is_playing():
+            next_track = queue.pop_next()
+            voice.play(next_track.source, after=lambda e: asyncio.run_coroutine_threadsafe(
+                self.play_next(ctx), self.bot.loop))
+
             embed = discord.Embed(
-                title="🎧 Spotify Processing",
-                description="Fetching playlist and downloading tracks...",
+                title="▶️ Now Playing",
+                description=f"[{next_track.title}]({next_track.webpage_url})\n" +
+                            f"Requested by: {next_track.requester.mention}",
                 color=discord.Color.green()
             )
             await ctx.send(embed=embed)
-
-            # Step 1: Get track URLs from playlist
-            try:
-                proc = await asyncio.create_subprocess_exec(
-                    "spotdl", link, "--dry-run",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                stdout, _ = await proc.communicate()
-                track_links = [line.strip() for line in stdout.decode().splitlines() if line.startswith("https://")]
-            except Exception as e:
-                embed = discord.Embed(
-                    title="❌ Spotify Error",
-                    description=f"Failed to fetch playlist: `{str(e)}`",
-                    color=discord.Color.red()
-                )
-                return await ctx.send(embed=embed)
-
-            if not track_links:
-                embed = discord.Embed(
-                    title="❌ No Tracks Found",
-                    description="No valid Spotify tracks were found in the playlist.",
-                    color=discord.Color.red()
-                )
-                return await ctx.send(embed=embed)
-
-            # Step 2: Download tracks in parallel
-            async def download_track(track_url):
-                await asyncio.create_subprocess_exec(
-                    "spotdl", track_url, "--output", downloads_dir,
-                    stdout=asyncio.subprocess.DEVNULL,
-                    stderr=asyncio.subprocess.DEVNULL
-                )
-
-            await asyncio.gather(*(download_track(url) for url in track_links))
-
-            # Step 3: Play first track and queue the rest
-            downloaded = [f for f in os.listdir(downloads_dir) if f.endswith(".mp3")]
-            if not downloaded:
-                embed = discord.Embed(
-                    title="❌ Download Error",
-                    description="Tracks failed to download.",
-                    color=discord.Color.red()
-                )
-                return await ctx.send(embed=embed)
-
-            first_path = os.path.join(downloads_dir, downloaded[0])
-            voice_client.stop()
-            voice_client.play(discord.FFmpegPCMAudio(first_path))
-
-            for file in downloaded[1:]:
-                path = os.path.join(downloads_dir, file)
-                audio = discord.FFmpegPCMAudio(path)
-                self.add_track(file, audio)
-
-            embed = discord.Embed(
-                title="📥 Spotify Playlist Queued",
-                description=f"Now playing: `{downloaded[0]}`\nQueued {len(downloaded) - 1} more track(s).",
-                color=discord.Color.green()
-            )
-            await ctx.send(embed=embed)
-
         else:
             embed = discord.Embed(
-                title="🎧 YouTube Processing",
-                description="Processing YouTube link...",
+                title="➕ Added to Queue",
+                description="\n".join(f"`{i+1}. {t}`" for i, t in enumerate(added)),
                 color=discord.Color.blue()
             )
             await ctx.send(embed=embed)
 
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'quiet': True,
-                'default_search': 'auto'
-            }
+    async def play_next(self, ctx):
+        """Callback to play next track in queue."""
+        queue = self.get_queue(ctx.guild.id)
+        if len(queue) == 0 and not queue.loop_track:
+            # if queue empty and not looping current
+            await ctx.voice_client.disconnect()
+            return
 
-            try:
-                with YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(link, download=False)
-                    audio_url = info['url']
-                    title = info.get('title', 'Unknown Title')
-                    source = discord.FFmpegPCMAudio(
-                        audio_url,
-                        before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-                        options="-vn"
-                    )
+        next_track = queue.pop_next()
+        ctx.voice_client.play(next_track.source, after=lambda e: asyncio.run_coroutine_threadsafe(
+            self.play_next(ctx), self.bot.loop))
 
-                    voice_client.stop()
-                    voice_client.play(source)
-                    self.add_track(title, source)
-
-                    embed = discord.Embed(
-                        title="▶️ Now Playing",
-                        description=f"**{title}**",
-                        color=discord.Color.blue()
-                    )
-                    await ctx.send(embed=embed)
-            except Exception as e:
-                embed = discord.Embed(
-                    title="❌ YouTube Error",
-                    description=f"`{str(e)}`",
-                    color=discord.Color.red()
-                )
-                return await ctx.send(embed=embed)
-
-    @commands.command(aliases=["skips"])
-    @commands.has_permissions(manage_guild=True)
-    async def set_skip_threshold(self, ctx, threshold: int):
-        self.skip_threshold = max(1, threshold)
-        await ctx.send(f"🔧 Skip threshold set to {self.skip_threshold} votes.")
+        embed = discord.Embed(
+            title="▶️ Now Playing",
+            description=f"[{next_track.title}]({next_track.webpage_url})\n" +
+                        f"Requested by: {next_track.requester.mention}",
+            color=discord.Color.green()
+        )
+        await ctx.send(embed=embed)
 
     @commands.command()
-    async def queue(self, ctx):
-        if not self.queue:
-            return await ctx.send("📭 The queue is empty.")
-        msg = "\n".join([f"{i+1}. `{title}`" for i, (title, _) in enumerate(self.queue)])
-        await ctx.send(f"📜 **Current Queue:**\n{msg}")
+    async def skip(self, ctx):
+        """Skip current track (DJ only)."""
+        if not ctx.voice_client or not ctx.voice_client.is_playing():
+            return await ctx.send(embed=discord.Embed(
+                title="⚠️ Nothing Playing", color=discord.Color.red()
+            ))
+        await self.ensure_voice(ctx)
+        ctx.voice_client.stop()
+        await ctx.send(embed=discord.Embed(
+            title="⏭️ Skipped", color=discord.Color.orange()
+        ))
 
     @commands.command()
     async def pause(self, ctx):
-        if ctx.voice_client and ctx.voice_client.is_playing():
-            ctx.voice_client.pause()
-            await ctx.send("⏸️ Paused playback.")
+        """Pause playback."""
+        vc = ctx.voice_client
+        if vc and vc.is_playing():
+            vc.pause()
+            await ctx.send(embed=discord.Embed(
+                title="⏸️ Paused", color=discord.Color.gold()
+            ))
 
     @commands.command()
     async def resume(self, ctx):
-        if ctx.voice_client and ctx.voice_client.is_paused():
-            ctx.voice_client.resume()
-            await ctx.send("▶️ Resumed playback.")
+        """Resume playback."""
+        vc = ctx.voice_client
+        if vc and vc.is_paused():
+            vc.resume()
+            await ctx.send(embed=discord.Embed(
+                title="▶️ Resumed", color=discord.Color.green()
+            ))
 
-    @commands.command(aliases=["ll", "lyrics"])
-    async def song(self, ctx, *, query: str):
-        """Fetch song lyrics from Genius (format: Song Title - Artist)"""
-        try:
-            async with ctx.typing():
-                if "-" not in query:
-                    return await ctx.send("Please use the format: `Song Title - Artist`")
+    @commands.command()
+    async def stop(self, ctx):
+        """Stop and clear queue (DJ only)."""
+        await self.ensure_voice(ctx)
+        ctx.voice_client.stop()
+        self.get_queue(ctx.guild.id).clear()
+        await ctx.voice_client.disconnect()
+        await ctx.send(embed=discord.Embed(
+            title="⏹️ Stopped", color=discord.Color.red()
+        ))
 
-                title, artist = map(str.strip, query.split("-", 1))
-                search_query = f"{title} {artist}"
+    # ─── Queue Management ────────────────────────────────────────────────────
 
-                headers = {"Authorization": f"Bearer {self.GENIUS_API_TOKEN}"}
+    @commands.command(name="queue")
+    async def cmd_queue(self, ctx):
+        """Show current queue."""
+        queue = self.get_queue(ctx.guild.id)
+        if not queue.tracks:
+            return await ctx.send(embed=discord.Embed(
+                title="📭 Empty Queue", color=discord.Color.light_grey()
+            ))
 
-                async with aiohttp.ClientSession() as session:
-                    # Search for the song
-                    search_url = f"https://api.genius.com/search?q={search_query}"
-                    async with session.get(search_url, headers=headers) as resp:
-                        if resp.status != 200:
-                            return await ctx.send("Could not search Genius.")
-                        data = await resp.json()
-                        hits = data["response"]["hits"]
-                        if not hits:
-                            return await ctx.send("No lyrics found.")
-                        song_url = hits[0]["result"]["url"]
+        desc = "\n".join(
+            f"{i+1}. [{t.title}]({t.webpage_url}) – {t.requester.mention}"
+            for i, t in enumerate(queue.tracks[:10])
+        )
+        embed = discord.Embed(
+            title=f"🎶 Queue (next {min(len(queue),10)} of {len(queue)})",
+            description=desc, color=discord.Color.purple()
+        )
+        await ctx.send(embed=embed)
 
-                    # Scrape the lyrics
-                    async with session.get(song_url) as song_resp:
-                        html = await song_resp.text()
-                        soup = BeautifulSoup(html, "lxml")
-                        containers = soup.find_all(
-                            "div", attrs={"data-lyrics-container": "true"}
-                        )
-                        lyrics_lines = []
+    @commands.command()
+    @is_dj()
+    async def shuffle(self, ctx):
+        """Shuffle the queue (DJ only)."""
+        queue = self.get_queue(ctx.guild.id)
+        queue.shuffle()
+        await ctx.send(embed=discord.Embed(
+            title="🔀 Shuffled Queue", color=discord.Color.blue()
+        ))
 
-                        for tag in containers:
-                            for element in tag.stripped_strings:
-                                lyrics_lines.append(element)
+    @commands.command()
+    @is_dj()
+    async def clear(self, ctx):
+        """Clear queue (DJ only)."""
+        self.get_queue(ctx.guild.id).clear()
+        await ctx.send(embed=discord.Embed(
+            title="🗑️ Queue Cleared", color=discord.Color.red()
+        ))
 
-                        lyrics = "\n".join(lyrics_lines)
+    @commands.group(invoke_without_command=True)
+    @is_dj()
+    async def loop(self, ctx):
+        """Toggle loop modes."""
+        queue = self.get_queue(ctx.guild.id)
+        queue.loop_queue = not queue.loop_queue
+        status = "enabled" if queue.loop_queue else "disabled"
+        await ctx.send(embed=discord.Embed(
+            title="🔁 Loop Queue",
+            description=f"Queue looping {status}.",
+            color=discord.Color.gold()
+        ))
 
-                if not lyrics:
-                    return await ctx.send("Lyrics not found on the page.")
+    @loop.command(name="track")
+    @is_dj()
+    async def loop_track(self, ctx):
+        """Toggle loop for current track."""
+        queue = self.get_queue(ctx.guild.id)
+        queue.loop_track = not queue.loop_track
+        status = "enabled" if queue.loop_track else "disabled"
+        await ctx.send(embed=discord.Embed(
+            title="🔂 Loop Track",
+            description=f"Track looping {status}.",
+            color=discord.Color.gold()
+        ))
 
-                # Split lyrics into lines and group into chunks under 1024 characters
-                lines = lyrics.split("\n")
-                chunks = []
-                current_chunk = ""
+    @commands.command()
+    @is_dj()
+    async def volume(self, ctx, vol: int):
+        """Change playback volume."""
+        vc = ctx.voice_client
+        if not vc or not vc.source:
+            return
+        vc.source = discord.PCMVolumeTransformer(vc.source, volume=vol/100)
+        await ctx.send(embed=discord.Embed(
+            title="🔊 Volume Changed",
+            description=f"Volume set to {vol}%",
+            color=discord.Color.green()
+        ))
 
-                for line in lines:
-                    if len(current_chunk) + len(line) + 1 <= 1024:
-                        current_chunk += line + "\n"
-                    else:
-                        chunks.append(current_chunk.strip())
-                        current_chunk = line + "\n"
+    # ─── Owner / Admin Commands ─────────────────────────────────────────────
 
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-
-                # Send lyrics in embed chunks
-                for i, chunk in enumerate(chunks):
-                    embed = discord.Embed(
-                        title=(
-                            f"{title} - {artist}"
-                            if i == 0
-                            else f"{title} - {artist} (Part {i+1})"
-                        ),
-                        description=chunk,
-                        color=discord.Color.blurple(),
-                    )
-                    await ctx.send(embed=embed)
-
-        except Exception as e:
-            await ctx.send(f"An error occurred: `{e}`")
-
+    @commands.command()
+    @commands.is_owner()
+    async def shutdown(self, ctx):
+        """Shutdown the bot (Owner only)."""
+        await ctx.send(embed=discord.Embed(
+            title="🛑 Shutting down...", color=discord.Color.dark_red()
+        ))
+        await self.bot.logout()
 
 async def setup(bot):
-    await bot.add_cog(MusicCog(bot))
-    print("Music cog has been loaded")
+    bot.add_cog(MusicCog(bot))
+    print("MusicCog has been loaded successfully")

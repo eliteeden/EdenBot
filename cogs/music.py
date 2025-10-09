@@ -314,5 +314,5 @@ class MusicCog(commands.Cog):
         await self.bot.logout()
 
 async def setup(bot):
-    bot.add_cog(MusicCog(bot))
+    await bot.add_cog(MusicCog(bot))
     print("MusicCog has been loaded successfully")

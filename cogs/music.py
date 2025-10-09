@@ -60,7 +60,7 @@ class MusicCog(commands.Cog):
 
     @commands.command()
     async def play(self, ctx, *, link: str):
-        """Plays a song from YouTube or Spotify, with parallel Spotify playlist processing and embed messages"""
+        """Plays a song from YouTube or Spotify with parallel Spotify playlist processing and embed messages"""
         if not ctx.author.voice:
             embed = discord.Embed(
                 title="⚠️ Voice Channel Required",
@@ -79,54 +79,71 @@ class MusicCog(commands.Cog):
         if "spotify.com" in link:
             embed = discord.Embed(
                 title="🎧 Spotify Processing",
-                description="Processing Spotify link...",
+                description="Fetching playlist and downloading tracks...",
                 color=discord.Color.green()
             )
             await ctx.send(embed=embed)
 
-            async def download_spotify():
+            # Step 1: Get track URLs from playlist
+            try:
                 proc = await asyncio.create_subprocess_exec(
-                    "spotdl", link, "--output", downloads_dir,
+                    "spotdl", link, "--dry-run",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )
-                await proc.communicate()
-
-            try:
-                await download_spotify()
-                downloaded = [f for f in os.listdir(downloads_dir) if f.endswith(".mp3")]
-                if not downloaded:
-                    embed = discord.Embed(
-                        title="❌ No Tracks Found",
-                        description="No MP3 files were downloaded from the Spotify link.",
-                        color=discord.Color.red()
-                    )
-                    return await ctx.send(embed=embed)
-
-                # Play first track immediately
-                first_path = os.path.join(downloads_dir, downloaded[0])
-                voice_client.stop()
-                voice_client.play(discord.FFmpegPCMAudio(first_path))
-
-                # Queue the rest
-                for file in downloaded[1:]:
-                    path = os.path.join(downloads_dir, file)
-                    audio = discord.FFmpegPCMAudio(path)
-                    self.add_track(file, audio)
-
-                embed = discord.Embed(
-                    title="📥 Spotify Tracks Queued",
-                    description=f"Now playing: `{downloaded[0]}`\nQueued {len(downloaded) - 1} more track(s).",
-                    color=discord.Color.green()
-                )
-                await ctx.send(embed=embed)
+                stdout, _ = await proc.communicate()
+                track_links = [line.strip() for line in stdout.decode().splitlines() if line.startswith("https://")]
             except Exception as e:
                 embed = discord.Embed(
                     title="❌ Spotify Error",
-                    description=f"`{str(e)}`",
+                    description=f"Failed to fetch playlist: `{str(e)}`",
                     color=discord.Color.red()
                 )
                 return await ctx.send(embed=embed)
+
+            if not track_links:
+                embed = discord.Embed(
+                    title="❌ No Tracks Found",
+                    description="No valid Spotify tracks were found in the playlist.",
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=embed)
+
+            # Step 2: Download tracks in parallel
+            async def download_track(track_url):
+                await asyncio.create_subprocess_exec(
+                    "spotdl", track_url, "--output", downloads_dir,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL
+                )
+
+            await asyncio.gather(*(download_track(url) for url in track_links))
+
+            # Step 3: Play first track and queue the rest
+            downloaded = [f for f in os.listdir(downloads_dir) if f.endswith(".mp3")]
+            if not downloaded:
+                embed = discord.Embed(
+                    title="❌ Download Error",
+                    description="Tracks failed to download.",
+                    color=discord.Color.red()
+                )
+                return await ctx.send(embed=embed)
+
+            first_path = os.path.join(downloads_dir, downloaded[0])
+            voice_client.stop()
+            voice_client.play(discord.FFmpegPCMAudio(first_path))
+
+            for file in downloaded[1:]:
+                path = os.path.join(downloads_dir, file)
+                audio = discord.FFmpegPCMAudio(path)
+                self.add_track(file, audio)
+
+            embed = discord.Embed(
+                title="📥 Spotify Playlist Queued",
+                description=f"Now playing: `{downloaded[0]}`\nQueued {len(downloaded) - 1} more track(s).",
+                color=discord.Color.green()
+            )
+            await ctx.send(embed=embed)
 
         else:
             embed = discord.Embed(
@@ -170,19 +187,6 @@ class MusicCog(commands.Cog):
                     color=discord.Color.red()
                 )
                 return await ctx.send(embed=embed)
-    @commands.command()
-    async def skip(self, ctx):
-        vc = ctx.voice_client
-        if not vc or not vc.is_playing():
-            return await ctx.send("⚠️ Nothing is playing.")
-        if ctx.author.id in self.skip_votes:
-            return await ctx.send("🗳️ You already voted to skip.")
-        self.skip_votes.add(ctx.author.id)
-        if len(self.skip_votes) >= self.skip_threshold:
-            vc.stop()
-            await ctx.send("⏭️ Track skipped by vote!")
-        else:
-            await ctx.send(f"🗳️ Skip vote added ({len(self.skip_votes)}/{self.skip_threshold}).")
 
     @commands.command(aliases=["skips"])
     @commands.has_permissions(manage_guild=True)

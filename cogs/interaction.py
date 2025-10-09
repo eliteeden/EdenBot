@@ -101,11 +101,11 @@ class InteractionCog(commands.Cog):
         else:
             raise FileNotFoundError(f"No files found in media/{folder}")
     @commands.command(name="halp", aliases=["betterhelp", "halpme", "plshalp"])
-    async def halp(self, ctx):
-        """Displays all available commands grouped by Cog with pagination and rainbow colors"""
+    async def halp(self, ctx, *, cog_filter: str = None):
+        """Displays all available commands grouped by Cog with pagination and optional Cog filter"""
         from collections import defaultdict
 
-        # Rainbow color palette (Discord embed colors)
+        # Rainbow color palette
         rainbow_colors = [
             discord.Color.red(),
             discord.Color.orange(),
@@ -116,12 +116,13 @@ class InteractionCog(commands.Cog):
             discord.Color.magenta()
         ]
 
+        # Group commands by cog
         command_dict = defaultdict(list)
-
         for command in self.bot.commands:
             cog_name = command.cog_name or "No Category"
             command_dict[cog_name].append(command)
 
+        # Get PaginatorCog
         paginator_cog = self.bot.get_cog("PaginatorCog")
         if not paginator_cog:
             await ctx.send("PaginatorCog is not loaded.")
@@ -129,28 +130,52 @@ class InteractionCog(commands.Cog):
 
         paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore
 
-        per_page = 5
-        cog_names = sorted(command_dict.keys())
-        for i in range(0, len(cog_names), per_page):
-            color = rainbow_colors[i % len(rainbow_colors)]  # Cycle through rainbow colors
+        # If a specific cog is requested
+        if cog_filter:
+            cog_filter = cog_filter.strip()
+            matched_cog = next((c for c in command_dict if c.lower() == cog_filter.lower()), None)
+            if not matched_cog:
+                await ctx.send(f"No commands found for cog: `{cog_filter}`")
+                return
 
             embed = discord.Embed(
-                title="📘 Bot Help Menu",
-                description=f"Showing pages {i+1} to {min(i+per_page, len(cog_names))}",
-                color=color,
+                title=f"📘 Help: {matched_cog}",
+                description=f"Commands in `{matched_cog}`",
+                color=discord.Color.blurple()
             )
 
-            for cog_name in cog_names[i:i+per_page]:
-                commands_list = command_dict[cog_name]
-                formatted_cmds = "\n".join(
-                    f"`{cmd.name}`: {cmd.help or 'No description'}" for cmd in commands_list
+            for cmd in command_dict[matched_cog]:
+                embed.add_field(
+                    name=f"`{cmd.name}`",
+                    value=cmd.help or "No description",
+                    inline=False
                 )
-                embed.add_field(name=f"**{cog_name}**", value=formatted_cmds, inline=False)
+
+            await ctx.send(embed=embed)
+            return
+
+        # Sort cogs by number of commands (descending)
+        sorted_cogs = sorted(command_dict.items(), key=lambda item: len(item[1]), reverse=True)
+
+        # Create one page per cog
+        for i, (cog_name, commands_list) in enumerate(sorted_cogs):
+            color = rainbow_colors[i % len(rainbow_colors)]
+            embed = discord.Embed(
+                title=f"📘 Help: {cog_name}",
+                description=f"{len(commands_list)} command(s) in `{cog_name}`",
+                color=color
+            )
+
+            for cmd in commands_list:
+                embed.add_field(
+                    name=f"`{cmd.name}`",
+                    value=cmd.help or "No description",
+                    inline=False
+                )
 
             paginator.add_page(embed)
 
         await paginator.send(ctx)
-
     @commands.command(name="howgay", aliases=["gaydar", "howgayareyou", "ilikecheese"])
     async def howgay(self, ctx: commands.Context, user: Member = None):  # type: ignore
         try:

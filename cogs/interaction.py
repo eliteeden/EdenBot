@@ -426,11 +426,12 @@ class InteractionCog(commands.Cog):
                         await ctx.send(URL)
                     else:
                         await ctx.send("No results found")
-
+                        
     @commands.command(name="bing", aliases=["ddg", "edge", "duckduckgo"])
     async def bing(self, ctx, *, query: str):
         """Searches DuckDuckGo and returns the first result with a clean link or responds with eden_meta."""
 
+        # Predefined responses for specific queries
         eden_meta = {
             "beautiful member": f"<@{USERS.ESMERY}>",
             "beautiful mod": f"<@{USERS.ZI}>",
@@ -440,23 +441,26 @@ class InteractionCog(commands.Cog):
             "who stole the cheese": f"<@{USERS.SCAREX}>",
             "who is eden's most annoying person": f"<@{USERS.DECK}>",
             "best bot": "it's obviously me",
-            "test": "https://www.bing.com/ck/a?!&&p=c9445896195a4ae76fab39cf494c6e4a3997761d65f6b53987150b82c25385afJmltdHM9MTc1ODY3MjAwMA&ptn=3&ver=2&hsh=4&fclid=2812b07d-0c05-6e15-3da1-a63f0d386f4f&psq=test&u=a1aHR0cHM6Ly93d3cuc3BlZWR0ZXN0Lm5ldC8",
+            "test": "https://www.speedtest.net/",
             "clanker": "That word is highly offensive and I do not like you anymore.",
             "nicest member": f"It would be me but I am a bot so I have to give it to <@{USERS.VIC}>",
             "best mod": f"I believe Zi doesn't count so I might as well give it to <@{USERS.HAPPY}>",
-            "retard": f"<@{USERS.COOTSHK}> until one of the mods will ban you for this."
+            "retard": f"<@{USERS.COOTSHK}> until one of the mods bans you for this."
         }
 
         search_msg = query.lower()
 
-        if any(banned_word in search_msg for banned_word in banned_words):
+        # Check for banned words
+        if any(word in search_msg for word in banned_words):
             await ctx.send("Your search contains banned words and cannot be processed.")
             return
 
+        # Check for predefined meta responses
         if search_msg in eden_meta:
             await ctx.send(eden_meta[search_msg])
             return
 
+        # Perform DuckDuckGo search
         async with ctx.typing():
             try:
                 encoded_query = urllib.parse.quote_plus(query)
@@ -479,16 +483,18 @@ class InteractionCog(commands.Cog):
                     clean_url = query_params.get('uddg', [''])[0]
                     decoded_url = urllib.parse.unquote(clean_url)
 
-                    # Basic SFW check on the result URL
-                    if any(banned_word in decoded_url.lower() for banned_word in banned_words):
+                    # Check for banned content in the result URL
+                    if any(word in decoded_url.lower() for word in banned_words):
                         await ctx.send("The result contains banned content and cannot be shown.")
                         return
 
                     await ctx.send(f"🔎 **{title}**\n{decoded_url}")
                 else:
                     await ctx.send("No results found.")
+            except requests.RequestException:
+                await ctx.send("There was a problem connecting to DuckDuckGo.")
             except Exception as e:
-                await ctx.send(f"Error: {e}")
+                await ctx.send(f"An unexpected error occurred: {e}")
 
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")

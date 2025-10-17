@@ -18,7 +18,9 @@ import requests
 import json
 import pytz
 from dotenv import load_dotenv
-from constants import ROLES, USERS
+from constants import ROLES, 
+HEADERS = {'User-Agent': 'Mozilla/5.0'}
+
 
 banned_words = [
             "milf",
@@ -464,16 +466,20 @@ class InteractionCog(commands.Cog):
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0'
                     }
             try:
-                search_url = f"https://search.brave.com/search?q={requests.utils.quote(query)}"
-                response = requests.get(search_url, headers=headers)
-                response.raise_for_status()
-                soup = BeautifulSoup(response.text, 'html.parser')
+                link = None
 
-                result = soup.find('a', {'class': 'result-header'})
-                if result and result['href']:
-                    await ctx.send(result['href'])  # Discord will auto-embed if the site supports it
-                else:
-                    await ctx.send("No results found.")
+                # 1) DuckDuckGo HTML search
+                resp = requests.post("https://html.duckduckgo.com/html/",
+                                    data={"q": query}, headers=HEADERS, timeout=8)
+                soup = BeautifulSoup(resp.text, "html.parser")
+                a = soup.select_one("a.result__a[href^='http']")
+                if a:
+                    link = a["href"]
+
+                # 2) (Optional) Add Bing / Startpage fallbacks here…
+
+                await ctx.send(link or "No results found.")
+
             except Exception as e:
                 await ctx.send(f"Error: {e}")
 

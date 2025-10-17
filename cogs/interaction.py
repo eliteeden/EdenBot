@@ -464,21 +464,21 @@ class InteractionCog(commands.Cog):
         async with ctx.typing():
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0'}
         try:
-
-            # Perform Bing search
             search_url = f"https://www.bing.com/search?q={requests.utils.quote(query)}"
             response = requests.get(search_url, headers=headers)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Extract first result
             result = soup.find('li', {'class': 'b_algo'})
             if result:
-                title = result.find('h2').text if result.find('h2') else 'No title'
-                link = result.find('a')['href'] if result.find('a') else 'No link'
-                await ctx.send(f"{link}")
+                link = result.find('a')['href'] if result.find('a') else None
+                if link:
+                    # Send the link as plain text to let Discord auto-embed it
+                    await ctx.send(link)
+                else:
+                    await ctx.send("No link found.")
             else:
-                await ctx.send("No results found.")
+                    await ctx.send("No results found.")
         except Exception as e:
             await ctx.send(f"Error: {e}")
 

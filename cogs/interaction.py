@@ -18,7 +18,7 @@ import requests
 import json
 import pytz
 from dotenv import load_dotenv
-from constants import ROLES
+from constants import ROLES, USERS
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
 

@@ -462,39 +462,26 @@ class InteractionCog(commands.Cog):
 
         # Perform DuckDuckGo search
         async with ctx.typing():
-            try:
-                encoded_query = urllib.parse.quote_plus(query)
-                url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
-                headers = {'User-Agent': 'Mozilla/5.0'}
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0'}
+        try:
 
-                response = requests.get(url, headers=headers, timeout=5)
-                response.raise_for_status()
+            # Perform Bing search
+            search_url = f"https://www.bing.com/search?q={requests.utils.quote(query)}"
+            response = requests.get(search_url, headers=headers)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-                soup = BeautifulSoup(response.text, 'html.parser')
-                results = soup.find_all('a', class_='result__a')
+            # Extract first result
+            result = soup.find('li', {'class': 'b_algo'})
+            if result:
+                title = result.find('h2').text if result.find('h2') else 'No title'
+                link = result.find('a')['href'] if result.find('a') else 'No link'
+                await ctx.send(f"Top Bing result for **{query}**:\n**{title}**\n{link}")
+            else:
+                await ctx.send("No results found.")
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
 
-                if results:
-                    first_result = results[0]
-                    title = first_result.text.strip()
-                    raw_link = first_result['href']
-
-                    parsed = urllib.parse.urlparse(raw_link)
-                    query_params = urllib.parse.parse_qs(parsed.query)
-                    clean_url = query_params.get('uddg', [''])[0]
-                    decoded_url = urllib.parse.unquote(clean_url)
-
-                    # Check for banned content in the result URL
-                    if any(word in decoded_url.lower() for word in banned_words):
-                        await ctx.send("The result contains banned content and cannot be shown.")
-                        return
-
-                    await ctx.send(f"🔎 **{title}**\n{decoded_url}")
-                else:
-                    await ctx.send("No results found.")
-            except requests.RequestException:
-                await ctx.send("There was a problem connecting to DuckDuckGo.")
-            except Exception as e:
-                await ctx.send(f"An unexpected error occurred: {e}")
 
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")

@@ -459,28 +459,24 @@ class InteractionCog(commands.Cog):
         if search_msg in eden_meta:
             await ctx.send(eden_meta[search_msg])
             return
-
-        # Perform DuckDuckGo search
         async with ctx.typing():
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0'}
-        try:
-            search_url = f"https://www.bing.com/search?q={requests.utils.quote(query)}"
-            response = requests.get(search_url, headers=headers)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
+            headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0'
+                    }
+            try:
+                search_url = f"https://search.brave.com/search?q={requests.utils.quote(query)}"
+                response = requests.get(search_url, headers=headers)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, 'html.parser')
 
-            result = soup.find('li', {'class': 'b_algo'})
-            if result:
-                link = result.find('a')['href'] if result.find('a') else None
-                if link:
-                    # Send the link as plain text to let Discord auto-embed it
-                    await ctx.send(link)
+                result = soup.find('a', {'class': 'result-header'})
+                if result and result['href']:
+                    await ctx.send(result['href'])  # Discord will auto-embed if the site supports it
                 else:
-                    await ctx.send("No link found.")
-            else:
                     await ctx.send("No results found.")
-        except Exception as e:
-            await ctx.send(f"Error: {e}")
+            except Exception as e:
+                await ctx.send(f"Error: {e}")
+
 
 
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])

@@ -476,7 +476,7 @@ class InteractionCog(commands.Cog):
             if result:
                 title = result.find('h2').text if result.find('h2') else 'No title'
                 link = result.find('a')['href'] if result.find('a') else 'No link'
-                await ctx.send(f"Top Bing result for **{query}**:\n**{title}**\n{link}")
+                await ctx.send(f"{link}")
             else:
                 await ctx.send("No results found.")
         except Exception as e:

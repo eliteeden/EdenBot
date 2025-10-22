@@ -239,8 +239,8 @@ class LevelsCog(commands.Cog):
         self, ctx: commands.Context, member: Optional[Member] = None
     ):  # pyright: ignore
 
-        member: Member | User = member or ctx.author  # type: ignore
-        if self.is_ban(member):  # type: ignore
+        member: Member | User = member or ctx.author # type: ignore
+        if self.is_ban(member): # type: ignore
             return
 
         server_id = str(ctx.guild.id)
@@ -481,7 +481,7 @@ class LevelsCog(commands.Cog):
             await ctx.send("PaginatorCog is not loaded.")
             return
 
-        paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore
+        paginator: PaginatorCog.Paginator = paginator_cog() # type: ignore
 
         # Create paginated embeds
         per_page = 10

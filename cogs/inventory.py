@@ -138,7 +138,7 @@ class InventoryCog(commands.Cog):
         """Add an item to a user's inventory."""
         if member == "self":
             member = ctx.author
-        amount = self.add_item(member, item, amount)  # type: ignore
+        amount = self.add_item(member, item, amount) # type: ignore
         await ctx.send(
             f"Added {amount:,} of {item} to {member}'s inventory.\nThey now have {amount:,} of {item}."
         )
@@ -159,7 +159,7 @@ class InventoryCog(commands.Cog):
         elif isinstance(member, discord.Member):
             member = member.name
         try:
-            amount = self.remove_item(member, item, amount)  # type: ignore
+            amount = self.remove_item(member, item, amount) # type: ignore
             await ctx.send(
                 f"Removed {amount} of {item} from {member}'s inventory.\nThey now have {amount} of {item}."
             )
@@ -170,10 +170,10 @@ class InventoryCog(commands.Cog):
 
     # Inventory Embed
     @commands.command(name="inventory", aliases=["inv"])
-    async def inventory(self, ctx: commands.Context, member: Optional[discord.Member] = None):  # type: ignore
+    async def inventory(self, ctx: commands.Context, member: Optional[discord.Member] = None): # type: ignore
         """Show a user's inventory."""
         if member is None:
-            member: discord.Member = ctx.author  # type: ignore
+            member: discord.Member = ctx.author # type: ignore
         inventory = self.get_inventory(member)
         if not inventory:
             await ctx.send(f"{member.name} has an empty inventory.")

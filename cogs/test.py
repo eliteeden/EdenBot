@@ -22,5 +22,5 @@ class TestCog(commands.Cog):
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""
-    await bot.add_cog(TestCog(bot))  # type: ignore
+    await bot.add_cog(TestCog(bot)) # type: ignore
     print("TestCog has been (re-)loaded.")

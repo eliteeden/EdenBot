@@ -510,6 +510,8 @@ async def process_sticky_queue(channel_id: str):
 
 @bot.event
 async def on_member_join(member: User):
+    if member.guild.id != GUILDS.ELITE_EDEN: # type: ignore
+        return
     channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
     await channel.send(
         f"Welcome to Elite Eden {member.mention} \n<@&{ROLES.WELCOME_PING}> say hello to our new member!"

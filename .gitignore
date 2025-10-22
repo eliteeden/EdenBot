@@ -1,0 +1,14 @@
+.env
+venv
+*.pyc
+*.json
+!.vscode/settings.json
+nohup.out
+files/
+*.mp3
+!media/
+
+# Nix
+.direnv
+result
+dev-profile

@@ -46,11 +46,6 @@ class ImageCog(commands.Cog, name="esmImage"):
             await ctx.send("Failed to download or open the image.")
             return None
 
-    # Basic utilities
-    @commands.command()
-    async def ping(self, ctx):
-        await ctx.send(f"Pong! {round(self.bot.latency * 1000)}ms")
-
     # Image transforms
     @commands.command()
     async def invert(self, ctx):

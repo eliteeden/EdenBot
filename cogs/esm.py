@@ -30,7 +30,7 @@ def to_bytes_io(img, fmt="PNG"):
     buf.seek(0)
     return buf
 
-class ImageCog(commands.Cog, name="esmImage"):
+class ImageCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -127,22 +127,27 @@ class ImageCog(commands.Cog, name="esmImage"):
         draw.text((w-tw-10, h-th-10), text, font=font, fill=(255,255,255,120))
         composed = Image.alpha_composite(base, txt)
         await ctx.send(file=discord.File(to_bytes_io(composed), "watermarked.png"))
-
     @commands.command()
     async def caption(self, ctx, *, text: str):
         img = await self._get_attachment_or_fail(ctx)
-        if not img: return
+        if not img:
+            return
+
         w, h = img.size
-        font = ensure_font(max(20, w//15))
-        # create new image with space for top and bottom text if needed
+        font = ensure_font(max(30, w // 10))  # Increased font size
+
+        # Add top padding only
         pad = int(h * 0.15)
         new_h = h + pad
-        new_img = Image.new("RGBA", (w, new_h), (0,0,0,255))
-        new_img.paste(img, (0, pad//2))
+        new_img = Image.new("RGBA", (w, new_h), (255, 255, 255, 255))  # White background
+        new_img.paste(img, (0, pad))  # Shift original image down
+
+        # Draw caption in the top padded area
         draw = ImageDraw.Draw(new_img)
         bbox = draw.textbbox((0, 0), text, font=font)
         tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        draw.text(((w-tw)/2, 5), text, font=font, fill=(255,255,255,255))
+        draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))  # Black text
+
         await ctx.send(file=discord.File(to_bytes_io(new_img), "captioned.png"))
 
     @commands.command()

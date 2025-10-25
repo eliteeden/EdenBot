@@ -19,7 +19,7 @@ import json
 import pytz
 from dotenv import load_dotenv
 from constants import ROLES, USERS
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
 from io import BytesIO
 
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
@@ -486,21 +486,27 @@ class InteractionCog(commands.Cog):
             except Exception as e:
                 await ctx.send(f"Error: {e}")
 
-
     @commands.command()
     async def caption(self, ctx, caption_text: str, gif_url: str):
         try:
-            # Download the GIF
-            response = requests.get(gif_url)
-            if response.status_code != 200:
-                await ctx.send("Failed to download the GIF. Please check the URL.")
+            # Download the GIF with headers
+            headers = {"User-Agent": "Mozilla/5.0"}
+            response = requests.get(gif_url, headers=headers)
+
+            if response.status_code != 200 or len(response.content) < 1000:
+                await ctx.send("Failed to download a valid GIF. Please check the URL.")
                 return
 
-            gif = Image.open(BytesIO(response.content))
+            # Try to open the image
+            try:
+                gif = Image.open(BytesIO(response.content))
+            except Exception:
+                await ctx.send("Downloaded file is not a valid image. Please use a direct GIF URL.")
+                return
 
             # Load font safely
             try:
-                font = ImageFont.truetype("arial.ttf", 20)
+                font = ImageFont.truetype("ArialCE.ttf", 20)
             except IOError:
                 font = ImageFont.load_default()
 
@@ -531,7 +537,6 @@ class InteractionCog(commands.Cog):
 
         except Exception as e:
             await ctx.send(f"An error occurred: {e}")
-
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def wiki(self, ctx: commands.Context, *, search_msg: str):

@@ -319,7 +319,7 @@ class InteractionCog(commands.Cog):
         if isinstance(error, commands.MissingAnyRole):
             await ctx.send("Exclusive to boosters")
 
-    @commands.command(name="xkcd", aliases=["comic"])
+    @commands.command(name="xkcd", aliases=["nerdcomic"])
     @commands.has_any_role(
         "Fden Bot Perms",
         "happy",

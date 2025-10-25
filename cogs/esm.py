@@ -39,7 +39,6 @@ class ImageCog(commands.Cog):
 
     async def _get_attachment_or_fail(self, ctx):
         if not ctx.message.attachments:
-            await ctx.send("Please attach an image.")
             return None
         url = ctx.message.attachments[0].url
         try:
@@ -195,18 +194,18 @@ class ImageCog(commands.Cog):
                         th = bbox[3] - bbox[1]
                         draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
 
+                        new_img = new_img.convert("P", palette=Image.ADAPTIVE)
                         frames.append(new_img)
                         durations.append(gif.info.get("duration", 100))
 
                     # Save modified GIF
                     output = BytesIO()
-                    frames[0].save(output, format="GIF", save_all=True, append_images=frames[1:], loop=0, duration=durations, transparency=0)
+                    frames[0].save(output, format="GIF", save_all=True, append_images=frames[1:], loop=0, duration=durations)
                     output.seek(0)
 
                     await ctx.send(file=discord.File(output, "captioned.gif"))
-
             except Exception as e:
-                await ctx.send(f"An error occurred: {e}")
+                await ctx.send("Error: {e}")
         else:
             w, h = img.size
             pad = int(h * 0.15)

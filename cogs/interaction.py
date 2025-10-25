@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 from constants import ROLES, USERS
 from PIL import Image, ImageDraw, ImageFont, ImageSequence
 from io import BytesIO
+import re
 
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
@@ -486,10 +487,15 @@ class InteractionCog(commands.Cog):
             except Exception as e:
                 await ctx.send(f"Error: {e}")
 
+
     @commands.command()
-    async def caption(self, ctx, caption_text: str, gif_url: str):
+    async def caption(self, ctx, gif_url: str, *, header_text: str):
         try:
-            # Download the GIF with headers
+            # Validate Tenor or direct GIF URL
+            if not re.search(r"(tenor\.com|\.gif)", gif_url):
+                await ctx.send("Please provide a valid Tenor or direct GIF URL.")
+                return
+
             headers = {"User-Agent": "Mozilla/5.0"}
             response = requests.get(gif_url, headers=headers)
 
@@ -497,18 +503,19 @@ class InteractionCog(commands.Cog):
                 await ctx.send("Failed to download a valid GIF. Please check the URL.")
                 return
 
-            # Try to open the image
             try:
                 gif = Image.open(BytesIO(response.content))
             except Exception:
                 await ctx.send("Downloaded file is not a valid image. Please use a direct GIF URL.")
                 return
 
-            # Load font safely
+            # Load font
             try:
-                font = ImageFont.truetype("ArialCE.ttf", 20)
+                # font_white = ImageFont.truetype("arial.ttf", 28)
+                font_black = ImageFont.truetype("arial.ttf", 24)
             except IOError:
-                font = ImageFont.load_default()
+                # font_white = ImageFont.load_default()
+                font_black = ImageFont.load_default()
 
             frames = []
             durations = []
@@ -517,26 +524,33 @@ class InteractionCog(commands.Cog):
                 frame_image = frame.convert("RGBA")
                 draw = ImageDraw.Draw(frame_image)
 
-                # Calculate text position
-                bbox = draw.textbbox((0, 0), caption_text, font=font)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
-                text_position = ((frame_image.width - text_width) // 2, frame_image.height - text_height - 10)
+                # Draw black header
+                header_bbox = draw.textbbox((0, 0), header_text, font=font_black)
+                header_width = header_bbox[2] - header_bbox[0]
+                header_height = header_bbox[3] - header_bbox[1]
+                header_pos = ((frame_image.width - header_width) // 2, 10)
+                draw.text(header_pos, header_text, font=font_black, fill="black")
 
-                draw.text(text_position, caption_text, font=font, fill="white")
+                # # Draw white caption below header
+                # caption_bbox = draw.textbbox((0, 0), caption_text, font=font_white)
+                # caption_width = caption_bbox[2] - caption_bbox[0]
+                # caption_height = caption_bbox[3] - caption_bbox[1]
+                # caption_pos = ((frame_image.width - caption_width) // 2, header_pos[1] + header_height + 5)
+                # draw.text(caption_pos, caption_text, font=font_white, fill="white")
+
                 frames.append(frame_image)
-                durations.append(gif.info.get("duration", 100))  # Default to 100ms if duration missing
+                durations.append(gif.info.get("duration", 100))
 
-            # Save the modified GIF
+            # Save modified GIF
             output = BytesIO()
             frames[0].save(output, format="GIF", save_all=True, append_images=frames[1:], loop=0, duration=durations, transparency=0)
             output.seek(0)
 
-            # Send the modified GIF
             await ctx.send(file=discord.File(output, "captioned.gif"))
 
         except Exception as e:
             await ctx.send(f"An error occurred: {e}")
+
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def wiki(self, ctx: commands.Context, *, search_msg: str):

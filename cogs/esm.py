@@ -127,7 +127,7 @@ class ImageCog(commands.Cog):
         composed = Image.alpha_composite(base, txt)
         await ctx.send(file=discord.File(to_bytes_io(composed), "watermarked.png"))
 
-    @commands.command()
+    @commands.command(aliases=["whenthe"])
     async def caption(self, ctx, *, text: str):
         img = await self._get_attachment_or_fail(ctx)
         if not img:
@@ -144,18 +144,19 @@ class ImageCog(commands.Cog):
         font_size = max_font_size
         margin = int(w * 0.05)
 
-        while font_size > 10:
+        font = ensure_font(font_size)
+        draw = ImageDraw.Draw(new_img)
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw = bbox[2] - bbox[0]
+
+        while font_size > 10 and tw > w - margin:
+            font_size -= 2
             font = ensure_font(font_size)
-            draw = ImageDraw.Draw(new_img)
             bbox = draw.textbbox((0, 0), text, font=font)
             tw = bbox[2] - bbox[0]
-            if tw <= w - margin:
-                break
-            font_size -= 2  # Reduce font size until it fits
 
-            # Draw scaled text
-            th = bbox[3] - bbox[1]
-            draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
+        th = bbox[3] - bbox[1]
+        draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
 
         await ctx.send(file=discord.File(to_bytes_io(new_img), "captioned.png"))
         

@@ -1,9 +1,11 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageDraw, ImageFont
 import aiohttp
 import io
 import math
+
 import numpy as np
 import cv2
 
@@ -159,6 +161,44 @@ class ImageCog(commands.Cog):
         draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
 
         await ctx.send(file=discord.File(to_bytes_io(new_img), "captioned.png"))
+
+
+    @app_commands.command(name="captionn", description="Add a caption to an uploaded image")
+    @app_commands.describe(text="The caption text to add")
+    async def caption2(self, interaction: discord.Interaction, text: str):
+        await interaction.response.defer()
+
+        img = await self._get_attachment_or_fail(interaction)
+        if not img:
+            await interaction.followup.send("No image found in your message.", ephemeral=True)
+            return
+
+        w, h = img.size
+        pad = int(h * 0.15)
+        new_h = h + pad
+        new_img = Image.new("RGBA", (w, new_h), (255, 255, 255, 255))  # White background
+        new_img.paste(img, (0, pad))  # Shift original image down
+
+        # Start with a large font size and scale down if needed
+        max_font_size = max(40, w // 8)
+        font_size = max_font_size
+        margin = int(w * 0.05)
+
+        font = ensure_font(font_size)
+        draw = ImageDraw.Draw(new_img)
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw = bbox[2] - bbox[0]
+
+        while font_size > 10 and tw > w - margin:
+            font_size -= 2
+            font = ensure_font(font_size)
+            bbox = draw.textbbox((0, 0), text, font=font)
+            tw = bbox[2] - bbox[0]
+
+        th = bbox[3] - bbox[1]
+        draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
+
+        await interaction.followup.send(file=discord.File(to_bytes_io(new_img), "captioned.png"))
         
     @commands.command()
     async def overlay(self, ctx, url: str):

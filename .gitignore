@@ -5,6 +5,8 @@ venv
 !.vscode/settings.json
 nohup.out
 files/
+*.mp3
+!media/
 
 # Nix
 .direnv

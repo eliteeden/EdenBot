@@ -27,7 +27,7 @@ class EconomyCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.bank: dict[str, int] = self.__load_bank()  # type: ignore # New bank maps ID directly to balance
+        self.bank: dict[str, int] = self.__load_bank() # type: ignore # New bank maps ID directly to balance
         # self.bank: dict[Literal["users"], list[BankEntry]] = self.__load_bank() # type: ignore # Load the bank every reload
         # TODO: not destroy my micro sd card with this
         self.jackpot_file = open(
@@ -45,7 +45,7 @@ class EconomyCog(commands.Cog):
         cog = self.bot.get_cog("InventoryCog")
         if cog is None:
             raise RuntimeError("InventoryCog is not loaded.")
-        return cog  # type: ignore
+        return cog # type: ignore
 
     def __get_id(self, member: MemberLike) -> strint:
         if member is None or member == "users":
@@ -176,7 +176,7 @@ class EconomyCog(commands.Cog):
 
     # Economy commands
     @commands.command(name="bal")
-    async def bal(self, ctx: commands.Context, user: Optional[Member] = None):  # type: ignore
+    async def bal(self, ctx: commands.Context, user: Optional[Member] = None): # type: ignore
         await ctx.send(
             f"{user.mention + '\'s' if user else 'Your'} balance is {self.get(user or ctx.author):,} eden coins."
         )
@@ -224,7 +224,7 @@ class EconomyCog(commands.Cog):
                 await ctx.send("PaginatorCog is not loaded.")
                 return
 
-            paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore # Assumes your PaginatorCog has this method
+            paginator: PaginatorCog.Paginator = paginator_cog() # type: ignore # Assumes your PaginatorCog has this method
 
             # Create paginated embeds
             for i in range(0, len(top_users), 10):  # 10 users per page
@@ -289,14 +289,14 @@ class EconomyCog(commands.Cog):
             return
         else:
             self.sub(ctx.author, price)
-            channel: discord.TextChannel = self.bot.get_channel(CHANNELS.WINNERS)  # type: ignore
+            channel: discord.TextChannel = self.bot.get_channel(CHANNELS.WINNERS) # type: ignore
             await channel.send(f"{ctx.author.mention} won the prize")
 
     @commands.command(name="roulette")
     @commands.cooldown(1, 180, commands.BucketType.user)
     async def roulette(self, ctx: commands.Context, bullets: int):
         if bullets < 1 or bullets > 5:
-            self.roulette.reset_cooldown(ctx)  # type: ignore
+            self.roulette.reset_cooldown(ctx) # type: ignore
             await ctx.send("Please choose between 1 to 5 bullets")
             return
 
@@ -310,7 +310,7 @@ class EconomyCog(commands.Cog):
             earn = 1000 * bullets
             self.add(ctx.author, earn)
             await ctx.send(f"You earned {earn:,} eden coins!")
-            self.roulette.reset_cooldown(ctx)  # type: ignore
+            self.roulette.reset_cooldown(ctx) # type: ignore
         else:
             await ctx.send(f"You died! Try again in 3 minutes")
 
@@ -336,7 +336,7 @@ class EconomyCog(commands.Cog):
             earn = 1_000_000  # break-even is 75,000
             self.add(ctx.author, earn)
             await ctx.send(f"You won {earn:,} eden coins!")
-            bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+            bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await bot_updates_channel.send(
                 f"User {ctx.author.mention} won {earn:,} coins in slots!"
             )
@@ -368,20 +368,20 @@ class EconomyCog(commands.Cog):
             await ctx.send(
                 f"{member.display_name} is protected and cannot be stolen from."
             )
-            self.steal.reset_cooldown(ctx)  # type: ignore
+            self.steal.reset_cooldown(ctx) # type: ignore
             return
 
         if member.bot:
-            if member.id == self.bot.user.id:  # type: ignore
+            if member.id == self.bot.user.id: # type: ignore
                 await ctx.send("Oh no you little rascal, you are NOT stealing from me!")
             else:
                 await ctx.send("I won't let you steal from a bot.")
-            self.steal.reset_cooldown(ctx)  # type: ignore
+            self.steal.reset_cooldown(ctx) # type: ignore
             return
 
         if member == thief:
             await ctx.send("That's already your money, genius.")
-            self.steal.reset_cooldown(ctx)  # type: ignore
+            self.steal.reset_cooldown(ctx) # type: ignore
             return
 
         target_balance = self.get(member.id)
@@ -389,7 +389,7 @@ class EconomyCog(commands.Cog):
             await ctx.send(
                 f"{member.display_name} doesn't have enough money to steal from."
             )
-            self.steal.reset_cooldown(ctx)  # type: ignore
+            self.steal.reset_cooldown(ctx) # type: ignore
             return
 
         reward = random.randint(
@@ -401,7 +401,7 @@ class EconomyCog(commands.Cog):
         if self.inventory().has_item(member, "Lock", 1):
             chance = 15
             break_lock = True
-            if self.inventory().has_item(thief, "Lockpick", 1):  # type: ignore
+            if self.inventory().has_item(thief, "Lockpick", 1): # type: ignore
                 break_lockpick = True
                 chance = 5
         else:
@@ -413,7 +413,7 @@ class EconomyCog(commands.Cog):
         if success == 2:
             self.sub(member, reward)
             self.add(thief, earned)
-            self.steal.reset_cooldown(ctx)  # type: ignore
+            self.steal.reset_cooldown(ctx) # type: ignore
             if reward == earned:
                 message += (
                     f"You successfully stole {earned} coins from {member.display_name}!\n"
@@ -434,7 +434,7 @@ class EconomyCog(commands.Cog):
             )
             message += f"\n{member.mention}, someone just tried to steal from you!"
         if break_lockpick:  # breaks every time
-            self.inventory().remove_item(thief, "Lockpick", 1)  # type: ignore
+            self.inventory().remove_item(thief, "Lockpick", 1) # type: ignore
             if break_lock and success == 2:
                 message += "\nI guess you got what you needed out of that lockpick."
             else:
@@ -481,28 +481,28 @@ class EconomyCog(commands.Cog):
             await ctx.send(
                 "This isn't `;invest`, you can't just abuse the bot like that."
             )
-            self.give.reset_cooldown(ctx)  # type: ignore
+            self.give.reset_cooldown(ctx) # type: ignore
             return
 
         if coins > 1001:
             await ctx.send(
                 "You can't give more than that bud\nWhere's the fun in that?"
             )
-            self.give.reset_cooldown(ctx)  # type: ignore
+            self.give.reset_cooldown(ctx) # type: ignore
             return
 
         if member.bot:
-            if member.id == self.bot.user.id:  # type: ignore
+            if member.id == self.bot.user.id: # type: ignore
                 await ctx.send("Why are you giving me these coins? I don't need them!")
             else:
                 await ctx.send("Bots don't have rights.")
-            self.give.reset_cooldown(ctx)  # type: ignore
+            self.give.reset_cooldown(ctx) # type: ignore
             return
         if member == ctx.author:
             await ctx.send(
                 "That's already your money, dumbass."
             )  # me when I can't use retard D:
-            self.give.reset_cooldown(ctx)  # type: ignore
+            self.give.reset_cooldown(ctx) # type: ignore
             return
 
         if self.get(ctx.author) < coins:
@@ -516,7 +516,7 @@ class EconomyCog(commands.Cog):
                     ]
                 )
             )
-            self.give.reset_cooldown(ctx)  # type: ignore
+            self.give.reset_cooldown(ctx) # type: ignore
             return
 
         self.sub(ctx.author, coins)
@@ -665,7 +665,7 @@ class EconomyCog(commands.Cog):
                     ]
                 )
             )
-            bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+            bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await bot_updates_channel.send(
                 f"User {ctx.author.mention} won {win_amount:,} coins in the jackpot!"
             )

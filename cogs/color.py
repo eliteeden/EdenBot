@@ -85,5 +85,5 @@ class ColorCog(commands.Cog):
 
 async def setup(bot: commands.Bot):
     """Function to load the cog."""
-    await bot.add_cog(ColorCog(bot))  # type: ignore
+    await bot.add_cog(ColorCog(bot)) # type: ignore
     print("ColorCog has been (re-)loaded.")

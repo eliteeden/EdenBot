@@ -9,17 +9,18 @@ from asyncio import subprocess
 import datetime
 from dotenv import load_dotenv
 import discord
-from discord import app_commands, Embed, Intents, Interaction, Member, User
+from discord import app_commands, Embed, Guild, Intents, Interaction, Member, User
 from discord.ext import commands
 import json
 import os
 import random
 import traceback
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import unicodedata
 
 from constants import CHANNELS, GUILDS, ROLES
-from cogs.inventory import InventoryCog
+if TYPE_CHECKING:
+    from cogs.inventory import InventoryCog
 
 
 # Elite bot for a server of bitches
@@ -65,7 +66,7 @@ async def block_commands_in_channel(ctx: commands.Context):
         for role in ctx.author.roles
     ):
         if ctx.channel.id == DISABLED_COMMAND_CHANNEL_ID:
-            if ctx.command.name not in EXEMPT_COMMANDS:  # type: ignore
+            if ctx.command.name not in EXEMPT_COMMANDS: # type: ignore
                 try:
                     await ctx.send(BLOCK_MESSAGE)
                 except discord.Forbidden:
@@ -100,7 +101,7 @@ async def on_ready():
         await bot.tree.sync()
     except Exception as e:
         print(f"Failed to sync commands: {e}")
-    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
+    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
     await channel.send("I'm backkkkk")
     print("Systems online")
 
@@ -205,7 +206,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         await ctx.send(
             "An error occurred while executing the command. Leave me alone for a bit."
         )
-        bot_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+        bot_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
         message = "\n".join(
             [
                 f"Error in command `{ctx.command}`: {error.original}",
@@ -315,7 +316,7 @@ sticky_data = load_sticky_data()
 
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR)
-async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None):  # type: ignore
+async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None): # type: ignore
     try:
         if channel is None:
             channel = ctx.channel
@@ -344,7 +345,7 @@ async def stick(ctx, msg_content: str, *, channel: discord.TextChannel = None): 
 
 @bot.command()
 @commands.has_any_role(ROLES.MODERATOR)
-async def unstick(ctx, channel: discord.TextChannel = None):  # type: ignore
+async def unstick(ctx, channel: discord.TextChannel = None): # type: ignore
     try:
         if channel is None:
             channel = ctx.channel
@@ -491,7 +492,7 @@ async def process_sticky_queue(channel_id: str):
             await asyncio.sleep(5)
 
         sticky_info = sticky_data[channel_id]
-        channel: discord.TextChannel = await bot.fetch_channel(int(channel_id))  # type: ignore
+        channel: discord.TextChannel = await bot.fetch_channel(int(channel_id)) # type: ignore
 
         try:
             old_msg = await channel.fetch_message(sticky_info["message_id"])
@@ -510,7 +511,9 @@ async def process_sticky_queue(channel_id: str):
 
 @bot.event
 async def on_member_join(member: User):
-    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
+    if member.guild.id != GUILDS.ELITE_EDEN: # type: ignore
+        return
+    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
     await channel.send(
         f"Welcome to Elite Eden {member.mention} \n<@&{ROLES.WELCOME_PING}> say hello to our new member!"
     )
@@ -518,26 +521,30 @@ async def on_member_join(member: User):
 
 @bot.event
 async def on_member_remove(member: User):
+    if member.guild.id != GUILDS.ELITE_EDEN: # type: ignore
+        return
     try:
-        await member.guild.fetch_ban(member)  # type: ignore # Check if the member was banned
+        await member.guild.fetch_ban(member) # type: ignore # Check if the member was banned
         return  # Exit the function if they were banned
         # Can't on_member_ban just go here?
     except discord.NotFound:
         print(f"{member} left the server (not banned)")
-        channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
+        channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
         await channel.send(
             f"{member.mention} ({member.name}) just left Elite Eden like a pussy."
         )
 
 
 @bot.event
-async def on_member_ban(guild, member: User):
-    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL)  # type: ignore
+async def on_member_ban(guild: Guild, member: User):
+    if guild.id != GUILDS.ELITE_EDEN: # type: ignore
+        return
+    channel: discord.TextChannel = bot.get_channel(CHANNELS.CAPITAL) # type: ignore
     await channel.send(f"Good riddance to {member.mention} ({member.name}).")
 
 
 @bot.command()
-async def profanity(ctx: commands.Context, member: Member = None):  # type: ignore
+async def profanity(ctx: commands.Context, member: Member = None): # type: ignore
     if member is None:
         member: Member = ctx.author  # Default to command user if no member specified
 
@@ -559,7 +566,7 @@ async def profanities(ctx):
     # Limit to top 100
     top_users = sorted_users[:100]
 
-    paginator = bot.cogs["PaginatorCog"]()  # type: ignore # Initialize paginator
+    paginator = bot.cogs["PaginatorCog"]() # type: ignore # Initialize paginator
 
     # Create paginated embeds
     for i in range(0, len(top_users), 10):  # Show 10 users per page
@@ -642,11 +649,11 @@ slur_words = {
 @app_commands.checks.has_any_role(
     ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms", "happy"
 )
-async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None):  # type: ignore
+async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None): # type: ignore
     # Check for the item or the role
     allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]  # ROLES.TALK_PERMS]
-    has_role = any(role.id in allowed_roles for role in interaction.user.roles)  # type: ignore
-    inventory: InventoryCog = bot.get_cog("InventoryCog")  # type: ignore
+    has_role = any(role.id in allowed_roles for role in interaction.user.roles) # type: ignore
+    inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
     if (
         has_role or interaction.guild_id != GUILDS.ELITE_EDEN
     ):  # or inventory.has_item(interaction.user, "Talk Command Permissions"):
@@ -660,8 +667,8 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
 
     await interaction.response.defer(ephemeral=True)
     if channel is None:
-        channel: discord.TextChannel = interaction.channel  # type: ignore
-    if (not channel.permissions_for(interaction.user).send_messages) and (not has_role):  # type: ignore
+        channel: discord.TextChannel = interaction.channel # type: ignore
+    if (not channel.permissions_for(interaction.user).send_messages) and (not has_role): # type: ignore
         await interaction.response.send_message(
             "You do not have permission to send messages in that channel.",
             ephemeral=True,
@@ -673,7 +680,7 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
     blocked = False
 
     # If flagged, notify a specific channel
-    alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES)  # type: ignore
+    alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES) # type: ignore
     if flagged and channel.guild.id == alert_channel.guild.id:
         blocked = True
         # The ID of the channel where alerts should be sent
@@ -686,7 +693,7 @@ async def talk(interaction: Interaction, message: str, channel: Optional[discord
     # Send the original message to the current channel
     try:
         if not blocked:
-            await channel.send(message)  # type: ignore
+            await channel.send(message) # type: ignore
     except Exception as e:
         if isinstance(e, discord.Forbidden):
             await interaction.response.send_message(
@@ -820,7 +827,7 @@ class ConfessCog(commands.Cog):
         await interaction.response.defer(
             ephemeral=True
         )  # Prevents errors by deferring the interaction
-        await interaction.channel.send(embed=embed)  # type: ignore # Sends the embed without replying to the trigger
+        await interaction.channel.send(embed=embed) # type: ignore # Sends the embed without replying to the trigger
         await interaction.delete_original_response()
 
     @commands.command(name="resetconfessions")

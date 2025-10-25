@@ -4,13 +4,14 @@
 import math
 import discord
 from discord.ext import commands
-from typing import Callable, Coroutine, Generator, Iterator, Optional, overload
+from typing import Callable, Coroutine, Iterator, Optional, overload, TYPE_CHECKING
 
-from cogs.economy import EconomyCog  # TypeDef only
-from cogs.inventory import InventoryCog  # TypeDef only
+if TYPE_CHECKING:
+    from cogs.economy import EconomyCog
+    from cogs.inventory import InventoryCog
 from constants import ROLES, CHANNELS
 
-type ShopItem = "ShopCog.Shop.ShopItem"  # TypeDef for type hinting
+type ShopItem = "ShopCog.Shop.ShopItem" # TypeDef for type hinting
 
 # Hey, the counter for how long I've wasted trying to remove @staticmethod is back
 hours_wasted = 8
@@ -91,7 +92,7 @@ class ShopCog(commands.Cog):
                     maximum_message,
                     hide_on_maximum,
                 ) in self.items:
-                    if bot.get_cog("InventoryCog").get_item(member, item) >= (maximum_items or float("inf")) and hide_on_maximum:  # type: ignore
+                    if bot.get_cog("InventoryCog").get_item(member, item) >= (maximum_items or float("inf")) and hide_on_maximum: # type: ignore
                         # If the user has the maximum amount of the item, they can't buy it again
                         return False
                 return True
@@ -234,7 +235,7 @@ class ShopCog(commands.Cog):
         @staticmethod
         async def test_item(bot: commands.Bot, interaction: discord.Interaction):
             """Prints a test message to the bot logs channel."""
-            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await updates_channel.send(
                 f"Test item purchased by {interaction.user.name}"
             )
@@ -245,7 +246,7 @@ class ShopCog(commands.Cog):
         @staticmethod
         async def test2_item(bot: commands.Bot, interaction: discord.Interaction):
             """Prints a test message to the bot logs channel."""
-            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await updates_channel.send(
                 f"Test2 item purchased by {interaction.user.name}"
             )
@@ -256,7 +257,7 @@ class ShopCog(commands.Cog):
         @staticmethod
         async def test3_item(bot: commands.Bot, interaction: discord.Interaction):
             """Prints a test message to the bot logs channel."""
-            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+            updates_channel: discord.TextChannel = bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
             await updates_channel.send(
                 f"Test3 item purchased by {interaction.user.name}"
             )
@@ -335,8 +336,8 @@ class ShopCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.economy: Callable[[], EconomyCog] = lambda: bot.get_cog("EconomyCog")  # type: ignore
-        self.inventory: Callable[[], InventoryCog] = lambda: bot.get_cog("InventoryCog")  # type: ignore
+        self.economy: Callable[[], EconomyCog] = lambda: bot.get_cog("EconomyCog") # type: ignore
+        self.inventory: Callable[[], InventoryCog] = lambda: bot.get_cog("InventoryCog") # type: ignore
 
     class ShopButtons(discord.ui.View):
         """The view containing the shop buttons."""
@@ -416,7 +417,7 @@ class ShopCog(commands.Cog):
             async def disable(self, interaction: discord.Interaction):
                 """Disables the button."""
                 self.disabled = True
-                await interaction.message.edit(content=interaction.message.content, view=self.view)  # type: ignore
+                await interaction.message.edit(content=interaction.message.content, view=self.view) # type: ignore
 
             async def callback(self, interaction: discord.Interaction):
                 assert isinstance(
@@ -461,7 +462,7 @@ class ShopCog(commands.Cog):
                         ephemeral=True,
                     )
                     return False
-                if interaction.user.id == self.shop.bot.user.id:  # type: ignore
+                if interaction.user.id == self.shop.bot.user.id: # type: ignore
                     await self.disable(interaction)
                     await interaction.response.send_message(
                         "You cannot purchase items for the bot.", ephemeral=True
@@ -483,10 +484,10 @@ class ShopCog(commands.Cog):
                     maximum_message,
                     hide_on_maximum,
                 ) in self.item.items:
-                    self.shop.inventory().add_item(interaction.user, item, amount)  # type: ignore
+                    self.shop.inventory().add_item(interaction.user, item, amount) # type: ignore
                     buy_msg += f"\n{buy_message.format(item_name=item)}"
                 # Log the purchase
-                UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS)  # type: ignore
+                UPDATES_CHANNEL: discord.TextChannel = self.shop.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
                 await UPDATES_CHANNEL.send(
                     f"{interaction.user.mention} ({interaction.user.name}) has purchased {self.item.name} for {self.item.price:,} Eden Coins."
                 )
@@ -566,14 +567,14 @@ class ShopCog(commands.Cog):
     @commands.command(name="shop")
     async def shop(self, ctx: commands.Context):
         """Displays the shop items."""
-        embed, view = await self.generate_shop_page(ctx.author)  # type: ignore
+        embed, view = await self.generate_shop_page(ctx.author) # type: ignore
         await ctx.send(embed=embed, view=view)
 
     @commands.command(name="shopall")
     @commands.has_any_role(ROLES.TOTALLY_MOD)
     async def shop_all(self, ctx: commands.Context):
         """Displays all shop items, even those that are not purchasable."""
-        embed, view = await self.generate_shop_page(ctx.author, show_all=True)  # type: ignore
+        embed, view = await self.generate_shop_page(ctx.author, show_all=True) # type: ignore
         await ctx.send(embed=embed, view=view)
 
 

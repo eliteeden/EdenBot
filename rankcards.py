@@ -64,7 +64,7 @@ class RANKCARD():
         img = ImageOps.expand(img, border=5, fill='gray')
 
         # Save image
-        output_path = f"{os.getcwd()}/media/rank/rankcards2.png"
+        output_path = f"/tmp/rankcard.png"
         img.save(output_path)
         return output_path
 

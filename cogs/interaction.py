@@ -133,7 +133,7 @@ class InteractionCog(commands.Cog):
             await ctx.send("PaginatorCog is not loaded.")
             return
 
-        paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore
+        paginator: PaginatorCog.Paginator = paginator_cog() # type: ignore
 
         # If a specific cog is requested
         if cog_filter:
@@ -182,7 +182,7 @@ class InteractionCog(commands.Cog):
 
         await paginator.send(ctx)
     @commands.command(name="howgay", aliases=["gaydar", "howgayareyou", "ilikecheese"])
-    async def howgay(self, ctx: commands.Context, user: Member = None):  # type: ignore
+    async def howgay(self, ctx: commands.Context, user: Member = None): # type: ignore
         try:
             if user is None:
                 user = ctx.author
@@ -236,7 +236,7 @@ class InteractionCog(commands.Cog):
         ]
         chance = [0.75, 0.25]
         words = random.choices([good_words, bad_words], weights=chance, k=1)[0]
-        roles = [role.id for role in ctx.author.roles]  # type: ignore
+        roles = [role.id for role in ctx.author.roles] # type: ignore
         if ROLES.MODERATOR not in roles and ROLES.SACRIFICE not in roles:
             await ctx.send(random.choice(words))
         elif ROLES.MODERATOR in roles:
@@ -624,7 +624,7 @@ class InteractionCog(commands.Cog):
     @commands.command(name="murder")
     @commands.has_any_role("MODERATOR", ROLES.SERVER_BOOSTER, "Fden Bot Perms")
     async def murder(self, ctx: commands.Context, member: Member):
-        author: Member = ctx.author  # type: ignore
+        author: Member = ctx.author # type: ignore
         if (
             author.get_role(ROLES.TOTALLY_MOD) is not None
             or author.top_role.position > member.top_role.position
@@ -759,7 +759,7 @@ class InteractionCog(commands.Cog):
             await ctx.send("PaginatorCog is not loaded.")
             return
 
-        paginator: PaginatorCog.Paginator = paginator_cog()  # type: ignore
+        paginator: PaginatorCog.Paginator = paginator_cog() # type: ignore
 
         members = role.members
         for i in range(0, len(members), 10):  # 10 members per page
@@ -779,12 +779,12 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name="find", aliases=["zii", "yoink", "stalk", "hunt", "track"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def find(self, ctx: commands.Context, member: Optional[discord.Member] = None):  # type: ignore
+    async def find(self, ctx: commands.Context, member: Optional[discord.Member] = None): # type: ignore
         """Finds the most recent message from a member across all text channels, using cache + parallel scanning."""
         try:
             async with ctx.typing():
-                member: Member = member or ctx.guild.get_member(USERS.ZI)  # type: ignore
-                member_id = member.id  # type: ignore
+                member: Member = member or ctx.guild.get_member(USERS.ZI) # type: ignore
+                member_id = member.id # type: ignore
 
                 # Try cached message first
                 if member_id in self.messages:
@@ -804,7 +804,7 @@ class InteractionCog(commands.Cog):
                     except discord.Forbidden:
                         return None
 
-                tasks = [scan_channel(channel) for channel in ctx.guild.text_channels]  # type: ignore
+                tasks = [scan_channel(channel) for channel in ctx.guild.text_channels] # type: ignore
                 results = await asyncio.gather(*tasks)
                 messages = [msg for msg in results if msg]
 

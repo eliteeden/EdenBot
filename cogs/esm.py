@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageDraw, ImageFont
@@ -127,6 +126,7 @@ class ImageCog(commands.Cog):
         draw.text((w-tw-10, h-th-10), text, font=font, fill=(255,255,255,120))
         composed = Image.alpha_composite(base, txt)
         await ctx.send(file=discord.File(to_bytes_io(composed), "watermarked.png"))
+
     @commands.command()
     async def caption(self, ctx, *, text: str):
         img = await self._get_attachment_or_fail(ctx)
@@ -134,22 +134,31 @@ class ImageCog(commands.Cog):
             return
 
         w, h = img.size
-        font = ensure_font(max(30, w // 10))  # Increased font size
-
-        # Add top padding only
         pad = int(h * 0.15)
         new_h = h + pad
         new_img = Image.new("RGBA", (w, new_h), (255, 255, 255, 255))  # White background
         new_img.paste(img, (0, pad))  # Shift original image down
 
-        # Draw caption in the top padded area
-        draw = ImageDraw.Draw(new_img)
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))  # Black text
+        # Start with a large font size and scale down if needed
+        max_font_size = max(40, w // 8)
+        font_size = max_font_size
+        margin = int(w * 0.05)
+
+        while font_size > 10:
+            font = ensure_font(font_size)
+            draw = ImageDraw.Draw(new_img)
+            bbox = draw.textbbox((0, 0), text, font=font)
+            tw = bbox[2] - bbox[0]
+            if tw <= w - margin:
+                break
+            font_size -= 2  # Reduce font size until it fits
+
+            # Draw scaled text
+            th = bbox[3] - bbox[1]
+            draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
 
         await ctx.send(file=discord.File(to_bytes_io(new_img), "captioned.png"))
-
+        
     @commands.command()
     async def overlay(self, ctx, url: str):
         img = await self._get_attachment_or_fail(ctx)

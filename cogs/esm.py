@@ -223,7 +223,7 @@ class ImageCog(commands.Cog):
 
             except Exception as e:
                 await ctx.send(f"An error occurred: {e}")
-        else:
+        elif not gif_url:
             w, h = img.size
             pad = int(h * 0.15)
             new_h = h + pad

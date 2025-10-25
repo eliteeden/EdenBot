@@ -1,12 +1,14 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageDraw, ImageFont
+from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageDraw, ImageFont, ImageSequence
 import aiohttp
 import io
+from io import BytesIO
 import math
-
+import re
 import numpy as np
+import requests
 import cv2
 
 DEFAULT_FONT_PATH = "arial/ARIAL.TTF"
@@ -130,37 +132,124 @@ class ImageCog(commands.Cog):
         await ctx.send(file=discord.File(to_bytes_io(composed), "watermarked.png"))
 
     @commands.command(aliases=["whenthe"])
-    async def caption(self, ctx, *, text: str):
+    async def caption(self, ctx, text: str, gif_url):
         img = await self._get_attachment_or_fail(ctx)
         if not img:
-            return
+            try:
+                # Validate Tenor or direct GIF URL
+                if not re.search(r"(tenor\.com|\.gif)", gif_url):
+                    await ctx.send("Please provide a valid Tenor or direct GIF URL.")
+                    return
 
-        w, h = img.size
-        pad = int(h * 0.15)
-        new_h = h + pad
-        new_img = Image.new("RGBA", (w, new_h), (255, 255, 255, 255))  # White background
-        new_img.paste(img, (0, pad))  # Shift original image down
+                headers = {"User-Agent": "Mozilla/5.0"}
+                response = requests.get(gif_url, headers=headers)
 
-        # Start with a large font size and scale down if needed
-        max_font_size = max(40, w // 8)
-        font_size = max_font_size
-        margin = int(w * 0.05)
+                if response.status_code != 200 or len(response.content) < 1000:
+                    await ctx.send("Failed to download a valid GIF. Please check the URL.")
+                    return
 
-        font = ensure_font(font_size)
-        draw = ImageDraw.Draw(new_img)
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw = bbox[2] - bbox[0]
+                try:
+                    gif = Image.open(BytesIO(response.content))
+                except Exception:
+                    await ctx.send("Downloaded file is not a valid image. Please use a direct GIF URL.")
+                    return
 
-        while font_size > 10 and tw > w - margin:
-            font_size -= 2
+                # Load font
+                try:
+                    font_white = ImageFont.truetype("arial.ttf", 28)
+                    font_black = ImageFont.truetype("arial.ttf", 24)
+                except IOError:
+                    font_white = ImageFont.load_default()
+                    font_black = ImageFont.load_default()
+
+                frames = []
+                durations = []
+
+                for frame in ImageSequence.Iterator(gif):
+                    frame_image = frame.convert("RGBA")
+                    draw = ImageDraw.Draw(frame_image)
+
+                    # # Draw black header
+                    # header_bbox = draw.textbbox((0, 0), header_text, font=font_black)
+                    # header_width = header_bbox[2] - header_bbox[0]
+                    # header_height = header_bbox[3] - header_bbox[1]
+                    # header_pos = ((frame_image.width - header_width) // 2, 10)
+                    # draw.text(header_pos, header_text, font=font_black, fill="black")
+
+
+
+                    # # Draw white caption below header
+                    # caption_bbox = draw.textbbox((0, 0), caption_text, font=font_white)
+                    # caption_width = caption_bbox[2] - caption_bbox[0]
+                    # caption_height = caption_bbox[3] - caption_bbox[1]
+                    # caption_pos = ((frame_image.width - caption_width) // 2, header_pos[1] + header_height + 5)
+                    # draw.text(caption_pos, caption_text, font=font_white, fill="white")
+
+                    w, h = frame_image.size
+                    pad = int(h * 0.15)
+                    new_h = h + pad
+                    new_img = Image.new("RGBA", (w, new_h), (255, 255, 255, 255))  # White background
+                    new_img.paste(frame_image, (0, pad))  # Shift original image down
+
+                    # Start with a large font size and scale down if needed
+                    max_font_size = max(40, w // 8)
+                    font_size = max_font_size
+                    margin = int(w * 0.05)
+
+                    font = ensure_font(font_size)
+                    draw = ImageDraw.Draw(new_img)
+                    bbox = draw.textbbox((0, 0), text, font=font)
+                    tw = bbox[2] - bbox[0]
+
+                    while font_size > 10 and tw > w - margin:
+                        font_size -= 2
+                        font = ensure_font(font_size)
+                        bbox = draw.textbbox((0, 0), text, font=font)
+                        tw = bbox[2] - bbox[0]
+
+                    th = bbox[3] - bbox[1]
+                    draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
+
+
+                    frames.append(frame_image)
+                    durations.append(gif.info.get("duration", 100))
+
+                # Save modified GIF
+                output = BytesIO()
+                frames[0].save(output, format="GIF", save_all=True, append_images=frames[1:], loop=0, duration=durations, transparency=0)
+                output.seek(0)
+
+                await ctx.send(file=discord.File(output, "captioned.gif"))
+
+            except Exception as e:
+                await ctx.send(f"An error occurred: {e}")
+        else:
+            w, h = img.size
+            pad = int(h * 0.15)
+            new_h = h + pad
+            new_img = Image.new("RGBA", (w, new_h), (255, 255, 255, 255))  # White background
+            new_img.paste(img, (0, pad))  # Shift original image down
+
+            # Start with a large font size and scale down if needed
+            max_font_size = max(40, w // 8)
+            font_size = max_font_size
+            margin = int(w * 0.05)
+
             font = ensure_font(font_size)
+            draw = ImageDraw.Draw(new_img)
             bbox = draw.textbbox((0, 0), text, font=font)
             tw = bbox[2] - bbox[0]
 
-        th = bbox[3] - bbox[1]
-        draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
+            while font_size > 10 and tw > w - margin:
+                font_size -= 2
+                font = ensure_font(font_size)
+                bbox = draw.textbbox((0, 0), text, font=font)
+                tw = bbox[2] - bbox[0]
 
-        await ctx.send(file=discord.File(to_bytes_io(new_img), "captioned.png"))
+            th = bbox[3] - bbox[1]
+            draw.text(((w - tw) / 2, (pad - th) / 2), text, font=font, fill=(0, 0, 0, 255))
+
+            await ctx.send(file=discord.File(to_bytes_io(new_img), "captioned.png"))
 
 
     @app_commands.command(name="captionn", description="Add a caption to an uploaded image")

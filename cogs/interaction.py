@@ -19,6 +19,9 @@ import json
 import pytz
 from dotenv import load_dotenv
 from constants import ROLES, USERS
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
+
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
 
@@ -429,7 +432,7 @@ class InteractionCog(commands.Cog):
                     else:
                         await ctx.send("No results found")
                         
-    @commands.command(name="bing", aliases=["ddg", "edge", "duckduckgo"])
+    @commands.command(name="bing", aliases=["ddg", "edge", "duckduckgo", 'www'])
     async def bing(self, ctx, *, query: str):
         """Searches DuckDuckGo and returns the first result with a clean link or responds with eden_meta."""
 
@@ -484,6 +487,50 @@ class InteractionCog(commands.Cog):
                 await ctx.send(f"Error: {e}")
 
 
+    @commands.command()
+    async def caption(self, ctx, caption_text: str, gif_url: str):
+        try:
+            # Download the GIF
+            response = requests.get(gif_url)
+            if response.status_code != 200:
+                await ctx.send("Failed to download the GIF. Please check the URL.")
+                return
+
+            gif = Image.open(BytesIO(response.content))
+
+            # Load font safely
+            try:
+                font = ImageFont.truetype("arial.ttf", 20)
+            except IOError:
+                font = ImageFont.load_default()
+
+            frames = []
+            durations = []
+
+            for frame in ImageSequence.Iterator(gif):
+                frame_image = frame.convert("RGBA")
+                draw = ImageDraw.Draw(frame_image)
+
+                # Calculate text position
+                bbox = draw.textbbox((0, 0), caption_text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+                text_position = ((frame_image.width - text_width) // 2, frame_image.height - text_height - 10)
+
+                draw.text(text_position, caption_text, font=font, fill="white")
+                frames.append(frame_image)
+                durations.append(gif.info.get("duration", 100))  # Default to 100ms if duration missing
+
+            # Save the modified GIF
+            output = BytesIO()
+            frames[0].save(output, format="GIF", save_all=True, append_images=frames[1:], loop=0, duration=durations, transparency=0)
+            output.seek(0)
+
+            # Send the modified GIF
+            await ctx.send(file=discord.File(output, "captioned.gif"))
+
+        except Exception as e:
+            await ctx.send(f"An error occurred: {e}")
 
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")

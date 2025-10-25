@@ -10,7 +10,7 @@ import os
 from sympy import true
 from constants import ROLES, CHANNELS
 
-
+ALLOWED_ROLE_NAME = "HELPER (Trainee Staff)"
 REPEAT_FILE = "repeat_data.json"
 
 # Load or initialize repeat data
@@ -433,6 +433,33 @@ class ModCog(commands.Cog):
                           Goodbye.""")
         await ctx.send("Message sent successfully")
         
+    
+
+    @commands.command()
+    @commands.has_permissions(manage_threads=True)
+    async def allowtalk(self, ctx, thread: discord.Thread = None):
+        thread = thread or ctx.channel
+
+        if not isinstance(thread, discord.Thread):
+            await ctx.send("This command must be used in or with a thread.")
+            return
+
+        guild = ctx.guild
+        role = discord.utils.get(guild.roles, name=ALLOWED_ROLE_NAME)
+
+        if not role:
+            await ctx.send(f"Role '{ALLOWED_ROLE_NAME}' not found.")
+            return
+
+        try:
+            await thread.send(f"🔧 Updating permissions for role '{role.name}'...")
+            await thread.set_permissions(role, send_messages=True)
+            await ctx.send(f"✅ Members with '{role.name}' can now speak in {thread.name}.")
+        except discord.Forbidden:
+            await ctx.send("❌ I don't have permission to edit thread permissions.")
+        except Exception as e:
+            await ctx.send(f"⚠️ Error: {e}")
+
 
 async def setup(bot):
     await bot.add_cog(ModCog(bot))

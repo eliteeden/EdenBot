@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 from discord import Member, User
 import datetime
 import asyncio
+import string
 import re
 import random
 import json
@@ -41,8 +42,9 @@ class ModCog(commands.Cog):
         self.bot = bot
         self.snipe_messages = {}
         self.active_loops = {}
-        self.emoji_pattern = re.compile(r"[^\w\s,-]")
+        self.emoji_pattern = re.compile(r"(<a?:\w+:\d+>|[\U0001F300-\U0001FAFF])")
         self.text_pattern = re.compile(r"\b\w+\b")
+        self.alphabet = [c for c in string.ascii_lowercase]
 
 
     @commands.command(aliases=["timeout"])
@@ -434,38 +436,60 @@ class ModCog(commands.Cog):
     @commands.command(name="formatchannels", aliases=["zifont", "edenfont", "channelfont"])
     @commands.has_permissions(manage_channels=True)
     async def format_channels(self, ctx, *, format_template: str = "‧˚₊{emoji}︱{text}˖˚˳"):
-        """Formats all text channel names using a customizable template with emoji and cleaned A–Z text."""
+        """Formats text channel names using a customizable template.
+        - Only keeps words made entirely of A-Z letters
+        - Extracts emojis using the requested emoji regex
+        - Preserves original word order (no alphabetical sorting)
+        - Builds a replacement list of alphabet letters not present in the text nor in the emoji string
+        """
 
-        # Validate template
+        # Validate template contains required placeholders
         if "{emoji}" not in format_template or "{text}" not in format_template:
             await ctx.send("Invalid format. Please include `{emoji}` and `{text}` in your template.")
             return
 
         for channel in ctx.guild.channels:
-            if isinstance(channel, discord.TextChannel):
-                original_name = channel.name
+            if not isinstance(channel, discord.TextChannel):
+                continue
 
-                # Extract emoji (first match)
-                emoji_match = self.emoji_pattern.search(original_name)
-                emoji = emoji_match.group(0) if emoji_match else "🎗"
+            original_name = channel.name
 
-                # Extract and filter alphabetic words
-                text_matches = self.text_pattern.findall(original_name)
-                alphabetic_words = [word for word in text_matches if word.isalpha()]
-                sorted_words = sorted(alphabetic_words, key=lambda w: w.lower())
-                core_text = "-".join(sorted_words).strip()
+            # 1) Extract first emoji match (if any)
+            emoji_match = self.emoji_pattern.search(original_name)
+            emoji = emoji_match.group(0).strip() if emoji_match else "🎗"
 
-                # Build new name using user-defined format
-                new_name = format_template.format(emoji=emoji, text=core_text)
+            # 2) Extract word-like tokens and keep only those that are strictly A-Z letters
+            text_matches = self.text_pattern.findall(original_name)
+            # Keep tokens that are purely alphabetic and contain only ASCII letters A-Z / a-z
+            alphabetic_words = [w for w in text_matches if w.isalpha() and all(ch.isalpha() and ch.lower() in self.alphabet for ch in w)]
+            # Preserve original order; do NOT sort
+            core_text = "-".join(alphabetic_words).strip()
 
-                # Rename channel
-                try:
-                    await channel.edit(name=new_name)
-                    await ctx.send(f"Renamed `{original_name}` → `{new_name}`")
-                except discord.Forbidden:
-                    await ctx.send(f"Missing permissions to rename `{original_name}`")
-                except discord.HTTPException as e:
-                    await ctx.send(f"Failed to rename `{original_name}`: {e}")
+            # 3) Build replacement list:
+            #    For each letter a..z, if it does not appear in core_text (case-insensitive)
+            #    and is not present inside the emoji string, mark it as "for replacement".
+            present_letters = set(core_text.replace("-", "").lower())
+            # Also consider letters that might be inside emoji shortcodes like <:name:123> (extract letters)
+            emoji_letters = set(re.sub(r"[^A-Za-z]", "", emoji).lower())
+            replacement_list = [c for c in self.alphabet if c not in present_letters and c not in emoji_letters]
+
+            # 4) Build new channel name using the provided format template
+            #    Provide {emoji}, {text}, and {replacements} for template flexibility
+            try:
+                new_name = format_template.format(emoji=emoji, text=core_text, replacements="".join(replacement_list))
+            except Exception as e:
+                await ctx.send(f"Invalid format template or formatting error: {e}")
+                return
+
+            # 5) Attempt rename (Discord name rules still apply; this may raise)
+            try:
+                await channel.edit(name=new_name)
+                await ctx.send(f"Renamed `{original_name}` → `{new_name}`")
+            except discord.Forbidden:
+                await ctx.send(f"Missing permissions to rename `{original_name}`")
+            except discord.HTTPException as e:
+                await ctx.send(f"Failed to rename `{original_name}`: {e}")
+
 
 async def setup(bot):
     await bot.add_cog(ModCog(bot))

@@ -107,6 +107,12 @@ class RandomCog(commands.Cog):
             }
         }
 
+    @commands.command(name="coinflip", aliases=["cf"])
+    async def coinflip(self, ctx):
+        sides = ["heads", "tails"]
+        side = random.choice(sides)
+        await ctx.send(f"{side.capitalize}!")
+
     @commands.command(name="8ball", aliases=["magicball", "pool", "conch"])
     async def ball(self, ctx, *, message: str):
         msg_lower = message.lower()

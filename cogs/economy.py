@@ -244,8 +244,8 @@ class EconomyCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"An error occurred: `{e}`")
 
-    @commands.command(name="coinflip", aliases=["cf", "toss"])
-    async def coinflip(self, ctx: commands.Context, *, txt: str):
+    @commands.command(name="coinflip", aliases=["cointoss"])
+    async def toss(self, ctx: commands.Context, *, txt: str):
         earn = 1000
         sides = ["heads", "tails"]
         toss = random.choice(sides)
@@ -540,7 +540,7 @@ class EconomyCog(commands.Cog):
 
     @commands.command(name="daily")
     @commands.cooldown(
-        1, 86400, commands.BucketType.user
+        1, 72000, commands.BucketType.user
     )  # 3-second cooldown for testing
     async def daily(self, ctx: commands.Context):
         """Log in every day for your rewards."""
@@ -548,7 +548,7 @@ class EconomyCog(commands.Cog):
         user_id = str(user.id)
         base_earn = 5_000
         bonus_per_streak = 1_000
-        streak_window = 172800  # seconds
+        streak_window = 144_000  # These are all in seconds
 
         # Load streaks and last claim dates
         streaks = self.load_streaks()

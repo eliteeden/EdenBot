@@ -487,6 +487,39 @@ class InteractionCog(commands.Cog):
             except Exception as e:
                 await ctx.send(f"Error: {e}")
 
+
+    @commands.command(name="pypi", aliases=["pymodule", "pydoc"])
+    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
+    async def pypi(self, ctx: commands.Context, *, query: str):
+        
+        search_msg = query.lower()
+        pypi_site = "https://pypi.org/"
+        # Check for banned words
+        if any(word in search_msg for word in banned_words):
+            await ctx.send("Your search contains banned words and cannot be processed.")
+            return
+            
+        async with ctx.typing():
+            headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0'
+                    }
+            try:
+                link = None
+
+                # DuckDuckGo HTML search
+                resp = requests.post("https://html.duckduckgo.com/html/",
+                                    data={"q": query}, headers=HEADERS, timeout=8)
+                soup = BeautifulSoup(resp.text, "html.parser")
+                a = soup.select_one("a.result__a[href^='http']")
+                if a:
+                    link = a["href"]
+                
+                await ctx.send(link or "No results found.")
+
+            except Exception as e:
+                await ctx.send(f"Error: {e}")
+
+
     @commands.command(name="wiki", aliases=["wikipedia", "fandom"])
     @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
     async def wiki(self, ctx: commands.Context, *, search_msg: str):

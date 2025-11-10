@@ -41,10 +41,8 @@ class ModCog(commands.Cog):
         self.bot = bot
         self.snipe_messages = {}
         self.active_loops = {}
-
-        # Regex patterns
-    emoji_pattern = re.compile(r"(<a?:\w+:\d+>|[\U0001F300-\U0001FAFF])")
-    text_pattern = re.compile(r"[\w\s-]+")
+        self.emoji_pattern = re.compile(r"[^\w\s,-]")
+        self.text_pattern = re.compile(r"\b\w+\b")
 
 
     @commands.command(aliases=["timeout"])
@@ -433,37 +431,41 @@ class ModCog(commands.Cog):
         await ctx.send("Repeating message stopped.")
 
 
-
     @commands.command(name="formatchannels", aliases=["zifont", "edenfont", "channelfont"])
     @commands.has_permissions(manage_channels=True)
-    #TODO: Add a way to set the format
-    async def format_channels(self, ctx):
-        """Formats all text channel names using a template with existing emoji and cleaned text."""
+    async def format_channels(self, ctx, *, format_template: str = "‧˚₊{emoji}︱{text}˖˚˳"):
+        """Formats all text channel names using a customizable template with emoji and cleaned A–Z text."""
+
+        # Validate template
+        if "{emoji}" not in format_template or "{text}" not in format_template:
+            await ctx.send("Invalid format. Please include `{emoji}` and `{text}` in your template.")
+            return
+
         for channel in ctx.guild.channels:
             if isinstance(channel, discord.TextChannel):
-                name = channel.name
+                original_name = channel.name
 
                 # Extract emoji (first match)
-                emoji_match = self.emoji_pattern.search(name)
+                emoji_match = self.emoji_pattern.search(original_name)
                 emoji = emoji_match.group(0) if emoji_match else "🎗"
 
-                # Extract core text
-                text_matches = self.text_pattern.findall(name)
-                core_text = "-".join(text_matches).strip()
+                # Extract and filter alphabetic words
+                text_matches = self.text_pattern.findall(original_name)
+                alphabetic_words = [word for word in text_matches if word.isalpha()]
+                sorted_words = sorted(alphabetic_words, key=lambda w: w.lower())
+                core_text = "-".join(sorted_words).strip()
 
-                # Build new name
-                new_name = f"‧˚₊{emoji}︱{core_text}˖˚˳"
+                # Build new name using user-defined format
+                new_name = format_template.format(emoji=emoji, text=core_text)
 
                 # Rename channel
                 try:
                     await channel.edit(name=new_name)
-                    await ctx.send(f"Renamed {name} → {new_name}")
+                    await ctx.send(f"Renamed `{original_name}` → `{new_name}`")
                 except discord.Forbidden:
-                    await ctx.send(f"Missing permissions to rename {name}")
+                    await ctx.send(f"Missing permissions to rename `{original_name}`")
                 except discord.HTTPException as e:
-                    await ctx.send(f"Failed to rename {name}: {e}")
-
-
+                    await ctx.send(f"Failed to rename `{original_name}`: {e}")
 
 async def setup(bot):
     await bot.add_cog(ModCog(bot))

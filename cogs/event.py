@@ -21,6 +21,21 @@ class EventsCog(commands.Cog):
         with open(CONFIG_FILE, "w") as f:
             json.dump(self.events, f, indent=4)
 
+    def set_event(self, event_type, guild_id, channel_id, message):
+        formatted_message = "\n".join(message.split("|"))
+        self.events.setdefault(event_type, {})
+        self.events[event_type][guild_id] = {
+            "channel_id": channel_id,
+            "message": formatted_message
+        }
+        self.save_events()
+
+    async def send_formatted_message(self, channel, message, member):
+        message = message.replace("{member}", member.mention)
+        message = message.replace("{member.name}", member.name)
+        message = message.replace("{member.id}", str(member.id))
+        await channel.send(message)
+
     # Event commands
 
     @commands.command(name="setwelcome", aliases=["sethello", "hellomsg", "welcomemsg"])
@@ -28,32 +43,15 @@ class EventsCog(commands.Cog):
     async def set_welcome(self, ctx, channel: discord.TextChannel, *, message: str):
         """Sets a welcome message for a specific channel."""
         guild_id = str(ctx.guild.id)
-
-        if "welcome" not in self.events:
-            self.events["welcome"] = {}
-        formatted_message = "\n".join(message.split("|"))
-        self.events["welcome"][guild_id] = {
-            "channel_id": channel.id,
-            "message": formatted_message
-        }
-        
-        self.save_events()
+        self.set_event("welcome", guild_id, channel.id, message)
         await ctx.send(f"Welcome message set for {channel.mention}.")
-
 
     @commands.command(name="setban")
     @commands.has_permissions(manage_guild=True)
     async def set_ban(self, ctx, channel: discord.TextChannel, *, message: str):
         """Sets a ban message for a specific channel."""
         guild_id = str(ctx.guild.id)
-        formatted_message = "\n".join(message.split("|"))
-        self.events.setdefault("ban", {})
-        self.events["ban"][guild_id] = {
-            "channel_id": channel.id,
-            "message": formatted_message
-        }
-        
-        self.save_events()
+        self.set_event("ban", guild_id, channel.id, message)
         await ctx.send(f"Ban message set for {channel.mention}.")
 
     @commands.command(name="setleave")
@@ -61,17 +59,35 @@ class EventsCog(commands.Cog):
     async def set_leave(self, ctx, channel: discord.TextChannel, *, message: str):
         """Sets a leave message for a specific channel."""
         guild_id = str(ctx.guild.id)
-        formatted_message = "\n".join(message.split("|"))
-        self.events.setdefault("leave", {})
-        self.events["leave"][guild_id] = {
-            "channel_id": channel.id,
-            "message": formatted_message
-        }
-        
-        self.save_events()
+        self.set_event("leave", guild_id, channel.id, message)
         await ctx.send(f"Leave message set for {channel.mention}.")
 
+    @commands.command(name="removeevent", aliases=["delevent", "endevent"])
+    @commands.has_permissions(manage_guild=True)
+    async def remove_event(self, ctx, event_type: str):
+        """Removes a configured event message for this server."""
+        guild_id = str(ctx.guild.id)
+        event_type = event_type.lower()
+
+        if event_type in self.events and guild_id in self.events[event_type]:
+            del self.events[event_type][guild_id]
+            if not self.events[event_type]:
+                del self.events[event_type]
+            self.save_events()
+            await ctx.send(f"{event_type.capitalize()} message removed for this server.")
+        else:
+            await ctx.send(f"No {event_type} message found for this server.")
+
     # Event listeners
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        guild_id = str(member.guild.id)
+        if "welcome" in self.events and guild_id in self.events["welcome"]:
+            data = self.events["welcome"][guild_id]
+            channel = self.bot.get_channel(data["channel_id"])
+            if channel:
+                await self.send_formatted_message(channel, data["message"], member)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -80,7 +96,7 @@ class EventsCog(commands.Cog):
             data = self.events["leave"][guild_id]
             channel = self.bot.get_channel(data["channel_id"])
             if channel:
-                await channel.send(data["message"].replace("{member}", member.mention, (member.name)))
+                await self.send_formatted_message(channel, data["message"], member)
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, user):
@@ -89,20 +105,7 @@ class EventsCog(commands.Cog):
             data = self.events["ban"][guild_id]
             channel = self.bot.get_channel(data["channel_id"])
             if channel:
-                await channel.send(data["message"].replace("{member}", user.mention, (user.name)))
-
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        guild_id = str(member.guild.id)
-
-        if "welcome" in self.events and guild_id in self.events["welcome"]:
-            data = self.events["welcome"][guild_id]
-            channel = self.bot.get_channel(data["channel_id"])
-            
-            if channel:
-                await channel.send(data["message"].replace("{member}", member.mention))
-                
-
+                await self.send_formatted_message(channel, data["message"], user)
 
 async def setup(bot):
     await bot.add_cog(EventsCog(bot))

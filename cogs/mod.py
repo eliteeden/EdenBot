@@ -436,6 +436,7 @@ class ModCog(commands.Cog):
 
     @commands.command(name="formatchannels", aliases=["zifont", "edenfont", "channelfont"])
     @commands.has_permissions(manage_channels=True)
+    #TODO: Add a way to set the format
     async def format_channels(self, ctx):
         """Formats all text channel names using a template with existing emoji and cleaned text."""
         for channel in ctx.guild.channels:
@@ -451,7 +452,7 @@ class ModCog(commands.Cog):
                 core_text = "-".join(text_matches).strip()
 
                 # Build new name
-                new_name = f"‧˚₊{emoji}︱୨『{core_text}』୧˖˚˳"
+                new_name = f"‧˚₊{emoji}︱{core_text}˖˚˳"
 
                 # Rename channel
                 try:

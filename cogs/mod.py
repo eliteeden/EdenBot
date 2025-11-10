@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 from discord import Member, User
 import datetime
 import asyncio
+import re
 import random
 import json
 import os
@@ -40,6 +41,11 @@ class ModCog(commands.Cog):
         self.bot = bot
         self.snipe_messages = {}
         self.active_loops = {}
+
+        # Regex patterns
+    emoji_pattern = re.compile(r"(<a?:\w+:\d+>|[\U0001F300-\U0001FAFF])")
+    text_pattern = re.compile(r"[\w\s-]+")
+
 
     @commands.command(aliases=["timeout"])
     @commands.has_permissions(moderate_members=True)
@@ -425,6 +431,38 @@ class ModCog(commands.Cog):
         save_repeat_data(repeat_data)
 
         await ctx.send("Repeating message stopped.")
+
+
+
+    @commands.command(name="formatchannels", aliases=["zifont", "edenfont", "channelfont"])
+    @commands.has_permissions(manage_channels=True)
+    async def format_channels(self, ctx):
+        """Formats all text channel names using a template with existing emoji and cleaned text."""
+        for channel in ctx.guild.channels:
+            if isinstance(channel, discord.TextChannel):
+                name = channel.name
+
+                # Extract emoji (first match)
+                emoji_match = self.emoji_pattern.search(name)
+                emoji = emoji_match.group(0) if emoji_match else "🎗"
+
+                # Extract core text
+                text_matches = self.text_pattern.findall(name)
+                core_text = "-".join(text_matches).strip()
+
+                # Build new name
+                new_name = f"‧˚₊{emoji}︱୨『{core_text}』୧˖˚˳"
+
+                # Rename channel
+                try:
+                    await channel.edit(name=new_name)
+                    await ctx.send(f"Renamed {name} → {new_name}")
+                except discord.Forbidden:
+                    await ctx.send(f"Missing permissions to rename {name}")
+                except discord.HTTPException as e:
+                    await ctx.send(f"Failed to rename {name}: {e}")
+
+
 
 async def setup(bot):
     await bot.add_cog(ModCog(bot))

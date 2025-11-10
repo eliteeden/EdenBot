@@ -31,12 +31,12 @@ class EventsCog(commands.Cog):
 
         if "welcome" not in self.events:
             self.events["welcome"] = {}
-
+        formatted_message = "\n".join(message.split("|"))
         self.events["welcome"][guild_id] = {
             "channel_id": channel.id,
-            "message": message
+            "message": formatted_message
         }
-
+        
         self.save_events()
         await ctx.send(f"Welcome message set for {channel.mention}.")
 
@@ -46,11 +46,13 @@ class EventsCog(commands.Cog):
     async def set_ban(self, ctx, channel: discord.TextChannel, *, message: str):
         """Sets a ban message for a specific channel."""
         guild_id = str(ctx.guild.id)
+        formatted_message = "\n".join(message.split("|"))
         self.events.setdefault("ban", {})
         self.events["ban"][guild_id] = {
             "channel_id": channel.id,
-            "message": message
+            "message": formatted_message
         }
+        
         self.save_events()
         await ctx.send(f"Ban message set for {channel.mention}.")
 
@@ -59,11 +61,13 @@ class EventsCog(commands.Cog):
     async def set_leave(self, ctx, channel: discord.TextChannel, *, message: str):
         """Sets a leave message for a specific channel."""
         guild_id = str(ctx.guild.id)
+        formatted_message = "\n".join(message.split("|"))
         self.events.setdefault("leave", {})
         self.events["leave"][guild_id] = {
             "channel_id": channel.id,
-            "message": message
+            "message": formatted_message
         }
+        
         self.save_events()
         await ctx.send(f"Leave message set for {channel.mention}.")
 
@@ -76,7 +80,7 @@ class EventsCog(commands.Cog):
             data = self.events["leave"][guild_id]
             channel = self.bot.get_channel(data["channel_id"])
             if channel:
-                await channel.send(data["message"].replace("{member}", member.name))
+                await channel.send(data["message"].replace("{member}", member.mention, (member.name)))
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, user):
@@ -85,7 +89,7 @@ class EventsCog(commands.Cog):
             data = self.events["ban"][guild_id]
             channel = self.bot.get_channel(data["channel_id"])
             if channel:
-                await channel.send(data["message"].replace("{member}", user.name))
+                await channel.send(data["message"].replace("{member}", user.mention, (user.name)))
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -94,8 +98,10 @@ class EventsCog(commands.Cog):
         if "welcome" in self.events and guild_id in self.events["welcome"]:
             data = self.events["welcome"][guild_id]
             channel = self.bot.get_channel(data["channel_id"])
+            
             if channel:
                 await channel.send(data["message"].replace("{member}", member.mention))
+                
 
 
 async def setup(bot):

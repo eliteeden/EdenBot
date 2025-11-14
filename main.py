@@ -176,7 +176,7 @@ async def whitelist(ctx, user: discord.User):
 async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     if hasattr(ctx.command, "on_error"):
         return
-    if isinstance(error, commands.MissingAnyRole):
+    if isinstance(error, (commands.MissingAnyRole, commands.MissingRole, commands.MissingPermissions)):     
         await ctx.send("You are missing moderator permissions, you wannabe.")
     elif isinstance(error, commands.CommandNotFound):
         await ctx.send(

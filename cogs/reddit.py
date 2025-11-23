@@ -1,9 +1,11 @@
 from discord.ext import commands, tasks
 import requests
 import discord
+
 import random
 from discord import Embed
-from constants import CHANNELS  # Make sure this has CHANNELS.REDDIT defined!
+import constants
+from constants import CHANNELS, USERS  # Make sure this has CHANNELS.REDDIT defined!
 
 
 class RedditCog(commands.Cog):
@@ -116,6 +118,63 @@ class RedditCog(commands.Cog):
                     await ctx.send(f"Error fetching data: {response.status_code}")
         except Exception as e:
             await ctx.send(f"Error: {e}")
+
+    @commands.command(name="fox", aliases=["cootshk", "fden", "foxes"])
+    async def fox(self, ctx: commands.Context):
+        """Fetches a random safe-for-work meme from Reddit."""
+        subreddits = ["foxes", "programmerhumour", "fox", "linuxmemes"]
+        chance = [0.6, 0.2, 0.1, 0.1]
+        subreddited: str = random.choices(subreddits, weights=chance, k=1)[0]
+        subreddit = subreddited.lower().removeprefix("r/").strip()
+        headers = {"User-Agent": "Mozilla/5.0"}
+        url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=120"
+        try:
+            async with ctx.typing():
+                response = requests.get(url, headers=headers)
+                if response.status_code == 200:
+                    data = response.json()
+                    valid_posts = [
+                        post["data"]
+                        for post in data["data"]["children"]
+                        if post["data"]["url"].endswith(("jpg", "png", "gif", "jpeg"))
+                        and not post["data"].get("over_18", False)
+                    ]
+
+                    if valid_posts:
+                        random.shuffle(valid_posts)
+                        latest_post = valid_posts[0]
+                        post_id = latest_post["id"]
+
+                        if self.LAST_POST_IDS.get(subreddit) is None:
+                            self.LAST_POST_IDS[subreddit] = post_id
+                        elif self.LAST_POST_IDS[subreddit] != post_id:
+                            self.LAST_POST_IDS[subreddit] = post_id
+
+                        # Send random meme to user
+                        chosen_post = random.choice(valid_posts)
+                        embed = Embed(
+                            title=chosen_post["title"], color=discord.Color.yellow()
+                        )
+                        embed.set_image(url=chosen_post["url"])
+                        meme_footer_responses = [
+                            f"Sponsored by <@{USERS.COOTSHK}>",
+                            "Foxes!!!",
+                            "Fden is love",
+                            "West supremacy",
+                            "",
+                            "Linux",
+                            "🦊🦊🦊",
+                            f"brought to you by the idiots in r/{subreddit}",
+                        ]
+                        embed.set_footer(text=f"{random.choice(meme_footer_responses)}")
+                        await ctx.send(embed=embed)
+                    else:
+                        await ctx.send("No safe images found in this subreddit.")
+                else:
+                    await ctx.send(f"Error fetching data: {response.status_code}")
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
+
 
     async def cog_load(self) -> None:
         """This fires when the cog is loaded."""

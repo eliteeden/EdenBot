@@ -644,69 +644,50 @@ slur_words = {
     "mentally ill",
 }
 
+from discord import app_commands
+import discord
 
-@bot.tree.command(name="talk")
-@app_commands.checks.has_any_role(
-    ROLES.MODERATOR, ROLES.TOTALLY_MOD, ROLES.TALK_PERMS, "Fden Bot Perms", "happy"
+@bot.tree.command(name="talk", description="Make the bot talk, optionally replying to a message or in another channel.")
+@app_commands.describe(
+    content="Message content",
+    reply_to="Optional message ID to reply to",
+    channel_id="Optional channel ID to send the message in"
 )
-async def talk(interaction: Interaction, message: str, channel: Optional[discord.TextChannel] = None): # type: ignore
-    # Check for the item or the role
-    allowed_roles = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]  # ROLES.TALK_PERMS]
-    has_role = any(role.id in allowed_roles for role in interaction.user.roles) # type: ignore
-    inventory: InventoryCog = bot.get_cog("InventoryCog") # type: ignore
-    if (
-        has_role or interaction.guild_id != GUILDS.ELITE_EDEN
-    ):  # or inventory.has_item(interaction.user, "Talk Command Permissions"):
-        pass
-    else:
-        await interaction.response.send_message(
-            "You do not have permission to use this command.\nGo check out the `;shop`.",
-            ephemeral=True,
-        )
-        return
+async def talk(
+    interaction: discord.Interaction,
+    content: str,
+    reply_to: str | None = None,
+    channel_id: str | None = None
+):
 
-    await interaction.response.defer(ephemeral=True)
-    if channel is None:
-        channel: discord.TextChannel = interaction.channel # type: ignore
-    if (not channel.permissions_for(interaction.user).send_messages) and (not has_role): # type: ignore
-        await interaction.response.send_message(
-            "You do not have permission to send messages in that channel.",
-            ephemeral=True,
-        )
-
-    # Check for bad words
-    lowered = message.lower()
-    flagged = any(bad_word in lowered for bad_word in slur_words)
-    blocked = False
-
-    # If flagged, notify a specific channel
-    alert_channel: discord.TextChannel = bot.get_channel(CHANNELS.STRIKES) # type: ignore
-    if flagged and channel.guild.id == alert_channel.guild.id:
-        blocked = True
-        # The ID of the channel where alerts should be sent
-        if alert_channel:
-            await alert_channel.send(
-                f"🚨 Message from {interaction.user.mention} in {interaction.channel.mention if isinstance(interaction.channel, discord.TextChannel) else f'(non-text-channel id: {interaction.channel_id})'} "
-                f"contained flagged content: ```{message}```"
-            )
-
-    # Send the original message to the current channel
-    try:
-        if not blocked:
-            await channel.send(message) # type: ignore
-    except Exception as e:
-        if isinstance(e, discord.Forbidden):
+    # Determine target channel
+    channel = interaction.channel
+    if channel_id is not None:
+        try:
+            channel = await bot.fetch_channel(int(channel_id))
+        except Exception:
             await interaction.response.send_message(
-                "I don't have permission to send messages in this channel.",
-                ephemeral=True,
+                "Couldn't fetch that channel ID.", ephemeral=True
             )
             return
-        await interaction.response.send_message(
-            f"Error sending message: {e}", ephemeral=True
-        )
 
-    # Clean up original interaction
-    await interaction.delete_original_response()
+    # Determine reply reference
+    reference = None
+    if reply_to is not None:
+        try:
+            msg = await channel.fetch_message(int(reply_to))
+            reference = msg.to_reference()
+        except Exception:
+            await interaction.response.send_message(
+                "Couldn't fetch that message ID in the selected channel.", ephemeral=True
+            )
+            return
+
+    # Send the message
+    await interaction.response.send_message(
+        f"Message sent in {channel.mention}", ephemeral=True
+    )
+    await channel.send(content, reference=reference)
 
 
 @bot.tree.command(name="embed")

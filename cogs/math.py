@@ -15,9 +15,10 @@ class MathCog(commands.Cog):
     async def latex(self, ctx, *, code: str):
         """
         Render LaTeX code into an image and reply with it.
-        Usage: !latex \sqrt{a^2 + b^2}
+        Usage: ;latex \sqrt{a^2 + b^2}
         """
-
+        if code.startswith("$"):
+            code.lstrip("$")
         # Configure matplotlib to use LaTeX-style rendering
         plt.rc('text', usetex=False)
         plt.rc('font', family='serif')
@@ -41,7 +42,7 @@ class MathCog(commands.Cog):
     async def calc(self, ctx, *, expression: str):
         """
         Safely evaluate a math expression.
-        Usage: !calc 2 + 3 * (4 - 1)
+        Usage: ;calc 2 + 3 * (4 - 1)
         """
 
         allowed = {
@@ -57,14 +58,14 @@ class MathCog(commands.Cog):
         except Exception as e:
             return await ctx.reply(f"Error: {e}")
 
-        await ctx.reply(f"**Result:** `{result}`")
+        await ctx.reply(f"**Ans:** `{result}`")
 
 
     @commands.command(name="calctex", aliases=["solve", "calc2", "wtfcalc"])
     async def calctex(self, ctx, *, expression: str):
         """
         Evaluate a math expression and render the result in LaTeX.
-        Usage: !calctex 5 * sin(pi/4)
+        Usage: ;calctex 5 * sin(pi/4)
         """
 
         allowed = {

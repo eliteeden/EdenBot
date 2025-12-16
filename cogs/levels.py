@@ -7,6 +7,7 @@ import logging
 import os
 from math import log10, floor
 import io
+from main import on_member_join
 from rankcards import RANKCARD
 from random import randint
 import json
@@ -78,7 +79,7 @@ class LevelsCog(commands.Cog):
 
         # Load data once at startup
         self.storage.load_if_empty()
-        self.storage.rejoining_member_check()
+
 
     def _get_level_xp(self, level: int) -> int:
         # XP needed to reach the *next* level
@@ -666,6 +667,12 @@ class LevelsCog(commands.Cog):
             await ctx.send("✅ Level data sent to your DMs.")
         except discord.Forbidden:
             await ctx.send("⚠️ I couldn't DM you. Check your privacy settings.")
+
+    @commands.Cog.listener()
+    async def on_member_join(self, guild, user):
+        self.storage.rejoining_member_check()
+    
+
 
 
 # 🔧 Cog setup function

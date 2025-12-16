@@ -41,6 +41,26 @@ class LevelsCog(commands.Cog):
                     self.db[key] = set(value) if isinstance(value, list) else value
             else:
                 log.info("📦 Using in-memory data (no reload).")
+        
+        def rejoining_member_check(self, filepath="levels_data.json"):
+            if not os.path.exists(filepath):
+                log.warning("⚠️ JSON file not found. Cannot re-add members.")
+                return
+
+            with open(filepath, "r") as f:
+                cached_data = json.load(f)
+
+            readded_count = 0
+            for username, level_data in cached_data.items():
+                if username not in self.db:
+                    self.db[username] = set(level_data) if isinstance(level_data, list) else level_data
+                    readded_count += 1
+                    log.info(f"🔁 Re-added {username} with levels: {self.db[username]}")
+
+            if readded_count == 0:
+                log.info("✅ No rejoining members found to re-add.")
+            else:
+                log.info(f"🔄 Re-added {readded_count} rejoining members from JSON.")
 
         def export_to_json(self, filepath="levels_data.json"):
             json_ready = {
@@ -58,6 +78,7 @@ class LevelsCog(commands.Cog):
 
         # Load data once at startup
         self.storage.load_if_empty()
+        self.storage.rejoining_member_check()
 
     def _get_level_xp(self, level: int) -> int:
         # XP needed to reach the *next* level

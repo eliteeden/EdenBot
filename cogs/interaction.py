@@ -107,7 +107,7 @@ class InteractionCog(commands.Cog):
         else:
             raise FileNotFoundError(f"No files found in media/{folder}")
     @commands.command(name="halp", aliases=["betterhelp", "halpme", "plshalp"])
-    async def halp(self, ctx, *, cog_filter: str = None):
+    async def halp(self, ctx, *, cog_filter: Optional[str] = None):
         """Displays all available commands grouped by Cog with pagination and optional Cog filter"""
         from collections import defaultdict
 
@@ -327,113 +327,21 @@ class InteractionCog(commands.Cog):
         ROLES.SERVER_BOOSTER,
         ROLES.MODERATOR,
     )
-    async def xkcd(self, ctx: commands.Context, *, title: str = None):
+    async def xkcd(self, ctx: commands.Context, *, title: Optional[str] = None):
         """Fetches an xkcd comic by number or title. If no input is given, returns the latest comic."""
 
         async with ctx.typing():
             try:
                 # Try to interpret the input as a comic number
-                num = int(title)
+                num = int(title or "")
                 return await ctx.send(f"https://xkcd.com/{num}")
             except ValueError:
                 # If it's not a number, treat it as a title and search
                 search_query = f"xkcd {title}" if title else "xkcd"
-                return await self.web(ctx, search_msg=search_query)
-            except Exception as e:
-                await ctx.send(f"⚠️ Error fetching xkcd comic: {str(e)}")
+                return await self.bing(ctx, query=search_query)
 
-    @commands.command(name="web", aliases=["search", "google"])
-    async def web(self, ctx: commands.Context, *, search_msg: str):
-        banned_words = [
-            "milf",
-            "porn",
-            "dick",
-            "pussy",
-            "femboy",
-            "milf",
-            "hentai",
-            "177013",
-            "r34",
-            "rule 34",
-            "nsfw",
-            "skibidi",
-            "mpreg",
-            "sexual",
-            "lgbt",
-            "boob",
-            "creampie",
-            "goon",
-            "edging",
-            "cum",
-            "slut",
-            "penis",
-            "clit",
-            "breast",
-            "futa",
-            "pornhub",
-            "phallus",
-            "anus",
-            "naked",
-            "nude",
-            "rule34",
-            "loli",
-            "shota",
-            "gore",
-            "doggystyle",
-            "sex position",
-            "doggy style",
-            "backshots",
-            "onlyfans",
-            "Footjob",
-            "yiff",
-            "vagin",
-            "cliloris",
-            "pennis",
-            "nipple",
-            "areola",
-            "pubic hair",
-            "foreskin",
-            "glans",
-            "labia",
-            "scrotum",
-            "taint",
-            "thong",
-            "g-string",
-            "orgy",
-            "creamoie",
-        ]
-        eden_meta = {
-            "beautiful member": f"<@{USERS.ESMERY}>",
-            "beautiful mod": f"<@{USERS.ZI}>",
-            "gayest ship": "Emi and Niki.",
-            "average eden iq": "The average eden IQ is still below room temperature.",
-            "glorious leader": f"<@{USERS.ZI}>",
-            "who stole the cheese": f"<@{USERS.SCAREX}>",
-            "who is eden's most annoying person": f"<@{USERS.DECK}>",
-            "best bot": "it's obviously me",
-            "test": "https://www.bing.com/ck/a?!&&p=c9445896195a4ae76fab39cf494c6e4a3997761d65f6b53987150b82c25385afJmltdHM9MTc1ODY3MjAwMA&ptn=3&ver=2&hsh=4&fclid=2812b07d-0c05-6e15-3da1-a63f0d386f4f&psq=test&u=a1aHR0cHM6Ly93d3cuc3BlZWR0ZXN0Lm5ldC8",
-            "clanker": "That word is highly offensive and I do not like you anymore.",
-            "nicest member": f"It would be me but I am a bot so I have to give it to <@{USERS.VIC}>",
-            "best mod": f"I believe Zi doesn't count so I might as well give it to <@{USERS.HAPPY}>", # self glaze
-            "retard": f"<@{USERS.COOTSHK}> until one of the mods bans you for this"  # heh heh heh
-        }
 
-        if search_msg.lower() in eden_meta:
-            await ctx.send(eden_meta[search_msg.lower()])
-            return  # Exit the function after responding
-
-        if any(banned_word in search_msg.lower() for banned_word in banned_words):
-            await ctx.send("Your search contains banned words and cannot be processed.")
-            return
-        else:
-            async with ctx.typing():
-                for URL in search(search_msg, stop=1, safe="on", country="us"):
-                    if "archive.org" not in URL or "files.catbox.moe" not in URL:
-                        await ctx.send(URL)
-                    else:
-                        await ctx.send("No results found")
-                        
-    @commands.command(name="bing", aliases=["ddg", "edge", "duckduckgo", 'www'])
+    @commands.command(name="bing", aliases=["ddg", "edge", "duckduckgo", 'www', "chrome", "google"])
     async def bing(self, ctx, *, query: str):
         """Searches DuckDuckGo and returns the first result with a clean link or responds with eden_meta."""
 
@@ -617,30 +525,21 @@ class InteractionCog(commands.Cog):
             author.get_role(ROLES.TOTALLY_MOD) is not None
             or author.top_role.position > member.top_role.position
         ):
-            try:
-                extra_text = "'s ghost"
+            extra_text = "'s ghost"
 
-                current_nick = member.nick if member.nick else member.name
+            current_nick = member.nick if member.nick else member.name
+            new_nick = current_nick.strip() + extra_text
 
-                # Prevent nickname length issues
-                if current_nick and len(current_nick) >= 22:
-                    current_nick = member.name
+            # Prevent nickname length issues
+            if len(new_nick) >= 32:
+                new_nick = member.name + extra_text
 
-                new_nick = f"{current_nick.strip()}{extra_text}"  # Append new words
-                await member.edit(nick=new_nick, reason=f"Murdered by {author.name}")
-                await ctx.send(f"{member.name} is dead")
+            await member.edit(nick=new_nick, reason=f"Murdered by {author.name}")
+            await ctx.send(f"{member.name} is dead")
 
-            except Exception as e:
-                await ctx.send(f"An unexpected error occurred: {e}")
-                print(f"An error occurred: {e}")
 
         else:
             await ctx.send("You are not high enough in role hierarchy to do this")
-
-    @murder.error
-    async def murder_error(self, ctx: commands.Context, error):
-        if isinstance(error, discord.errors.HTTPException):
-            await ctx.send("Member is dead but the name is too long in length to edit.")
 
     @commands.command(name="cheer", aliases=["yass"])
     async def cheer(self, ctx: commands.Context, member: Member):
@@ -726,11 +625,12 @@ class InteractionCog(commands.Cog):
 
     @commands.command(name="getmods", aliases=["mods", "listusers", "rolelist"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-    async def getmods(self, ctx: commands.Context, chosen_role: discord.Role = None):
+    async def getmods(self, ctx: commands.Context, chosen_role: Optional[discord.Role] = None):
         # Use default role ID if no role is provided
         role_id = 993475229798113320 if not chosen_role else chosen_role.id
 
         # Find the role object by ID
+        if not ctx.guild: return
         role = discord.utils.get(ctx.guild.roles, id=role_id)
 
         if not role:
@@ -765,49 +665,52 @@ class InteractionCog(commands.Cog):
 
         await paginator.send(ctx)
 
+    @commands.command(name="membercount", aliases=["cache", "howdeadiseden"])
+    async def membercount(self, ctx: commands.Context):
+        """Displays the number of users in the ;find cache."""
+        count = len(self.messages)
+        await ctx.send(f"There are {count} users in the ;find cache.")
+
     @commands.command(name="find", aliases=["zii", "yoink", "stalk", "hunt", "track"])
     @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     async def find(self, ctx: commands.Context, member: Optional[discord.Member] = None): # type: ignore
         """Finds the most recent message from a member across all text channels, using cache + parallel scanning."""
-        try:
-            async with ctx.typing():
-                member: Member = member or ctx.guild.get_member(USERS.ZI) # type: ignore
-                member_id = member.id # type: ignore
+        async with ctx.typing():
+            member: Member = member or ctx.guild.get_member(USERS.ZI) # type: ignore
+            member_id = member.id # type: ignore
 
-                # Try cached message first
-                if member_id in self.messages:
-                    cached_msg = self.messages[member_id]
-                    timestamp = int(cached_msg.created_at.timestamp())
-                    await ctx.send(
-                        f"{member.display_name} was last seen in <#{cached_msg.channel.id}> — <t:{timestamp}:R>. [Jump!]({cached_msg.jump_url})"
-                    )
-                    return
+            # Try cached message first
+            if member_id in self.messages:
+                cached_msg = self.messages[member_id]
+                timestamp = int(cached_msg.created_at.timestamp())
+                await ctx.send(
+                    f"{member.display_name} was last seen in <#{cached_msg.channel.id}> — <t:{timestamp}:R>. [Jump!]({cached_msg.jump_url})"
+                )
+                return
 
-                # Scan all channels concurrently
-                async def scan_channel(channel):
-                    try:
-                        async for msg in channel.history(limit=100):
-                            if msg.author.id == member_id:
-                                return msg
-                    except discord.Forbidden:
-                        return None
+            # Scan all channels concurrently
+            async def scan_channel(channel):
+                try:
+                    async for msg in channel.history(limit=100):
+                        if msg.author.id == member_id:
+                            return msg
+                except discord.Forbidden:
+                    return None
 
-                tasks = [scan_channel(channel) for channel in ctx.guild.text_channels] # type: ignore
-                results = await asyncio.gather(*tasks)
-                messages = [msg for msg in results if msg]
+            tasks = [scan_channel(channel) for channel in ctx.guild.text_channels] # type: ignore
+            results = await asyncio.gather(*tasks)
+            messages = [msg for msg in results if msg]
 
-                if messages:
-                    latest_msg = max(messages, key=lambda m: m.created_at)
-                    timestamp = int(latest_msg.created_at.timestamp())
-                    await ctx.send(
-                        f"It has been <t:{timestamp}:R> since {member.display_name} was last seen in #{getattr(latest_msg.channel, 'name', 'DMs')}. [Jump!]({latest_msg.jump_url})"
-                    )
-                else:
-                    await ctx.send(
-                        f"Couldn’t find any recent messages from {member.display_name}."
-                    )
-        except Exception as e:
-            await ctx.send(f"Error: {e}")
+            if messages:
+                latest_msg = max(messages, key=lambda m: m.created_at)
+                timestamp = int(latest_msg.created_at.timestamp())
+                await ctx.send(
+                    f"It has been <t:{timestamp}:R> since {member.display_name} was last seen in #{getattr(latest_msg.channel, 'name', 'DMs')}. [Jump!]({latest_msg.jump_url})"
+                )
+            else:
+                await ctx.send(
+                    f"Couldn't find any recent messages from {member.display_name}."
+                )
 
 
     # On message event

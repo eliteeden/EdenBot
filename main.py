@@ -14,6 +14,7 @@ from discord.ext import commands
 import json
 import os
 import random
+import regex
 import traceback
 from typing import Optional, TYPE_CHECKING
 import unicodedata
@@ -179,9 +180,14 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, (commands.MissingAnyRole, commands.MissingRole, commands.MissingPermissions)):     
         await ctx.send("You are missing moderator permissions, you wannabe.")
     elif isinstance(error, commands.CommandNotFound):
-        await ctx.send(
-            "That command doesn't exist stupid. Type `;help` to see available commands."
-        )
+        if f";{ctx.invoked_with}" in load_responses()["EXACT_RESPONSES"]:
+            return  # Handled by autoresponse
+        elif f";{ctx.invoked_with}" in load_responses()["AUTO_RESPONSES"]:
+            return  # Handled by autoresponse
+        else:
+            await ctx.send(
+                "That command doesn't exist stupid. Type `;help` to see available commands."
+            )
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("Some parameters are missing, Einstein.")
     elif isinstance(error, commands.CommandOnCooldown):
@@ -221,7 +227,6 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         else:
             for i in range(0, len(message), 2000):
                 await bot_channel.send(message[i : i + 2000])
-        print(error)
     else:
         raise error
 
@@ -422,7 +427,7 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    responses = load_responses()
+    responses = load_responses() # we really *should* cache this
 
     channel_id = str(message.channel.id)
 
@@ -444,7 +449,7 @@ async def on_message(message):
 
     # Check triggers
     for trigger, response in responses["AUTO_RESPONSES"].items():
-        if trigger in content:
+        if regex.match(rf"\b{regex.escape(trigger)}\b", content, regex.IGNORECASE | regex.MULTILINE | regex.UNICODE) is not None:
             await message.channel.send(response)
             return
 

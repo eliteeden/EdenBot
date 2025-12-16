@@ -43,7 +43,7 @@ class LevelsCog(commands.Cog):
             else:
                 log.info("📦 Using in-memory data (no reload).")
                 
-        def rejoining_member_check(self, user, filepath="levels_data.json"):
+        def rejoining_member_check(self, member: discord.Member, filepath="levels_data.json"):
             if not os.path.exists(filepath):
                 log.warning("⚠️ JSON file not found. Cannot check rejoining members.")
                 return
@@ -51,12 +51,16 @@ class LevelsCog(commands.Cog):
             with open(filepath, "r") as f:
                 cached_data = json.load(f)
 
-            username = str(user.name)  # or user.id if you store by ID
-            if username in cached_data and username not in self.db:
-                self.db[username] = set(cached_data[username]) if isinstance(cached_data[username], list) else cached_data[username]
-                log.info(f"🔁 Re-added rejoining member: {username} with levels: {self.db[username]}")
+            guild_id = str(member.guild.id)
+            user_id = str(member.id)
+            xp_key = f"{guild_id}:{user_id}:xp"
+
+            if xp_key in cached_data and xp_key not in self.db:
+                self.db[xp_key] = cached_data[xp_key]
+                self.db.setdefault(f"{guild_id}:players", set()).add(user_id)
+                log.info(f"🔁 Restored XP for rejoining member {member.name} ({user_id})")
             else:
-                log.info(f"👤 New member or already present: {username}")
+                log.info(f"👤 {member.name} ({user_id}) is new or already tracked.")
                 
         def export_to_json(self, filepath="levels_data.json"):
             json_ready = {
@@ -601,9 +605,11 @@ class LevelsCog(commands.Cog):
         await ctx.send(f"{member.mention} is now level {self._get_level_from_xp(xp)}!")
 
     @commands.Cog.listener()
-    async def on_member_join(self, user):
-        self.storage.rejoining_member_check(user)
+    async def on_member_join(self, member: discord.Member):
+        self.storage.rejoining_member_check(member)
+        await self.assign_level_roles(member)
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot or not message.guild:
             return

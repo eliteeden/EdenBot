@@ -42,27 +42,22 @@ class LevelsCog(commands.Cog):
                     self.db[key] = set(value) if isinstance(value, list) else value
             else:
                 log.info("📦 Using in-memory data (no reload).")
-        
-        def rejoining_member_check(self, filepath="levels_data.json"):
+                
+        def rejoining_member_check(self, user, filepath="levels_data.json"):
             if not os.path.exists(filepath):
-                log.warning("⚠️ JSON file not found. Cannot re-add members.")
+                log.warning("⚠️ JSON file not found. Cannot check rejoining members.")
                 return
 
             with open(filepath, "r") as f:
                 cached_data = json.load(f)
 
-            readded_count = 0
-            for username, level_data in cached_data.items():
-                if username not in self.db:
-                    self.db[username] = set(level_data) if isinstance(level_data, list) else level_data
-                    readded_count += 1
-                    log.info(f"🔁 Re-added {username} with levels: {self.db[username]}")
-
-            if readded_count == 0:
-                log.info("✅ No rejoining members found to re-add.")
+            username = str(user.name)  # or user.id if you store by ID
+            if username in cached_data and username not in self.db:
+                self.db[username] = set(cached_data[username]) if isinstance(cached_data[username], list) else cached_data[username]
+                log.info(f"🔁 Re-added rejoining member: {username} with levels: {self.db[username]}")
             else:
-                log.info(f"🔄 Re-added {readded_count} rejoining members from JSON.")
-
+                log.info(f"👤 New member or already present: {username}")
+                
         def export_to_json(self, filepath="levels_data.json"):
             json_ready = {
                 k: list(v) if isinstance(v, set) else v for k, v in self.db.items()
@@ -606,6 +601,9 @@ class LevelsCog(commands.Cog):
         await ctx.send(f"{member.mention} is now level {self._get_level_from_xp(xp)}!")
 
     @commands.Cog.listener()
+    async def on_member_join(self, user):
+        self.storage.rejoining_member_check(user)
+
     async def on_message(self, message):
         if message.author.bot or not message.guild:
             return
@@ -668,9 +666,6 @@ class LevelsCog(commands.Cog):
         except discord.Forbidden:
             await ctx.send("⚠️ I couldn't DM you. Check your privacy settings.")
 
-    @commands.Cog.listener()
-    async def on_member_join(self, guild, user):
-        self.storage.rejoining_member_check()
     
 
 

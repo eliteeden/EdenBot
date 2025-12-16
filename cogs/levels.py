@@ -7,7 +7,6 @@ import logging
 import os
 from math import log10, floor
 import io
-from main import on_member_join
 from rankcards import RANKCARD
 from random import randint
 import json

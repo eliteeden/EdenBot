@@ -450,7 +450,7 @@ class InteractionCog(commands.Cog):
             await ctx.send("Exclusive to boosters")
 
     @commands.command(name="fuck")
-    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms")
+    @commands.has_any_role(ROLES.SERVER_BOOSTER, ROLES.MODERATOR, "Fden Bot Perms", "Brilliance")
     async def fuck(self, ctx: commands.Context, member: Member):
         embed = Embed(
             title=f"**{ctx.author.display_name}**! Where are you taking **{member.display_name}**",

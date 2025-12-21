@@ -110,12 +110,12 @@ class EventsCog(commands.Cog):
                 await self.send_formatted_message(channel, data["message"], user)
     
     @commands.Cog.listener()
-    async def on_message(self, bot, message):
+    async def on_message(self, message):
         TARGET_MESSAGE = "🎁"
         REQUIRED_ROLE_NAME = "MODERATOR"
         REPLACEMENT_MESSAGE = "🦋"
         # Prevent bot from responding to itself
-        if message.author == bot.user:
+        if message.author == self.bot.user:
             return
 
         # Check if the message matches the target

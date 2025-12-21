@@ -123,7 +123,7 @@ class EventsCog(commands.Cog):
             # Check if the author has the required role
             if any(role.name == REQUIRED_ROLE_NAME for role in message.author.roles):
                 try:
-                    delay = random.randint(2, 15)
+                    delay = random.randint(1, 8)
                     await asyncio.sleep(delay)
                     await message.delete()
                     await message.channel.send(REPLACEMENT_MESSAGE)

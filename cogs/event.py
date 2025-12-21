@@ -11,6 +11,7 @@ class EventsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.events = self.load_events()
+        self.last_target_message_id = None  
 
     def load_events(self):
         if os.path.exists(CONFIG_FILE):
@@ -108,21 +109,25 @@ class EventsCog(commands.Cog):
             channel = self.bot.get_channel(data["channel_id"])
             if channel:
                 await self.send_formatted_message(channel, data["message"], user)
-    
+ 
+
     @commands.Cog.listener()
     async def on_message(self, message):
         TARGET_MESSAGE = "🎁"
         REQUIRED_ROLE_NAME = "MODERATOR"
         REPLACEMENT_MESSAGE = "🦋"
+        REACTION_EMOJI = "🥳"  
+        REPLY_TRIGGER = "claimed"
+
         # Prevent bot from responding to itself
         if message.author == self.bot.user:
             return
 
         # Check if the message matches the target
         if message.content.lower() == TARGET_MESSAGE.lower():
-            # Check if the author has the required role
             if any(role.name == REQUIRED_ROLE_NAME for role in message.author.roles):
                 try:
+                    self.last_target_message_id = message.id  # Save the target message ID
                     delay = random.randint(1, 8)
                     await asyncio.sleep(delay)
                     await message.delete()
@@ -131,6 +136,19 @@ class EventsCog(commands.Cog):
                     print("Missing permissions to delete or send messages.")
                 except Exception as e:
                     print(f"An error occurred: {e}")
+            return  # Exit early to avoid reacting to the same message
+
+        if (
+            message.reference
+            and message.reference.message_id == self.last_target_message_id
+            and message.content.strip().lower() == REPLY_TRIGGER
+        ):
+            try:
+                await message.add_reaction(REACTION_EMOJI)
+            except discord.Forbidden:
+                print("Missing permissions to add reactions.")
+            except Exception as e:
+                print(f"An error occurred while reacting: {e}")
 
 
 async def setup(bot):

@@ -128,7 +128,7 @@ class EventsCog(commands.Cog):
             if any(role.name == REQUIRED_ROLE_NAME for role in message.author.roles):
                 try:
                     self.last_target_message_id = message.id  # Save the target message ID
-                    delay = random.randint(2, 11)
+                    delay = random.randint(2, 16)
                     await asyncio.sleep(delay)
                     await message.delete()
                     await message.channel.send(REPLACEMENT_MESSAGE)

@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+import random
+import asyncio
 import json
 import os
 
@@ -106,6 +108,30 @@ class EventsCog(commands.Cog):
             channel = self.bot.get_channel(data["channel_id"])
             if channel:
                 await self.send_formatted_message(channel, data["message"], user)
+    
+    @commands.Cog.listener()
+    async def on_message(self, bot, message):
+        TARGET_MESSAGE = "🎁"
+        REQUIRED_ROLE_NAME = "MODERATOR"
+        REPLACEMENT_MESSAGE = "🦋"
+        # Prevent bot from responding to itself
+        if message.author == bot.user:
+            return
+
+        # Check if the message matches the target
+        if message.content.lower() == TARGET_MESSAGE.lower():
+            # Check if the author has the required role
+            if any(role.name == REQUIRED_ROLE_NAME for role in message.author.roles):
+                try:
+                    delay = random.randint(2, 15)
+                    await asyncio.sleep(delay)
+                    await message.delete()
+                    await message.channel.send(REPLACEMENT_MESSAGE)
+                except discord.Forbidden:
+                    print("Missing permissions to delete or send messages.")
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+
 
 async def setup(bot):
     await bot.add_cog(EventsCog(bot))

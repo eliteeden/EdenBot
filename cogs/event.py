@@ -128,7 +128,7 @@ class EventsCog(commands.Cog):
             if any(role.name == REQUIRED_ROLE_NAME for role in message.author.roles):
                 try:
                     self.last_target_message_id = message.id  # Save the target message ID
-                    delay = random.randint(1, 8)
+                    delay = random.randint(2, 11)
                     await asyncio.sleep(delay)
                     await message.delete()
                     await message.channel.send(REPLACEMENT_MESSAGE)
@@ -145,6 +145,7 @@ class EventsCog(commands.Cog):
         ):
             try:
                 await message.add_reaction(REACTION_EMOJI)
+                await asyncio.sleep(20)
             except discord.Forbidden:
                 print("Missing permissions to add reactions.")
             except Exception as e:

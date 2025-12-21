@@ -87,7 +87,7 @@ class ModCog(commands.Cog):
     async def unmute(self, ctx, member: Member):
         await member.edit(timed_out_until=None)
 
-    @commands.command()
+    @commands.command(aliases=["slime", "1984"])
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, user_id: int = None, *, reason: str = None):
         if not user_id:

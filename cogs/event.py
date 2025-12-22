@@ -166,34 +166,33 @@ class EventsCog(commands.Cog):
         # Auto Responses
         msg: str = message.content
         # Exact is handled seperately
-        response = None
-        if (type:= self.ar_type(msg)):
-            await message.channel.send(self.responses()(type)[msg.lower()])
+        if (response:= self.ar_value(msg)):
+            await message.channel.send(response)
 
     # This should be called publicly (main.py)
-    def ar_type(self, msg: Optional[str]) -> Optional[Literal["exact", "line", "word", "auto"]]:
+    def ar_value(self, msg: Optional[str]) -> Optional[str]:
         """
-        Returns the type of auto response that matches the message, if any.
+        Returns the auto response that matches the given message, if any.
         
         Args:
             msg (Optional[str]): The message to check.
         Returns:
-            Optional[Literal["exact", "line", "word", "auto"]]: The type of auto response that matches the message, or None if no match is found.
+            Optional[str]: The auto response that matches the given message, or None if no match is found.
         """
         if msg is None:
             return None
-        for r in self.responses.exact:
-            if msg.lower() == r.lower():
-                return "exact"
+        for k, v in self.responses.exact.items():
+            if msg.lower() == k.lower():
+                return v
         for response_type in ["line", "word", "auto"]:
-            for r in self.responses()(response_type):
+            for k, v in self.responses()(response_type).items():
                 pattern = {
                     "line": "^{}$",
                     "word": r"(^|\W){}($|\W)",
                     "auto": "{}"
-                }[response_type].format(re.escape(r))
+                }[response_type].format(re.escape(k))
                 if re.search(pattern, msg, re.IGNORECASE | re.MULTILINE | re.DOTALL): # /gmi
-                    return response_type # type: ignore
+                    return v
         return None
 
     @commands.command(aliases=["autoresponse", "auto", "exactresponse", "maketheedenbotsaysomethingstupidsometimes"])
@@ -204,7 +203,14 @@ class EventsCog(commands.Cog):
         Usage:
         • ;ar auto hello Hi there!
         • ;ar exact ping pong
-        • ;ar auto hello remove   ← Removes 'hello' from AUTO_RESPONSES
+        • ;ar auto hello   ← Removes 'hello' from AUTO_RESPONSES
+        The categories are:
+        • exact - Matches the entire message exactly
+        • line  - Matches entire lines in a multi-line message (same as exact for single-line messages)
+        • word  - Matches whole words in the message
+        • auto  - Matches anywhere in the message
+        Categories are checked in the order: exact, line, word, auto.
+        If the reply is empty, the auto response for the given trigger will be removed.
         """
         if category not in ["exact", "line", "word", "auto"]:
             # Shift the arguments if category is actually the trigger

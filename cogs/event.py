@@ -139,42 +139,6 @@ class EventsCog(commands.Cog):
         if message.author.bot:
             return
 
-<<<<<<< HEAD
-        # Check if the message matches the target
-        if message.content.lower() == TARGET_MESSAGE.lower():
-<<<<<<< HEAD
-            if any(role.name == REQUIRED_ROLE_NAME for role in message.author.roles):
-                try:
-                    self.last_target_message_id = message.id  # Save the target message ID
-                    delay = random.randint(15, 40)
-                    await asyncio.sleep(delay)
-                    await message.delete()
-                    await message.channel.send(REPLACEMENT_MESSAGE)
-                except discord.Forbidden:
-                    print("Missing permissions to delete or send messages.")
-                except Exception as e:
-                    print(f"An error occurred: {e}")
-            return  # Exit early to avoid reacting to the same message
-
-        if (
-=======
-            if isinstance(message.author, discord.Member) and any(role.id == ROLE_ID for role in message.author.roles):
-                self.last_target_message_id = message.id  # Save the target message ID
-                delay = random.randint(2, 16)
-                await asyncio.sleep(delay)
-                await message.delete()
-                await message.channel.send(REPLACEMENT_MESSAGE)
-        elif (
->>>>>>> 60e1f7c36fbe7ac5d65438cebc512a6e3b01b995
-            message.reference
-            and message.reference.message_id == self.last_target_message_id
-            and message.content.strip().lower() == REPLY_TRIGGER
-        ):
-            await message.add_reaction(REACTION_EMOJI)
-            await asyncio.sleep(20)
-
-=======
->>>>>>> 7c941c6bd7357fabccc82c2bad3906e87fb112d3
         # Auto Responses
         msg: str = message.content
         # Exact is handled seperately

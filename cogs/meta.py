@@ -406,7 +406,10 @@ class MetaCog(commands.Cog):
             # Unload cogs
             for file in os.listdir("cogs"):
                 if file.endswith(".py"):
-                    await self.bot.unload_extension(f"cogs.{file[:-3]}")
+                    try: 
+                        await self.bot.unload_extension(f"cogs.{file[:-3]}")
+                    finally:
+                        print("Cog unloaded:", file)
             await self.execvc("reboot") # This will exit the bot
         else:
             await ctx.message.reply("<:ee_iara_think_thonk:1435280022775791716>")

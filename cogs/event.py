@@ -240,6 +240,17 @@ class EventsCog(commands.Cog):
         auto: record = {}
         def __call__(self, name: str) -> record:
             return self.__getattribute__(name)
+    @commands.command(name = "responses", aliases = ["whatdoisay"])
+    @commands.has_any_role(ROLES.TOTALLY_MOD, ROLES.MODERATOR)
+    async def get_responses(self, ctx: commands.Context):
+        """DMs the user the current autoresponses file"""
+        await ctx.author.send(file = discord.File(AR_FILE, spoiler = True))
+    @commands.command(name = "reloadar")
+    @commands.has_any_role(ROLES.TOTALLY_MOD)
+    async def reload_ar(self, ctx: commands.Context):
+        """Reloads the autoresponses from disk, for when you edit the JSON file directly."""
+        self.load_ar()
+        await ctx.send("Autoresponses reloaded from disk.")
 
         
 

@@ -136,17 +136,10 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        # Claimed
-        TARGET_MESSAGE = "🎁"
-        ROLE_ID = ROLES.MODERATOR
-        REPLACEMENT_MESSAGE = "🦋"
-        REACTION_EMOJI = "🥳"  
-        REPLY_TRIGGER = "claimed"
-
-        # Prevent bot from responding to itself
-        if message.author == self.bot.user:
+        if message.author.bot:
             return
 
+<<<<<<< HEAD
         # Check if the message matches the target
         if message.content.lower() == TARGET_MESSAGE.lower():
 <<<<<<< HEAD
@@ -180,6 +173,8 @@ class EventsCog(commands.Cog):
             await message.add_reaction(REACTION_EMOJI)
             await asyncio.sleep(20)
 
+=======
+>>>>>>> 7c941c6bd7357fabccc82c2bad3906e87fb112d3
         # Auto Responses
         msg: str = message.content
         # Exact is handled seperately

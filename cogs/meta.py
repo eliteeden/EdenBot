@@ -12,7 +12,7 @@ import time
 from dotenv import load_dotenv
 import psutil
 
-from constants import ROLES
+from constants import ROLES, USERS
 
 start_time = time.time()
 DATA_FILE = "memberstats.json"
@@ -397,6 +397,19 @@ class MetaCog(commands.Cog):
         )
         embed.set_footer(text=f"Ping: {self.bot.latency * 1000:.2f}ms")
         await ctx.send(embed=embed)
+
+    @commands.command(name="ohshitsomethinggotextremelyfuckedupwhatdoido", aliases=["reboot", "nuke", "z"])
+    async def reboot(self, ctx: commands.Context):
+        """No, you can't use this."""
+        if ctx.author.id == USERS.COOTSHK or ctx.author.id == USERS.HAPPY:
+            await ctx.send("Tactical nuke inbound...")
+            # Unload cogs
+            for file in os.listdir("cogs"):
+                if file.endswith(".py"):
+                    await self.bot.unload_extension(f"cogs.{file[:-3]}")
+            await self.execvc("reboot") # This will exit the bot
+        else:
+            await ctx.message.reply("<:ee_iara_think_thonk:1435280022775791716>")
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -1,3 +1,5 @@
+import re
+from typing import Literal, Optional
 import discord
 from discord.ext import commands
 import random
@@ -5,13 +7,34 @@ import asyncio
 import json
 import os
 
+from constants import ROLES
+
 CONFIG_FILE = "events.json"
+AR_FILE = "autoresponses.json"
 
 class EventsCog(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.events = self.load_events()
-        self.last_target_message_id = None  
+        self.last_target_message_id = None
+        self.load_ar()
+
+    def load_ar(self):
+        r: dict[str, dict[str, str]] = {}
+        with open(AR_FILE, "r") as f:
+            r = json.load(f)
+        self.responses.exact = r.get("exact", {})
+        self.responses.line = r.get("line", {})
+        self.responses.word = r.get("word", {})
+        self.responses.auto = r.get("auto", {})
+    def save_ar(self):
+        with open(AR_FILE, "w") as f:
+            json.dump({
+                "exact": self.responses.exact,
+                "line": self.responses.line,
+                "word": self.responses.word,
+                "auto": self.responses.auto,
+            }, f, indent=4)
 
     def load_events(self):
         if os.path.exists(CONFIG_FILE):
@@ -112,9 +135,10 @@ class EventsCog(commands.Cog):
  
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
+        # Claimed
         TARGET_MESSAGE = "🎁"
-        REQUIRED_ROLE_NAME = "MODERATOR"
+        ROLE_ID = ROLES.MODERATOR
         REPLACEMENT_MESSAGE = "🦋"
         REACTION_EMOJI = "🥳"  
         REPLY_TRIGGER = "claimed"
@@ -125,33 +149,103 @@ class EventsCog(commands.Cog):
 
         # Check if the message matches the target
         if message.content.lower() == TARGET_MESSAGE.lower():
-            if any(role.name == REQUIRED_ROLE_NAME for role in message.author.roles):
-                try:
-                    self.last_target_message_id = message.id  # Save the target message ID
-                    delay = random.randint(2, 16)
-                    await asyncio.sleep(delay)
-                    await message.delete()
-                    await message.channel.send(REPLACEMENT_MESSAGE)
-                except discord.Forbidden:
-                    print("Missing permissions to delete or send messages.")
-                except Exception as e:
-                    print(f"An error occurred: {e}")
-            return  # Exit early to avoid reacting to the same message
-
-        if (
+            if isinstance(message.author, discord.Member) and any(role.id == ROLE_ID for role in message.author.roles):
+                self.last_target_message_id = message.id  # Save the target message ID
+                delay = random.randint(2, 16)
+                await asyncio.sleep(delay)
+                await message.delete()
+                await message.channel.send(REPLACEMENT_MESSAGE)
+        elif (
             message.reference
             and message.reference.message_id == self.last_target_message_id
             and message.content.strip().lower() == REPLY_TRIGGER
         ):
-            try:
-                await message.add_reaction(REACTION_EMOJI)
-                await asyncio.sleep(20)
-            except discord.Forbidden:
-                print("Missing permissions to add reactions.")
-            except Exception as e:
-                print(f"An error occurred while reacting: {e}")
+            await message.add_reaction(REACTION_EMOJI)
+            await asyncio.sleep(20)
 
+        # Auto Responses
+        msg: str = message.content
+        # Exact is handled seperately
+        response = None
+        if (type:= self.ar_type(msg)):
+            await message.channel.send(self.responses()(type)[msg.lower()])
+
+    # This should be called publicly (main.py)
+    def ar_type(self, msg: Optional[str]) -> Optional[Literal["exact", "line", "word", "auto"]]:
+        """
+        Returns the type of auto response that matches the message, if any.
+        
+        Args:
+            msg (Optional[str]): The message to check.
+        Returns:
+            Optional[Literal["exact", "line", "word", "auto"]]: The type of auto response that matches the message, or None if no match is found.
+        """
+        if msg is None:
+            return None
+        for r in self.responses.exact:
+            if msg.lower() == r.lower():
+                return "exact"
+        for response_type in ["line", "word", "auto"]:
+            for r in self.responses()(response_type):
+                pattern = {
+                    "line": "^{}$",
+                    "word": r"(^|\W){}($|\W)",
+                    "auto": "{}"
+                }[response_type].format(re.escape(r))
+                if re.search(pattern, msg, re.IGNORECASE | re.MULTILINE | re.DOTALL): # /gmi
+                    return response_type # type: ignore
+        return None
+
+    @commands.command(aliases=["autoresponse", "auto", "exactresponse", "maketheedenbotsaysomethingstupidsometimes"])
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
+    async def ar(self, ctx: commands.Context, category: str, trigger: str, *, reply: str = ""):
+        """
+        Sets an auto response
+        Usage:
+        • ;ar auto hello Hi there!
+        • ;ar exact ping pong
+        • ;ar auto hello remove   ← Removes 'hello' from AUTO_RESPONSES
+        """
+        if category not in ["exact", "line", "word", "auto"]:
+            # Shift the arguments if category is actually the trigger
+            reply = trigger + reply
+            trigger = category
+            category = "auto"
+        record = self.responses()(category)
+        trigger_lower = trigger.lower()
+        if reply.lower() == "":
+            if trigger_lower in record:
+                del record[trigger_lower]
+                self.save_ar()
+                await ctx.send(f"Removed auto response for '{trigger}' in category '{category}'.")
+            else:
+                await ctx.send(f"No auto response found for '{trigger}' in category '{category}'.")
+        else:
+            record[trigger_lower] = reply
+            self.save_ar()
+            await ctx.send(f"Set auto response for '{trigger}' in category '{category}'.")
+
+    # AR shenanigans
+    class responses:
+        type record = dict[str, str]
+        exact: record = {}
+        line: record = {}
+        word: record = {}
+        auto: record = {}
+        def __call__(self, name: str) -> record:
+            return self.__getattribute__(name)
+
+        
 
 async def setup(bot):
     await bot.add_cog(EventsCog(bot))
     print("EventsCog has been loaded successfully")
+
+async def teardown(bot: commands.Bot):
+    EC: EventsCog = bot.get_cog("EventsCog") # type: ignore
+    if EC:
+        # Save autoresponses
+        EC.save_ar()
+        # Save events
+        EC.save_events()
+        print("EventsCog has been unloaded successfully")

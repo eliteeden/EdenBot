@@ -146,7 +146,7 @@ async def block_blacklisted_users(ctx):
 
 # Mod command to blacklist a user
 @bot.command()
-@commands.has_any_role(ROLES.MODERATOR)
+@commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def blacklist(ctx, user: discord.User):
     users = load_blacklist()
     if user.id in users:
@@ -159,7 +159,7 @@ async def blacklist(ctx, user: discord.User):
 
 # Mod command to blacklist a user
 @bot.command()
-@commands.has_any_role(ROLES.MODERATOR)
+@commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def whitelist(ctx, user: discord.User):
     try:
         users = load_blacklist()
@@ -182,7 +182,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
         await ctx.send("You are missing moderator permissions, you wannabe.")
     elif isinstance(error, commands.CommandNotFound):
         EC: EventsCog = bot.get_cog("EventsCog") # type: ignore
-        if (EC.ar_type(ctx.invoked_with) is not None):
+        if (EC.ar_value(ctx.invoked_with) is not None):
             return  # Handled by autoresponse
         else:
             await ctx.send(
@@ -660,9 +660,6 @@ async def embed(
         embed = Embed(title=title, description=formatted_message, color=color_int)
 
         # Check user roles
-        allowed_role_ids = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]
-        has_role = any(role.id in allowed_role_ids for role in interaction.user.roles)
-
         allowed_role_ids = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]
         user_roles = [role.id for role in interaction.user.roles]
         has_role = any(role_id in allowed_role_ids for role_id in user_roles)

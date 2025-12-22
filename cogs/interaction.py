@@ -521,6 +521,11 @@ class InteractionCog(commands.Cog):
     @commands.has_any_role("MODERATOR", ROLES.SERVER_BOOSTER, "Fden Bot Perms")
     async def murder(self, ctx: commands.Context, member: Member):
         author: Member = ctx.author # type: ignore
+        if author == member:
+            return await ctx.send("Stop it. Get some help.")
+        elif member == self.bot.user:
+            return await ctx.send("hehehe....... **no**.")
+
         if (
             author.get_role(ROLES.TOTALLY_MOD) is not None
             or author.top_role.position > member.top_role.position

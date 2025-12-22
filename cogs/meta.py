@@ -12,7 +12,7 @@ import time
 from dotenv import load_dotenv
 import psutil
 
-from constants import ROLES, USERS
+from constants import CHANNELS, ROLES, USERS
 
 start_time = time.time()
 DATA_FILE = "memberstats.json"
@@ -408,8 +408,9 @@ class MetaCog(commands.Cog):
                 if file.endswith(".py"):
                     try: 
                         await self.bot.unload_extension(f"cogs.{file[:-3]}")
-                    finally:
-                        print("Cog unloaded:", file)
+                    except Exception as e:
+                        bot_updates_channel: discord.TextChannel = self.bot.get_channel(CHANNELS.BOT_LOGS) # type: ignore
+                        await bot_updates_channel.send(f"Failed to unload cog cogs.{file[:-3]} during reboot.\n\n<@{USERS.COOTSHK}> and <@{USERS.HAPPY}> you should probably fix this.\n\n" + str(e))
             await self.execvc("reboot") # This will exit the bot
         else:
             await ctx.message.reply("<:ee_iara_think_thonk:1435280022775791716>")

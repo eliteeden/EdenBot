@@ -10,7 +10,7 @@ class DebatesCog(commands.Cog):
         self.bot: commands.Bot = bot
 
     @commands.command()
-    @commands.has_any_role("Event Host", ROLES.MODERATOR)
+    @commands.has_any_role("Event Host", ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     @commands.has_permissions(manage_channels=True)
     async def hush(
         self,
@@ -36,7 +36,7 @@ class DebatesCog(commands.Cog):
         await ctx.send(f"{member.mention} can now talk in {channel.mention} again.")
 
     @commands.command()
-    @commands.has_any_role("Event Host", ROLES.MODERATOR)
+    @commands.has_any_role("Event Host", ROLES.MODERATOR, ROLES.TOTALLY_MOD)
     @commands.has_permissions(manage_channels=True)
     async def unhush(
         self,

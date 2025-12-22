@@ -87,7 +87,7 @@ class ModCog(commands.Cog):
     async def unmute(self, ctx, member: Member):
         await member.edit(timed_out_until=None)
 
-    @commands.command()
+    @commands.command(aliases=["slime", "1984"])
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, user_id: int = None, *, reason: str = None):
         if not user_id:
@@ -259,8 +259,8 @@ class ModCog(commands.Cog):
             await ctx.send(f"Error: {e}")
 
     @commands.command()
-    @commands.has_permissions(moderate_members=True)
-    async def warn(self, ctx, user: discord.Member = None, *, reason: str = None):
+    # @commands.has_permissions(moderate_members=True)
+    async def warn(self, ctx, user: discord.Member = None, *, reason: str = ""): # type: ignore
         author = ctx.author
         if not user:
             await ctx.send("Please specify a valid member to warn.")
@@ -269,7 +269,7 @@ class ModCog(commands.Cog):
             await ctx.send("You are not high enough in role hierarchy to do that")
             return
         roles = [role.id for role in ctx.author.roles]
-        if not reason or not reason.strip():
+        if reason.strip() == "":
             await ctx.send("Please provide a valid reason.")
             return
         if ROLES.MODERATOR in roles:
@@ -296,10 +296,12 @@ class ModCog(commands.Cog):
                 )
             with open("reports.json", "w+") as f:
                 json.dump(report, f, indent=4)
-        else:
-            await ctx.send(
+        elif ROLES.TOTALLY_MOD in roles:
+            return await ctx.send(
                 f"{user.mention} stop annoying **{ctx.author.name}** by {reason}."
             )
+        else:
+            return await ctx.send("Who do you think you are?\n-# maybe we should just warn you instead...")
 
     @commands.command(aliases=["rwarn", "-warn"])
     @commands.has_permissions(moderate_members=True)

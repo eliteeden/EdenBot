@@ -19,6 +19,7 @@ import traceback
 from typing import Optional, TYPE_CHECKING
 import unicodedata
 
+from cogs.event import EventsCog
 from constants import CHANNELS, GUILDS, ROLES
 if TYPE_CHECKING:
     from cogs.inventory import InventoryCog
@@ -145,7 +146,7 @@ async def block_blacklisted_users(ctx):
 
 # Mod command to blacklist a user
 @bot.command()
-@commands.has_any_role(ROLES.MODERATOR)
+@commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def blacklist(ctx, user: discord.User):
     users = load_blacklist()
     if user.id in users:
@@ -158,7 +159,7 @@ async def blacklist(ctx, user: discord.User):
 
 # Mod command to blacklist a user
 @bot.command()
-@commands.has_any_role(ROLES.MODERATOR)
+@commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
 async def whitelist(ctx, user: discord.User):
     try:
         users = load_blacklist()
@@ -180,9 +181,8 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, (commands.MissingAnyRole, commands.MissingRole, commands.MissingPermissions)):     
         await ctx.send("You are missing moderator permissions, you wannabe.")
     elif isinstance(error, commands.CommandNotFound):
-        if f";{ctx.invoked_with}" in load_responses()["EXACT_RESPONSES"]:
-            return  # Handled by autoresponse
-        elif f";{ctx.invoked_with}" in load_responses()["AUTO_RESPONSES"]:
+        EC: EventsCog = bot.get_cog("EventsCog") # type: ignore
+        if (EC.ar_value(ctx.invoked_with) is not None):
             return  # Handled by autoresponse
         else:
             await ctx.send(
@@ -375,59 +375,10 @@ async def unstick(ctx, channel: discord.TextChannel = None): # type: ignore
         await ctx.send(f"An error occurred: {e}")
 
 
-# Load responses from file
-def load_responses():
-    with open("autoresponses.json", "r") as f:
-        return json.load(f)
-
-
-# Save updated responses
-def save_responses(data):
-    with open("autoresponses.json", "w") as f:
-        json.dump(data, f, indent=4)
-
-
-@bot.command()
-@commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-async def responses(ctx: commands.Context):
-    await ctx.author.send(
-        file=discord.File("autoresponses.json", "ar.json", spoiler=True)
-    )
-
-
-@bot.command()
-@commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
-async def ar(ctx, category: str, trigger: str, *, reply: str = "remove"):
-    """
-    Sets an auto response
-    Usage:
-      • ;ar auto hello Hi there!
-      • ;ar exact ping pong
-      • ;ar auto hello remove   ← Removes 'hello' from AUTO_RESPONSES
-    """
-    responses = load_responses()
-    category_key = "AUTO_RESPONSES" if category.lower() == "auto" else "EXACT_RESPONSES"
-    trigger = trigger.lower()
-
-    if reply.lower() == "remove":
-        if trigger in responses[category_key]:
-            del responses[category_key][trigger]
-            save_responses(responses)
-            await ctx.send(f"Removed `{trigger}` from {category_key}")
-        else:
-            await ctx.send(f"`{trigger}` not found in {category_key}")
-    else:
-        responses[category_key][trigger] = reply
-        save_responses(responses)
-        await ctx.send(f"Added `{trigger}` to {category_key}")
-
-
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
-
-    responses = load_responses() # we really *should* cache this
 
     channel_id = str(message.channel.id)
 
@@ -446,17 +397,6 @@ async def on_message(message):
 
     content = message.content.lower()
     channel_id = message.channel.id
-
-    # Check triggers
-    for trigger, response in responses["AUTO_RESPONSES"].items():
-        if regex.match(rf"\b{regex.escape(trigger)}\b", content, regex.IGNORECASE | regex.MULTILINE | regex.UNICODE) is not None:
-            await message.channel.send(response)
-            return
-
-    # Check exact matches
-    if content in responses["EXACT_RESPONSES"]:
-        await message.channel.send(responses["EXACT_RESPONSES"][content])
-        return
 
     # Profanity tracking
     for profanity in swears:
@@ -721,9 +661,6 @@ async def embed(
 
         # Check user roles
         allowed_role_ids = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]
-        has_role = any(role.id in allowed_role_ids for role in interaction.user.roles)
-
-        allowed_role_ids = [ROLES.MODERATOR, ROLES.TOTALLY_MOD]
         user_roles = [role.id for role in interaction.user.roles]
         has_role = any(role_id in allowed_role_ids for role_id in user_roles)
 
@@ -983,7 +920,7 @@ async def districtclaim(ctx, category_id: int):
 
 
 # Cog commands
-@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
+@commands.has_any_role(ROLES.TOTALLY_MOD)
 @bot.command()
 async def cogs(ctx: commands.Context):
     await ctx.send("Loaded cogs: `" + "`, `".join(bot.cogs.keys()) + "`")
@@ -1006,7 +943,7 @@ async def cogs_error(ctx: commands.Context, error: commands.CommandError):
 
 
 @bot.command()
-@commands.has_any_role(ROLES.TOTALLY_MOD, "happy")
+@commands.has_any_role(ROLES.TOTALLY_MOD)
 async def reload(ctx: commands.Context, cog: str):
     """Reloads a specific cog."""
     try:
@@ -1027,7 +964,7 @@ async def reload_error(ctx: commands.Context, error: commands.CommandError):
     elif isinstance(error, commands.ExtensionNotFound):
         await ctx.send("The specified cog does not exist.")
     elif isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send("What do you want me to do, reload *everything*?")
+        await ctx.send("What do you want me to do, reload *everything*?\n-# I don't wanna launch a nuke...")
     else:
         await ctx.send(f"An unexpected error occurred: {error}")
 
@@ -1048,7 +985,7 @@ async def load(ctx: commands.Context, cog: str):
 async def load_error(ctx: commands.Context, error: commands.CommandError):
     """Handles errors for the load command."""
     if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("what do you even mean to do with that command, filthy peasant?")
+        await ctx.send("what do you even mean to do with that command, filthy civilian?")
     elif isinstance(error, commands.ExtensionNotFound):
         await ctx.send("The specified cog does not exist.")
     elif isinstance(error, commands.MissingRequiredArgument):
@@ -1099,7 +1036,7 @@ async def pull_error(ctx: commands.Context, error: commands.CommandError):
     """Handles errors for the pull command."""
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send(
-            "Where are you trying to pull from, the depths of hell? Only the elite can do that."
+            "Where are you trying to pull from, the depths of hell?"
         )
     else:
         await ctx.send(f"An unexpected error occurred: {error}")

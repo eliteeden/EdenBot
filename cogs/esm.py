@@ -51,18 +51,21 @@ class ImageCog(commands.Cog):
         
     @commands.command(name="copyemoji", aliases=["emote", "emoji"])
     @commands.has_permissions(manage_emojis=True)
-    async def copyemoji(self, ctx, emoji: Emoji = str|int, name=None): #type: ignore
+    async def copyemoji(self, ctx, emoji: discord.Emoji, *, name: str = None):
         """
-        Shows information about a custom emoji the bot has access to.
+        Copies a custom emoji into the current guild.
         Usage: ;emoji :emoji_name:
         """
-        if isinstance(arg, Emoji):
-            asset = emoji.url_as()
-            if not name:
-                name = emoji.name
-            emoji = await ctx.guild.create_custom_emoji(image=await asset.read(), name=name)
-            await ctx.send(f"Emoji <:{emoji.name}:{emoji.id}> was added!")
-        
+        # Get image bytes from emoji URL
+        async with ctx.bot.http_session.get(str(emoji.url)) as resp:
+            image_bytes = await resp.read()
+
+        if not name:
+            name = emoji.name
+
+        new_emoji = await ctx.guild.create_custom_emoji(image=image_bytes, name=name)
+        await ctx.send(f"Emoji <:{new_emoji.name}:{new_emoji.id}> was added!")
+
 
     @commands.command(name="avatar", aliases=["av", "ava", "pfp"])
     async def avatar(self, ctx, member: discord.Member = None):

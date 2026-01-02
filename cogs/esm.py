@@ -49,7 +49,7 @@ class ImageCog(commands.Cog):
             await ctx.send("Failed to download or open the image.")
             return None
 
-    @commands.command(name="copyemoji", aliases=["steal", "emoji"])
+    @commands.command(name="copyemoji", aliases=["emote", "emoji"])
     @commands.has_permissions(manage_emojis=True)
     async def copyemoji(self, ctx, *, arg: str = None):
         """

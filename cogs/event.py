@@ -227,24 +227,6 @@ class EventsCog(commands.Cog):
         """Reloads the autoresponses from disk, for when you edit the JSON file directly."""
         self.load_ar()
         await ctx.send("Autoresponses reloaded from disk.")
-    @commands.command()
-    @commands.has_any_role(ROLES.TOTALLY_MOD)
-    async def import_ar(self, ctx: commands.Context):
-        """Imports autoresponses from the old format."""
-        old_ar_file = ctx.message.attachments[0]
-        old_data = json.loads(await old_ar_file.read())
-        auto = old_data["AUTO_RESPONSES"]
-        exact = old_data["EXACT_RESPONSES"]
-        count = 0
-        for k, v in auto.items():
-            self.responses.auto[k.lower()] = v
-            count += 1
-        for k, v in exact.items():
-            self.responses.exact[k.lower()] = v
-            count += 1
-        self.save_ar()
-        await ctx.send(f"Imported {count} autoresponses from the old format.")
-
         
 
 async def setup(bot):

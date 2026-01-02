@@ -54,10 +54,12 @@ class ImageCog(commands.Cog):
     async def copyemoji(self, ctx, emoji: discord.PartialEmoji, *, name: str = None):
         """
         Copies a custom emoji into the current guild.
-        Usage: ;emoji :emoji_name:
+        Usage: ;emoji <:emoji_name:emoji_id>
         """
-        # Get the image bytes from the emoji URL
-        image_bytes = await emoji.url.read()
+        # Fetch the image bytes manually
+        async with aiohttp.ClientSession() as session:
+            async with session.get(str(emoji.url)) as resp:
+                image_bytes = await resp.read()
 
         if not name:
             name = emoji.name

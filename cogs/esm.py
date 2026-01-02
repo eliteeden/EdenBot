@@ -51,7 +51,7 @@ class ImageCog(commands.Cog):
 
     @commands.command(name="copyemoji", aliases=["emote", "emoji"])
     @commands.has_permissions(manage_emojis=True)
-    async def copyemoji(self, ctx, *, emoji: discord.Emoji, name=None):
+    async def copyemoji(self, ctx, emoji: discord.Emoji, name=None):
         """
         Shows information about a custom emoji the bot has access to.
         Usage: ;emoji :emoji_name:

@@ -51,22 +51,23 @@ class RolesCog(commands.Cog):
             # Determine position
             if above_role_id is None:
                 above_role_id = guild.roles[-1].id
-
+            
+            else:
                 above_role = guild.get_role(above_role_id)
-                if not above_role:
-                    return await ctx.send("❌ Role with that ID not found.")
+                return above_role            
 
-                new_position = above_role.position + 1
 
-                # Create and move role
-                new_role = await guild.create_role(
-                    name=name, color=role_color, reason=f"Created by {ctx.author}"
-                )
-                await guild.edit_role_positions(positions={new_role: new_position})
+            new_position = above_role.position + 1
 
-                await ctx.send(
-                    f"✅ Created role **{new_role.name}** above **{above_role.name}** with color `{color}`."
-                )
+            # Create and move role
+            new_role = await guild.create_role(
+                name=name, color=role_color, reason=f"Created by {ctx.author}"
+            )
+            await guild.edit_role_positions(positions={new_role: new_position})
+
+            await ctx.send(
+                f"✅ Created role **{new_role.name}** above **{above_role.name}** with color `{color}`."
+            )
 
         except discord.Forbidden:
             await ctx.send("❌ I don't have permission to manage or move roles.")

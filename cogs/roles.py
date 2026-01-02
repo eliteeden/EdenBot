@@ -52,6 +52,8 @@ class RolesCog(commands.Cog):
             # Determine position
             if above_role_id is None:
                 above_role_id = guild.roles[-1].id
+            else:
+                above_role_id = above_role_id
 
 
             if not above_role:

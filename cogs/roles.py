@@ -48,13 +48,13 @@ class RolesCog(commands.Cog):
                     await ctx.send("❌ Invalid hex code.")
                     return
 
-            above_role = guild.get_role(above_role_id)
+            
             # Determine position
             if above_role_id is None:
                 above_role_id = guild.roles[-1].id
             else:
                 above_role_id = above_role_id
-
+            above_role = guild.get_role(above_role_id)
 
             if not above_role:
                 return await ctx.send("❌ Role with that ID not found.")

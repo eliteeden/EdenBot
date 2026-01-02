@@ -122,7 +122,7 @@ class RolesCog(commands.Cog):
             await ctx.send(f"Failed to reorder roles: {e}")
 
     @commands.command(name="add_role", aliases=["addrole", "giverole", "assign"])
-    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    @commands.has_guild_permissions(manage_roles=True)
     async def add_role(self, ctx, member: discord.Member, role: discord.Role):
         """
         Add a role to a member.
@@ -144,7 +144,7 @@ class RolesCog(commands.Cog):
                 await ctx.send(f"Failed to add role: {e}")
 
     @commands.command(name="bulk_add_role", aliases=["massrole", "addroles", "bulkassign", "bulkadd"])
-    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    @commands.has_guild_permissions(manage_roles=True)
     async def bulk_add_role(self, ctx, role: discord.Role, *args):
         async with ctx.typing():
             """
@@ -198,7 +198,7 @@ class RolesCog(commands.Cog):
             await ctx.send("\n".join(response))             
 
     @commands.command(name="bulk_remove_role", aliases=["massremoverole", "removeroles", "bulkremove"])
-    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    @commands.has_guild_permissions(manage_roles=True)
     async def bulk_remove_role(self, ctx, role: discord.Role, *args):
         async with ctx.typing():
             """
@@ -251,7 +251,7 @@ class RolesCog(commands.Cog):
             await ctx.send("\n".join(response))   
 
     @commands.command(name="remove_role", aliases=["removerole", "unassign"])
-    @commands.has_any_role(ROLES.MODERATOR, ROLES.PRESIDENT)
+    @commands.has_guild_permissions(manage_roles=True)
     async def remove_role(self, ctx, member: discord.Member, role: discord.Role):
         """
         Remove a role from a member.

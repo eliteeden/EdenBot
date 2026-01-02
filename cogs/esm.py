@@ -1,6 +1,6 @@
 from ast import alias
 import discord
-from discord import app_commands
+from discord import app_commands, Emoji
 from discord.ext import commands
 from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageDraw, ImageFont, ImageSequence
 import aiohttp
@@ -48,20 +48,21 @@ class ImageCog(commands.Cog):
         except Exception:
             await ctx.send("Failed to download or open the image.")
             return None
-
+        
     @commands.command(name="copyemoji", aliases=["emote", "emoji"])
     @commands.has_permissions(manage_emojis=True)
-    async def copyemoji(self, ctx, emoji: discord.Emoji, name=None):
+    async def copyemoji(self, ctx, emoji: Emoji = str|int, name=None): #type: ignore
         """
         Shows information about a custom emoji the bot has access to.
         Usage: ;emoji :emoji_name:
         """
-        asset = emoji.url_as()
-        if not name:
-            name = emoji.name
-        emoji = await ctx.guild.create_custom_emoji(image=await asset.read(), name=name)
-        await ctx.send(f"Emoji <:{emoji.name}:{emoji.id}> was added!")
-
+        if isinstance(arg, Emoji):
+            asset = emoji.url_as()
+            if not name:
+                name = emoji.name
+            emoji = await ctx.guild.create_custom_emoji(image=await asset.read(), name=name)
+            await ctx.send(f"Emoji <:{emoji.name}:{emoji.id}> was added!")
+        
 
     @commands.command(name="avatar", aliases=["av", "ava", "pfp"])
     async def avatar(self, ctx, member: discord.Member = None):

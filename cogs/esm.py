@@ -51,52 +51,17 @@ class ImageCog(commands.Cog):
 
     @commands.command(name="copyemoji", aliases=["emote", "emoji"])
     @commands.has_permissions(manage_emojis=True)
-    async def copyemoji(self, ctx, *, arg: str = None):
+    async def copyemoji(self, ctx, *, emoji: discord.Emoji, name=None):
         """
-        Copies an emoji into the current guild.
-        Supports Discord emojis, image links, and attachments.
+        Shows information about a custom emoji the bot has access to.
+        Usage: ;emoji :emoji_name:
         """
-        # Case 1: Attachment
-        if ctx.message.attachments:
-            img = await self._get_attachment_or_fail(ctx)
-            if not img:
-                return
-            buf = to_bytes_io(img)
-            name = ctx.message.attachments[0].filename.split(".")[0]
-            new_emoji = await ctx.guild.create_custom_emoji(name=name, image=buf.read())
-            return await ctx.send(f"Emoji created from attachment: {new_emoji}")
+        asset = emoji.url_as()
+        if not name:
+            name = emoji.name
+        emoji = await ctx.guild.create_custom_emoji(image=await asset.read(), name=name)
+        await ctx.send(f"Emoji <:{emoji.name}:{emoji.id}> was added!")
 
-        # Case 2: Discord emoji
-        if arg and arg.startswith("<") and arg.endswith(">"):
-            try:
-                emoji = await commands.EmojiConverter().convert(ctx, arg)
-            except commands.BadArgument:
-                return await ctx.send("Couldn't parse that emoji.")
-            async with aiohttp.ClientSession() as session:
-                async with session.get(str(emoji.url)) as resp:
-                    if resp.status != 200:
-                        return await ctx.send("Couldn't download emoji.")
-                    emoji_bytes = await resp.read()
-                    new_emoji = await ctx.guild.create_custom_emoji(
-                        name=emoji.name, image=emoji_bytes
-                    )
-                    return await ctx.send(f"Emoji copied: {new_emoji}")
-
-        # Case 3: Direct image link
-        url_regex = re.compile(r"^https?:\/\/.*\.(?:png|jpg|jpeg|gif)$")
-        if arg and url_regex.match(arg):
-            async with aiohttp.ClientSession() as session:
-                async with session.get(arg) as resp:
-                    if resp.status != 200:
-                        return await ctx.send("Couldn't download image.")
-                    image_bytes = await resp.read()
-                    name = arg.split("/")[-1].split(".")[0]
-                    new_emoji = await ctx.guild.create_custom_emoji(
-                        name=name, image=image_bytes
-                    )
-                    return await ctx.send(f"Emoji created from link: {new_emoji}")
-
-        return await ctx.send("Please provide an emoji, image link, or upload an image.")
 
     @commands.command(name="avatar", aliases=["av", "ava", "pfp"])
     async def avatar(self, ctx, member: discord.Member = None):

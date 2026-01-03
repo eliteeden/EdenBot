@@ -87,3 +87,4 @@ class QuotesCog(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(QuotesCog(bot))
+    print("QuotesCog has been loaded")

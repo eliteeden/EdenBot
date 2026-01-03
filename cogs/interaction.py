@@ -350,6 +350,7 @@ class InteractionCog(commands.Cog):
             "beautiful member": f"<@{USERS.ESMERY}>",
             "beautiful mod": f"<@{USERS.ZI}>",
             "gayest ship": "Emi and Niki.",
+            "define bum": "eden members",
             "average eden iq": "The average eden IQ is still below room temperature.",
             "glorious leader": f"<@{USERS.ZI}>",
             "who stole the cheese": f"<@{USERS.SCAREX}>",
@@ -383,6 +384,37 @@ class InteractionCog(commands.Cog):
                 # 1) DuckDuckGo HTML search
                 resp = requests.post("https://html.duckduckgo.com/html/",
                                     data={"q": query}, headers=HEADERS, timeout=8)
+                soup = BeautifulSoup(resp.text, "html.parser")
+                a = soup.select_one("a.result__a[href^='http']")
+                if a:
+                    link = a["href"]
+
+                # 2) (Optional) Add Bing / Startpage fallbacks here…
+
+                await ctx.send(link or "No results found.")
+
+            except Exception as e:
+                await ctx.send(f"Error: {e}")
+
+
+    @commands.command(name="ie", aliases=["uc", "vivendi"])
+    async def ie(self, ctx, *, query: str):
+        """Searches DuckDuckGo and does things"""
+
+        async with ctx.typing():
+            headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0'
+                    }
+            try:
+                link = None
+
+                # 1) DuckDuckGo HTML search
+                resp = requests.post(
+                                "https://html.duckduckgo.com/html/",
+                                data={"q": query, "kp": "-2"},
+                                headers=headers,
+                                timeout=8
+                            )
                 soup = BeautifulSoup(resp.text, "html.parser")
                 a = soup.select_one("a.result__a[href^='http']")
                 if a:
@@ -677,7 +709,7 @@ class InteractionCog(commands.Cog):
         await ctx.send(f"There are {count} users in the ;find cache.")
 
     @commands.command(name="find", aliases=["zii", "yoink", "stalk", "hunt", "track"])
-    @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD)
+    @commands.has_any_role(ROLES.MODERATOR, ROLES.TOTALLY_MOD, "happy")
     async def find(self, ctx: commands.Context, member: Optional[discord.Member] = None): # type: ignore
         """Finds the most recent message from a member across all text channels, using cache + parallel scanning."""
         async with ctx.typing():

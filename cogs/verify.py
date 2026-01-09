@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord.ui import Button, View
 import json
 import os
 
@@ -34,24 +33,11 @@ class VerificationCog(commands.Cog):
             if not channel or not role:
                 continue
 
-            # Re-send the verification button
-            button = discord.ui.Button(label="Click here to verify!", style=discord.ButtonStyle.green)
-
-            async def button_callback(interaction: discord.Interaction):
-                await interaction.response.defer(ephemeral=True)
-                try:
-                    await interaction.user.add_roles(role)
-                    await interaction.followup.send("You are now verified ✅", ephemeral=True)
-                except discord.Forbidden:
-                    await interaction.followup.send("❌ I don't have permission to give you that role.", ephemeral=True)
-
-            button.callback = button_callback
-            view = View()
-            view.add_item(button)
-
             try:
-                await channel.send("Click here to verify!", view=view)
-                print(f"Verification button reloaded in {guild.name}")
+                # Send verification message with reaction
+                msg = await channel.send("React with ✅ to verify yourself!")
+                await msg.add_reaction("✅")
+                print(f"Verification message reloaded in {guild.name}")
             except Exception as e:
                 print(f"Failed to reload verification in {guild.name}: {e}")
 
@@ -85,54 +71,42 @@ class VerificationCog(commands.Cog):
             overwrite_verified.view_channel = True
             await ch.set_permissions(role, overwrite=overwrite_verified)
 
-        # Step 2: Create button for verification
-        button = discord.ui.Button(label="Click here to verify!", style=discord.ButtonStyle.green)
+        # Step 2: Send verification message with reaction
+        msg = await channel.send("React with ✅ to verify yourself!")
+        await msg.add_reaction("✅")
 
-        async def button_callback(interaction: discord.Interaction):
-            await interaction.response.defer(ephemeral=True)
-            try:
-                await interaction.user.add_roles(role)
-                await interaction.followup.send("You are now verified ✅", ephemeral=True)
-            except discord.Forbidden:
-                await interaction.followup.send("❌ I don't have permission to give you that role.", ephemeral=True)
-
-        button.callback = button_callback
-        view = View()
-        view.add_item(button)
-
-        await channel.send("Click here to verify!", view=view)
         await ctx.send("✅ Verification system setup complete!")
 
-    
-    @commands.command(name="oneoff")
-    @commands.has_permissions(manage_roles=True)
-    async def oneoff(self, ctx, role: discord.Role):
-        """
-        Assigns the specified role to every member in the server.
-        Usage: ;assignrole @RoleName
-        """
-        # Confirm action
-        await ctx.send(f"Starting to assign {role.name} to all members...")
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        """Grant role when user reacts with ✅"""
+        guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
+            return
 
-        # Iterate through all members
-        success_count = 0
-        fail_count = 0
-        for member in ctx.guild.members:
-            try:
-                # Skip bots if you want
-                if member.bot:
-                    continue
-                await member.add_roles(role)
-                success_count += 1
-            except Exception as e:
-                fail_count += 1
-                print(f"Failed to assign role to {member}: {e}")
+        guild_id = str(guild.id)
+        if guild_id not in self.config:
+            return
 
-        await ctx.send(
-            f"✅ Finished assigning {role.name}.\n"
-            f"Success: {success_count}, Failed: {fail_count}"
-        )
+        role = guild.get_role(self.config[guild_id]["role_id"])
+        if not role:
+            return
 
+        # Ensure it's the right channel and emoji
+        if payload.channel_id != self.config[guild_id]["channel_id"]:
+            return
+        if str(payload.emoji) != "✅":
+            return
+
+        member = guild.get_member(payload.user_id)
+        if not member or member.bot:
+            return
+
+        try:
+            await member.add_roles(role)
+            print(f"{member} verified in {guild.name}")
+        except discord.Forbidden:
+            print(f"❌ Missing permissions to assign role in {guild.name}")
 
 # --- Cog Setup Function ---
 async def setup(bot):

@@ -103,6 +103,37 @@ class VerificationCog(commands.Cog):
         await channel.send("Click here to verify!", view=view)
         await ctx.send("✅ Verification system setup complete!")
 
+    
+    @commands.command(name="oneoff")
+    @commands.has_permissions(manage_roles=True)
+    async def oneoff(self, ctx, role: discord.Role):
+        """
+        Assigns the specified role to every member in the server.
+        Usage: ;assignrole @RoleName
+        """
+        # Confirm action
+        await ctx.send(f"Starting to assign {role.name} to all members...")
+
+        # Iterate through all members
+        success_count = 0
+        fail_count = 0
+        for member in ctx.guild.members:
+            try:
+                # Skip bots if you want
+                if member.bot:
+                    continue
+                await member.add_roles(role)
+                success_count += 1
+            except Exception as e:
+                fail_count += 1
+                print(f"Failed to assign role to {member}: {e}")
+
+        await ctx.send(
+            f"✅ Finished assigning {role.name}.\n"
+            f"Success: {success_count}, Failed: {fail_count}"
+        )
+
+
 # --- Cog Setup Function ---
 async def setup(bot):
     await bot.add_cog(VerificationCog(bot))

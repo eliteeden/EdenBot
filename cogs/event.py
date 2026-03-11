@@ -7,7 +7,7 @@ import asyncio
 import json
 import os
 
-from constants import ROLES
+from constants import CHANNELS, ROLES
 
 CONFIG_FILE = "events.json"
 AR_FILE = "autoresponses.json"
@@ -142,7 +142,7 @@ class EventsCog(commands.Cog):
         # Auto Responses
         msg: str = message.content
         # Exact is handled seperately
-        if (response:= self.ar_value(msg)):
+        if (response:= self.ar_value(msg)) and message.channel.id != CHANNELS.SERIOUS:
             await message.channel.send(response)
 
     # This should be called publicly (main.py)

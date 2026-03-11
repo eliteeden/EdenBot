@@ -12,7 +12,7 @@ from random import randint
 import json
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance, ImageSequence
 import requests
-from constants import ROLES
+from constants import CHANNELS, ROLES
 
 
 log = logging.getLogger(__name__)
@@ -643,7 +643,7 @@ class LevelsCog(commands.Cog):
 
         # 🎉 Level up
         if new_level > prev_level:
-            await message.channel.send(
+            await self.bot.get_channel(CHANNELS.LEVELS).send( # type: ignore
                 f"{message.author.mention} leveled up to **Level {new_level}**! 🚀"
             )
             await self.assign_level_roles(message.author)

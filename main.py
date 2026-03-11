@@ -3,10 +3,8 @@
 
 
 # Imports
-import aiohttp
 import asyncio
 from asyncio import subprocess
-import datetime
 from dotenv import load_dotenv
 import discord
 from discord import app_commands, Embed, Guild, Intents, Interaction, Member, User
@@ -14,15 +12,11 @@ from discord.ext import commands
 import json
 import os
 import random
-import regex
 import traceback
-from typing import Optional, TYPE_CHECKING
 import unicodedata
 
 from cogs.event import EventsCog
 from constants import CHANNELS, GUILDS, ROLES
-if TYPE_CHECKING:
-    from cogs.inventory import InventoryCog
 
 
 # Elite bot for a server of bitches
